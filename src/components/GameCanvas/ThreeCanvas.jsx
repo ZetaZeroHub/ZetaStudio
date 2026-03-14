@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
-import { renderAll, destroyAll, drawSelectionBox, clearSelectionBox, getThreeObjectMap } from '../../engine/threeRenderer';
+import { renderAll, destroyAll, syncElements, drawSelectionBox, clearSelectionBox, getThreeObjectMap } from '../../engine/threeRenderer';
 import useEditorStore from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
 import styles from './GameCanvas.module.css';
@@ -15,6 +15,7 @@ export default function ThreeCanvas({ mode }) {
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
   const transformRef = useRef(null);
+  const keyHandlerRef = useRef(null);
   const initIdRef = useRef(0);
   const reqIdRef = useRef(0);
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,11 @@ export default function ThreeCanvas({ mode }) {
     if (transformRef.current) transformRef.current.dispose();
     if (rendererRef.current) rendererRef.current.dispose();
     if (controlsRef.current) controlsRef.current.dispose();
+    // Remove keyboard handler
+    if (keyHandlerRef.current && containerRef.current) {
+      containerRef.current.removeEventListener('keydown', keyHandlerRef.current);
+      keyHandlerRef.current = null;
+    }
     if (canvasMountRef.current) canvasMountRef.current.innerHTML = '';
     sceneRef.current = null;
     rendererRef.current = null;
@@ -83,14 +89,14 @@ export default function ThreeCanvas({ mode }) {
       }
       cameraRef.current = camera;
 
-      // OrbitControls for camera
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.1;
-      controlsRef.current = controls;
-
-      // TransformControls for gizmo (edit mode only)
+      // OrbitControls ONLY in edit mode — not in preview!
       if (mode === 'edit') {
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        controlsRef.current = controls;
+
+        // TransformControls for gizmo
         const transformControls = new TransformControls(camera, renderer.domElement);
         transformControls.__isHelper = true;
         scene.add(transformControls);
@@ -123,7 +129,11 @@ export default function ThreeCanvas({ mode }) {
         });
 
         setupEditInteractions(scene, camera, renderer.domElement, threeMap, transformControls);
-        setupKeyboardShortcuts(renderer.domElement, transformControls, camera, controls);
+        setupKeyboardShortcuts(transformControls, camera, controls);
+
+        if (selectedElementId) {
+          attachGizmoToObject(selectedElementId, threeMap, transformControls, scene);
+        }
       }
 
       // App object to mimic pixi app.ticker for scripts
@@ -156,16 +166,13 @@ export default function ThreeCanvas({ mode }) {
         });
       }
 
-      if (mode === 'edit' && selectedElementId) {
-        attachGizmo(selectedElementId);
-      }
-
       const animate = () => {
         if (currentId !== initIdRef.current) return;
         reqIdRef.current = requestAnimationFrame(animate);
         
         customApp.ticker.tasks.forEach(task => task());
-        if (controlsRef.current) controlsRef.current.update();
+        // Only update OrbitControls in edit mode
+        if (mode === 'edit' && controlsRef.current) controlsRef.current.update();
         
         renderer.render(scene, camera);
       };
@@ -179,21 +186,17 @@ export default function ThreeCanvas({ mode }) {
     }
   }, [elements, mode, destroyApp]);
 
-  const attachGizmo = useCallback((elementId) => {
-    const tc = transformRef.current;
-    if (!tc || !sceneRef.current) return;
-    
-    const objMap = getThreeObjectMap();
-    const obj = objMap.get(elementId);
-    
+  const attachGizmoToObject = (elementId, objMap, tc, scene) => {
+    if (!tc || !scene) return;
+    const obj = objMap ? objMap.get(elementId) : getThreeObjectMap().get(elementId);
     if (obj) {
       tc.attach(obj);
-      clearSelectionBox(sceneRef.current);
-      drawSelectionBox(sceneRef.current, elementId);
+      clearSelectionBox(scene);
+      drawSelectionBox(scene, elementId);
     } else {
       tc.detach();
     }
-  }, []);
+  };
 
   const setupEditInteractions = (scene, camera, domElement, threeMap, transformControls) => {
     const raycaster = new THREE.Raycaster();
@@ -236,16 +239,19 @@ export default function ThreeCanvas({ mode }) {
     domElement.addEventListener('click', onClick);
   };
 
-  const setupKeyboardShortcuts = (domElement, transformControls, camera, orbitControls) => {
+  const setupKeyboardShortcuts = (transformControls, camera, orbitControls) => {
     const onKeyDown = (event) => {
+      // Don't intercept when typing in input fields
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
       
       switch (event.key.toLowerCase()) {
         case 'g': // Grab/Move
           transformControls.setMode('translate');
+          event.preventDefault();
           break;
         case 'r': // Rotate
           transformControls.setMode('rotate');
+          event.preventDefault();
           break;
         case 's': // Scale
           if (!event.ctrlKey && !event.metaKey) {
@@ -254,6 +260,7 @@ export default function ThreeCanvas({ mode }) {
           }
           break;
         case 'x': // X axis constraint
+          event.preventDefault();
           transformControls.showX = true;
           transformControls.showY = false;
           transformControls.showZ = false;
@@ -264,6 +271,7 @@ export default function ThreeCanvas({ mode }) {
           }, 2000);
           break;
         case 'y': // Y axis constraint
+          event.preventDefault();
           transformControls.showX = false;
           transformControls.showY = true;
           transformControls.showZ = false;
@@ -274,6 +282,7 @@ export default function ThreeCanvas({ mode }) {
           }, 2000);
           break;
         case 'z': // Z axis constraint
+          event.preventDefault();
           transformControls.showX = false;
           transformControls.showY = false;
           transformControls.showZ = true;
@@ -285,6 +294,7 @@ export default function ThreeCanvas({ mode }) {
           break;
         case 'delete':
         case 'backspace': {
+          event.preventDefault();
           const store = useEditorStore.getState();
           if (store.selectedElementId) {
             transformControls.detach();
@@ -292,34 +302,31 @@ export default function ThreeCanvas({ mode }) {
           }
           break;
         }
-        case '1': // Front view (numpad)
-          if (event.code === 'Numpad1') {
-            camera.position.set(0, 0, 10);
-            camera.lookAt(0, 0, 0);
-            orbitControls.target.set(0, 0, 0);
-          }
+        case '1': // Front view
+          event.preventDefault();
+          camera.position.set(0, 0, 10);
+          camera.lookAt(0, 0, 0);
+          orbitControls.target.set(0, 0, 0);
           break;
         case '3': // Right view
-          if (event.code === 'Numpad3') {
-            camera.position.set(10, 0, 0);
-            camera.lookAt(0, 0, 0);
-            orbitControls.target.set(0, 0, 0);
-          }
+          event.preventDefault();
+          camera.position.set(10, 0, 0);
+          camera.lookAt(0, 0, 0);
+          orbitControls.target.set(0, 0, 0);
           break;
         case '7': // Top view
-          if (event.code === 'Numpad7') {
-            camera.position.set(0, 10, 0);
-            camera.lookAt(0, 0, 0);
-            orbitControls.target.set(0, 0, 0);
-          }
+          event.preventDefault();
+          camera.position.set(0, 10, 0);
+          camera.lookAt(0, 0, 0);
+          orbitControls.target.set(0, 0, 0);
           break;
       }
     };
 
-    // Listen on the container for focus
-    const wrapper = domElement.parentElement;
-    if (wrapper) {
-      wrapper.addEventListener('keydown', onKeyDown);
+    // Attach to the outer container which has tabIndex and gets focus
+    if (containerRef.current) {
+      containerRef.current.addEventListener('keydown', onKeyDown);
+      keyHandlerRef.current = onKeyDown;
     }
   };
 
@@ -342,23 +349,25 @@ export default function ThreeCanvas({ mode }) {
     return () => destroyApp();
   }, [mode]);
 
-  // Sync elements without destroying
+  // Sync elements without destroying — use direct import (not dynamic)
   useEffect(() => {
     if (!sceneRef.current) return;
     if (mode === 'preview') return;
-    import('../../engine/threeRenderer').then(({ syncElements }) => {
-      syncElements(sceneRef.current, elements, variables, true);
-      if (selectedElementId) {
-        attachGizmo(selectedElementId);
-      }
-    });
+    
+    syncElements(sceneRef.current, elements, variables, true);
+    
+    if (selectedElementId && transformRef.current) {
+      attachGizmoToObject(selectedElementId, null, transformRef.current, sceneRef.current);
+    }
   }, [elements, variables, selectedElementId, mode]);
 
   useEffect(() => {
     if (sceneRef.current && mode === 'edit') {
       clearSelectionBox(sceneRef.current);
       if (selectedElementId) {
-        attachGizmo(selectedElementId);
+        if (transformRef.current) {
+          attachGizmoToObject(selectedElementId, null, transformRef.current, sceneRef.current);
+        }
       } else if (transformRef.current) {
         transformRef.current.detach();
       }
@@ -368,11 +377,13 @@ export default function ThreeCanvas({ mode }) {
   const SHORTCUTS = language === 'zh' ? [
     ['G', '移动模式'], ['R', '旋转模式'], ['S', '缩放模式'],
     ['X/Y/Z', '轴约束'], ['Del', '删除'],
+    ['1/3/7', '前/右/顶视角'],
     ['鼠标左键', '选择/拖拽'], ['中键拖拽', '平移视角'], ['滚轮', '缩放视角'],
     ['右键拖拽', '旋转视角'],
   ] : [
     ['G', 'Move'], ['R', 'Rotate'], ['S', 'Scale'],
     ['X/Y/Z', 'Axis Lock'], ['Del', 'Delete'],
+    ['1/3/7', 'Front/Right/Top'],
     ['Left Click', 'Select/Drag'], ['Mid Drag', 'Pan'], ['Scroll', 'Zoom'],
     ['Right Drag', 'Orbit'],
   ];
