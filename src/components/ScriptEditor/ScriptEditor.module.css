@@ -109,3 +109,12 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Mobile */
+@media (max-width: 767px) {
+  .sidebar { width: 120px; }
+  .item { padding: 5px 6px; font-size: 0.75rem; }
+  .header { padding: 6px 8px; font-size: 0.7rem; }
+  .nameInput { width: 70px; font-size: 0.75rem; }
+}
+

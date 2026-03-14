@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, Globe } from 'lucide-react';
+import { Sparkles, Globe, Github } from 'lucide-react';
 import useI18nStore from '../../stores/i18nStore';
 import styles from './Navbar.module.css';
 
@@ -20,6 +20,15 @@ export default function Navbar({ children }) {
         <div className={styles.navActions}>
           {children}
         </div>
+        <a
+          href="https://github.com/ZetaZeroHub/ZetaStudio"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.githubLink}
+          title="GitHub"
+        >
+          <Github size={18} strokeWidth={2} />
+        </a>
         <button className={styles.langToggle} onClick={toggleLanguage} title={language === 'zh' ? 'Switch to English' : '切换到中文'}>
           <Globe size={18} strokeWidth={2} />
           <span>{language === 'zh' ? 'EN' : '中'}</span>

@@ -24,6 +24,11 @@
   letter-spacing: -0.01em;
 }
 
+.projectName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .projectIcon {
   color: var(--accent-brand);
 }
@@ -74,11 +79,22 @@
   color: var(--accent-success);
 }
 
+/* Tablet drawer toggle — hidden on desktop & mobile */
+.tabletDrawerToggle {
+  display: none;
+}
+
 .editorBody {
   flex: 1;
   display: flex;
   overflow: hidden;
   background: var(--bg-primary);
+  position: relative;
+}
+
+/* Tablet drawer backdrop */
+.drawerBackdrop {
+  display: none;
 }
 
 /* Left Panel */
@@ -163,10 +179,216 @@
   display: none;
 }
 
+/* Mobile: code area full height */
+.codeAreaFull {
+  height: auto;
+  flex: 1;
+}
+
 /* Right Panel */
 .rightPanel {
   width: 300px;
   min-width: 300px;
   border-left: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
+}
+
+/* Mobile-only panels — hidden on desktop */
+.mobilePanel {
+  display: none;
+}
+
+/* Bottom Tab Bar — hidden on desktop */
+.bottomTabBar {
+  display: none;
+}
+
+/* ============================
+   TABLET (768px – 1023px)
+   ============================ */
+@media (max-width: 1023px) {
+  /* Hide left panel by default, show as overlay drawer */
+  .leftPanel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: none;
+  }
+
+  .leftPanelOpen {
+    transform: translateX(0);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .drawerBackdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  .tabletDrawerToggle {
+    display: flex;
+  }
+
+  /* Reduce right panel width */
+  .rightPanel {
+    width: 240px;
+    min-width: 240px;
+  }
+
+  /* Navbar: reduce padding */
+  .segmentBtn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .projectTitle {
+    max-width: 140px;
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================
+   MOBILE (≤767px)
+   ============================ */
+@media (max-width: 767px) {
+  .editorPage {
+    height: 100vh;
+    height: 100dvh; /* dynamic viewport height for mobile browsers */
+  }
+
+  /* Hide desktop left/right panels */
+  .leftPanel {
+    display: none;
+  }
+
+  .rightPanel {
+    display: none;
+  }
+
+  .drawerBackdrop {
+    display: none;
+  }
+
+  .tabletDrawerToggle {
+    display: none;
+  }
+
+  /* Navbar adjustments */
+  .projectTitle {
+    max-width: 100px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .segmentedControl {
+    padding: 2px;
+  }
+
+  .segmentBtn {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .segmentLabel {
+    display: none;
+  }
+
+  .actionLabel {
+    display: none;
+  }
+
+  .actionGroup {
+    gap: 4px;
+  }
+
+  /* Center panel takes full height minus bottom bar */
+  .editorBody {
+    flex: 1;
+    position: relative;
+  }
+
+  .centerPanel {
+    display: flex;
+  }
+
+  /* Mobile-hidden utility */
+  .mobileHidden {
+    display: none !important;
+  }
+
+  /* Code area when in code tab */
+  .codeAreaFull {
+    height: auto;
+    flex: 1;
+    border-top: none;
+  }
+
+  .canvasArea {
+    min-height: 0;
+  }
+
+  /* Mobile panels */
+  .mobilePanel {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--bg-secondary);
+  }
+
+  .mobilePanelActive {
+    display: flex;
+  }
+
+  /* Mobile property area inside mobile panel */
+  .mobilePanel .propertyArea {
+    height: auto;
+    min-height: 0;
+    flex: 1;
+  }
+
+  /* Bottom Tab Bar */
+  .bottomTabBar {
+    display: flex;
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border-subtle);
+    padding: 4px 0;
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+  }
+
+  .bottomTab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 0;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.6rem;
+    transition: color 0.15s;
+  }
+
+  .bottomTab:active {
+    color: var(--text-primary);
+  }
+
+  .bottomTabActive {
+    color: var(--accent-primary-light);
+  }
+
+  .bottomTabLabel {
+    font-family: var(--font-sans);
+    font-weight: 500;
+  }
 }

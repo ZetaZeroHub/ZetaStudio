@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight, Crosshair } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight, Crosshair, Github, ExternalLink } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import ParticleField from '../../components/ParticleField/ParticleField';
 import useProjectStore from '../../stores/projectStore';
@@ -160,6 +160,29 @@ export default function HomePage() {
           </div>
         )}
       </section>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerLinks}>
+            <a href="https://zzh.app/" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+              <ExternalLink size={14} />
+              <span>{language === 'zh' ? '了解我们' : 'About Us'}</span>
+            </a>
+            <span className={styles.footerDot}>·</span>
+            <a href="https://github.com/ZetaZeroHub" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+              <Github size={14} />
+              <span>GitHub</span>
+            </a>
+            <span className={styles.footerDot}>·</span>
+            <a href="https://github.com/ZetaZeroHub/ZetaStudio" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+              <Github size={14} />
+              <span>{language === 'zh' ? '开源仓库' : 'Source Code'}</span>
+            </a>
+          </div>
+          <p className={styles.footerCopy}>© {new Date().getFullYear()} ZetaZeroHub · Apache 2.0 License</p>
+        </div>
+      </footer>
 
       {/* Modal */}
       {showModal && (

@@ -31,6 +31,12 @@ export default {
     save: '保存',
     publish: '发布',
     scriptsLabel: '脚本与逻辑',
+    mobileTab: {
+      canvas: '画布',
+      elements: '元素',
+      code: '代码',
+      ai: 'AI',
+    },
   },
   aiPanel: {
     title: 'AI 助手',

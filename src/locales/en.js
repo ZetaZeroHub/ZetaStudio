@@ -31,6 +31,12 @@ export default {
     save: 'Save',
     publish: 'Publish',
     scriptsLabel: 'Scripts & Logic',
+    mobileTab: {
+      canvas: 'Canvas',
+      elements: 'Items',
+      code: 'Code',
+      ai: 'AI',
+    },
   },
   aiPanel: {
     title: 'AI Assistant',

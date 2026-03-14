@@ -59,3 +59,22 @@
   font-family: var(--font-mono);
   font-size: 0.8rem;
 }
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .gameWrapper { padding: var(--space-md); }
+  .gameFrame { max-width: 100%; }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .gameWrapper { padding: var(--space-sm); }
+  .gameFrame { border-radius: var(--radius-sm); aspect-ratio: 16 / 10; }
+  .gameTitle { font-size: 0.85rem; }
+  .shareSection { padding: var(--space-md); }
+  .shareUrl { flex-direction: column; }
+  .shareUrlInput { width: 100%; font-size: 0.7rem; }
+  .playHeader { gap: var(--space-sm); flex-wrap: wrap; }
+  .playHeader button { font-size: 0.75rem; }
+}
+

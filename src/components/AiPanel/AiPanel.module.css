@@ -151,3 +151,15 @@
   color: var(--text-primary);
   border-color: var(--border-accent);
 }
+
+/* Mobile */
+@media (max-width: 767px) {
+  .aiPanel { height: 100%; }
+  .messages { padding: var(--space-sm); gap: var(--space-sm); }
+  .message { font-size: 0.8rem; padding: 8px 10px; }
+  .inputArea { padding: var(--space-sm); }
+  .textInput { min-height: 34px; padding: 6px 12px; font-size: 0.85rem; }
+  .quickActions { gap: 4px; }
+  .quickBtn { padding: 3px 8px; font-size: 0.7rem; }
+}
+
