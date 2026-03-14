@@ -1,0 +1,30 @@
+.editor { padding: var(--space-sm); overflow-y: auto; height: 100%; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-md); padding-bottom: var(--space-sm); border-bottom: 1px solid var(--border-subtle); }
+.headerTitle { font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: var(--space-sm); }
+.headerIcon { font-size: 1rem; }
+
+.section { margin-bottom: var(--space-md); }
+.sectionTitle { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--space-sm); display: flex; align-items: center; gap: var(--space-xs); }
+.sectionIcon { font-size: 0.75rem; }
+
+.row { display: flex; gap: var(--space-sm); margin-bottom: 6px; align-items: center; }
+.label { font-size: 0.7rem; color: var(--text-muted); min-width: 28px; text-align: center; flex-shrink: 0; }
+.inputSmall { width: 70px; padding: 4px 6px; font-size: 0.78rem; }
+.inputFull { width: 100%; padding: 4px 8px; font-size: 0.78rem; }
+.colorInput { width: 32px; height: 24px; padding: 0; border: 1px solid var(--border-default); border-radius: var(--radius-sm); cursor: pointer; background: transparent; }
+.colorRow { display: flex; align-items: center; gap: var(--space-sm); }
+.colorHex { width: 80px; font-family: var(--font-mono); font-size: 0.75rem; }
+
+.select { width: 100%; padding: 4px 8px; font-size: 0.78rem; background: var(--bg-input); border: 1px solid var(--border-default); border-radius: var(--radius-sm); color: var(--text-primary); }
+
+.behaviorList { display: flex; flex-direction: column; gap: var(--space-sm); }
+.behaviorItem { padding: var(--space-sm); background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+.behaviorDesc { color: var(--text-secondary); }
+.deleteSmall { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.7rem; }
+.deleteSmall:hover { color: var(--accent-danger); }
+
+.addBehaviorBtn { width: 100%; padding: 6px; font-size: 0.75rem; background: var(--bg-card); border: 1px dashed var(--border-default); border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; transition: all var(--transition-fast); }
+.addBehaviorBtn:hover { border-color: var(--accent-primary); color: var(--accent-primary-light); }
+
+.empty { text-align: center; padding: var(--space-2xl) var(--space-md); color: var(--text-muted); font-size: 0.8rem; }
+.emptyIcon { font-size: 2rem; margin-bottom: var(--space-sm); opacity: 0.5; display: block; }

@@ -1,0 +1,172 @@
+/* ============================
+   EditorPage — Premium Design
+   ============================ */
+.editorPage {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.projectTitle {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.projectIcon {
+  color: var(--accent-brand);
+}
+
+/* Segmented Control */
+.segmentedControl {
+  display: flex;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  border: 1px solid var(--border-default);
+}
+
+.segmentBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 16px;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.segmentBtn:hover {
+  color: var(--text-primary);
+}
+
+.segmentBtnActive {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-default);
+}
+
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.iconSuccess {
+  color: var(--accent-success);
+}
+
+.editorBody {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* Left Panel */
+.leftPanel {
+  width: 260px;
+  min-width: 260px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.elementPanelArea {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.propertyArea {
+  height: 45%;
+  min-height: 200px;
+  border-top: 1px solid var(--border-subtle);
+  overflow-y: auto;
+  background: var(--bg-secondary);
+}
+
+/* Center Panel */
+.centerPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.canvasArea {
+  flex: 1;
+  min-height: 300px;
+  position: relative;
+  background: #050505;
+}
+
+.codeArea {
+  height: 280px;
+  border-top: 1px solid var(--border-default);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+}
+
+.codeAreaHeader {
+  padding: 7px var(--space-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.codeAreaBody {
+  flex: 1;
+  overflow: hidden;
+}
+
+.codeAreaCollapsed {
+  height: 36px;
+}
+
+.codeAreaCollapsed .codeAreaBody {
+  display: none;
+}
+
+/* Right Panel */
+.rightPanel {
+  width: 300px;
+  min-width: 300px;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}

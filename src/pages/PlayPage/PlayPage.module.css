@@ -1,0 +1,61 @@
+.playPage {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.playHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.gameTitle {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.gameWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+}
+
+.gameFrame {
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-lg);
+}
+
+.shareSection {
+  text-align: center;
+  padding: var(--space-lg);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.shareInfo {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-md);
+}
+
+.shareUrl {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.shareUrlInput {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
