@@ -44,10 +44,6 @@
 
 ![3D 编辑器 — 操作指南覆盖层、变换控制器、材质属性](./docs/screenshots/editor_3d_shortcuts.png)
 
-### 完整功能演示
-
-![完整编辑器工作流演示](./docs/screenshots/demo_walkthrough.webp)
-
 ---
 
 ## 功能特性

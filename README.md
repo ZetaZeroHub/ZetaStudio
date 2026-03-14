@@ -44,10 +44,6 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 
 ![3D editor — Controls help overlay, transform gizmo, material properties](./docs/screenshots/editor_3d_shortcuts.png)
 
-### Full Feature Demo
-
-![Complete editor workflow demonstration](./docs/screenshots/demo_walkthrough.webp)
-
 ---
 
 ## Features
