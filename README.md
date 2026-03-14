@@ -14,6 +14,32 @@ Natural language driven 2D/3D game generation. Fusing generative audiovisuals an
 
 The platform combines a visual scene editor, a code editor, and an AI assistant into a unified workspace, lowering the barrier to game creation while maintaining full programmatic control.
 
+## Screenshots
+
+### Homepage
+
+![Homepage — Hero section with particle canvas and feature highlights](./docs/screenshots/homepage.png)
+
+### Project Gallery
+
+![Project gallery with 2D/3D badges](./docs/screenshots/projects.png)
+
+### Template Selection
+
+![Create project modal — 2D/3D dimension toggle and template cards](./docs/screenshots/template_modal.png)
+
+### 2D Editor
+
+![2D game editor — scene canvas, code editor, AI assistant](./docs/screenshots/editor_2d.png)
+
+### 3D Editor
+
+![3D editor with Three.js cube rendering and rotation script](./docs/screenshots/editor_3d.png)
+
+### Gameplay Preview
+
+![Platformer game running in preview mode with scoring](./docs/screenshots/gameplay_platformer.png)
+
 ## Features
 
 ### 🎮 Dual Engine Architecture
@@ -157,7 +183,7 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 
 ## License
 
-This project is part of The Reality Lab's multimodal creation suite.
+This project is licensed under the [Apache License 2.0](./LICENSE).
 
 ---
 

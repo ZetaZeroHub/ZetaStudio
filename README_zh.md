@@ -14,6 +14,32 @@
 
 平台将可视化场景编辑器、代码编辑器和 AI 助手整合在一个统一的工作空间中，在降低游戏创作门槛的同时保留完整的编程控制能力。
 
+## 截图展示
+
+### 首页
+
+![首页 — 粒子动画 Hero 区与功能特性展示](./docs/screenshots/homepage.png)
+
+### 项目画廊
+
+![项目列表，支持 2D/3D 标签](./docs/screenshots/projects.png)
+
+### 模板选择
+
+![创建项目模态框 — 2D/3D 维度切换与模板卡片](./docs/screenshots/template_modal.png)
+
+### 2D 编辑器
+
+![2D 游戏编辑器 — 场景画布、代码编辑器、AI 助手](./docs/screenshots/editor_2d.png)
+
+### 3D 编辑器
+
+![3D 编辑器，Three.js 立方体渲染与旋转脚本](./docs/screenshots/editor_3d.png)
+
+### 游戏预览
+
+![跳跃游戏在预览模式下运行，含计分系统](./docs/screenshots/gameplay_platformer.png)
+
 ## 功能特性
 
 ### 🎮 双引擎架构
@@ -157,7 +183,7 @@ Zeta Studio 遵循 **社论式极简主义** 设计语言，灵感来源于 Appl
 
 ## 许可
 
-本项目是现实实验室多模态创作套件的一部分。
+本项目基于 [Apache License 2.0](./LICENSE) 许可证开源。
 
 ---
 
