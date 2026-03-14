@@ -4,7 +4,7 @@ import {
   PaintBucket, Repeat, Sparkles, Shapes, Image as ImageIcon,
   Type, Clapperboard, MousePointerClick, Box, Keyboard,
   Swords, Timer, Pointer, Hash, Link, Copy, Trash2, Eye, EyeOff, Plus,
-  Camera, Sun, Circle, FileBox, Cylinder, PackageOpen
+  Camera, Sun, Circle, FileBox, Cylinder, PackageOpen, Lightbulb, CloudSun, Globe
 } from 'lucide-react';
 import useEditorStore, { createNewElement } from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
@@ -58,7 +58,10 @@ const ADD_OPTIONS_3D = {
     { type: 'perspectiveCamera', labelKey: 'perspectiveCamera', icon: <Camera size={14} /> },
     { type: 'ambientLight', labelKey: 'ambientLight', icon: <Sun size={14} /> },
     { type: 'directionalLight', labelKey: 'directionalLight', icon: <Sun size={14} /> },
-    { type: 'pointLight', labelKey: 'pointLight', icon: <Sun size={14} /> },
+    { type: 'pointLight', labelKey: 'pointLight', icon: <Lightbulb size={14} /> },
+    { type: 'spotLight', labelKey: 'spotLight', icon: <Lightbulb size={14} /> },
+    { type: 'hemisphereLight', labelKey: 'hemisphereLight', icon: <CloudSun size={14} /> },
+    { type: 'skybox', labelKey: 'skybox', icon: <Globe size={14} /> },
   ],
   sprite: [
     { type: 'box', labelKey: 'box', icon: <Box size={14} /> },
@@ -76,7 +79,8 @@ const TYPE_ICONS = {
   graphics: <Shapes size={14} />, image: <ImageIcon size={14} />, text: <Type size={14} />,
   animatedSprite: <Clapperboard size={14} />, button: <MousePointerClick size={14} />, container: <Box size={14} />,
   perspectiveCamera: <Camera size={14} />, ambientLight: <Sun size={14} />, directionalLight: <Sun size={14} />,
-  pointLight: <Sun size={14} />, box: <Box size={14} />, sphere: <Circle size={14} />,
+  pointLight: <Lightbulb size={14} />, spotLight: <Lightbulb size={14} />, hemisphereLight: <CloudSun size={14} />,
+  skybox: <Globe size={14} />, box: <Box size={14} />, sphere: <Circle size={14} />,
   plane: <Component size={14} />, cylinder: <Cylinder size={14} />, importedModel: <FileBox size={14} />,
   keyboardEvent: <Keyboard size={14} />, collisionRule: <Swords size={14} />, timerEvent: <Timer size={14} />,
   clickEvent: <Pointer size={14} />, variable: <Hash size={14} />, uiBinding: <Link size={14} />,

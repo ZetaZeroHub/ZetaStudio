@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Settings2, Tag, Move, Palette, FileText, Activity, Zap, Trash2, Pointer, FileBox } from 'lucide-react';
+import { Settings2, Tag, Move, Palette, FileText, Activity, Zap, Trash2, Pointer, FileBox, Sun, Globe, Lightbulb, Upload } from 'lucide-react';
 import useEditorStore from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
 import styles from './PropertyEditor.module.css';
@@ -31,6 +31,9 @@ export default function PropertyEditor() {
   const hasPhysics = el.category === 'sprite' || el.category === 'mesh';
   const hasStyle = isVisual && el.type !== 'text';
   const isData = el.category === 'data';
+  const isLight = ['ambientLight', 'directionalLight', 'pointLight', 'spotLight', 'hemisphereLight'].includes(el.type);
+  const isDirectionalOrSpot = ['directionalLight', 'spotLight'].includes(el.type);
+  const isSkybox = el.type === 'skybox';
 
   const typeLabel = t(`propertyEditor.typeLabels.${el.type}`) !== `propertyEditor.typeLabels.${el.type}` 
     ? t(`propertyEditor.typeLabels.${el.type}`) 
@@ -190,6 +193,139 @@ export default function PropertyEditor() {
             };
             input.click();
           }}>{t('propertyEditor.replaceModel')}</button>
+        </div>
+      )}
+
+      {/* ===== Light Properties ===== */}
+      {is3D && isLight && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}><Sun size={14} className={styles.sectionIcon} /> 光照属性</div>
+          {/* Color */}
+          <div className={styles.colorRow}>
+            <input className={styles.colorInput} type="color" value={el.style?.color || '#ffffff'} onChange={e => updateNested('style', 'color', e.target.value)} />
+            <input className={`input ${styles.colorHex}`} value={el.style?.color || '#ffffff'} onChange={e => updateNested('style', 'color', e.target.value)} />
+            <span className={styles.label} style={{ minWidth: 'auto' }}>颜色</span>
+          </div>
+          {/* Ground color for hemisphere */}
+          {el.type === 'hemisphereLight' && (
+            <div className={styles.colorRow} style={{ marginTop: 6 }}>
+              <input className={styles.colorInput} type="color" value={el.style?.groundColor || '#362907'} onChange={e => updateNested('style', 'groundColor', e.target.value)} />
+              <input className={`input ${styles.colorHex}`} value={el.style?.groundColor || '#362907'} onChange={e => updateNested('style', 'groundColor', e.target.value)} />
+              <span className={styles.label} style={{ minWidth: 'auto' }}>地面</span>
+            </div>
+          )}
+          {/* Intensity */}
+          <div className={styles.row} style={{ marginTop: 6 }}>
+            <span className={styles.label}>强度</span>
+            <input className={`input ${styles.inputSmall}`} type="number" step="0.1" min="0" value={el.style?.intensity ?? 1} onChange={e => updateNested('style', 'intensity', +e.target.value)} />
+          </div>
+          {/* Distance & Decay for point/spot */}
+          {(el.type === 'pointLight' || el.type === 'spotLight') && (
+            <div className={styles.row} style={{ marginTop: 6 }}>
+              <span className={styles.label}>距离</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="1" min="0" value={el.style?.distance ?? 0} onChange={e => updateNested('style', 'distance', +e.target.value)} />
+              <span className={styles.label}>衰减</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="0.1" min="0" value={el.style?.decay ?? 2} onChange={e => updateNested('style', 'decay', +e.target.value)} />
+            </div>
+          )}
+          {/* Spot angle & penumbra */}
+          {el.type === 'spotLight' && (
+            <div className={styles.row} style={{ marginTop: 6 }}>
+              <span className={styles.label}>角度°</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="1" min="1" max="90" value={el.style?.angle ?? 45} onChange={e => updateNested('style', 'angle', +e.target.value)} />
+              <span className={styles.label}>边缘柔化</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="0.05" min="0" max="1" value={el.style?.penumbra ?? 0.1} onChange={e => updateNested('style', 'penumbra', +e.target.value)} />
+            </div>
+          )}
+          {/* Shadow settings for directional/point/spot */}
+          {(el.type !== 'ambientLight' && el.type !== 'hemisphereLight') && (
+            <>
+              <div className={styles.row} style={{ marginTop: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                  <input type="checkbox" checked={el.style?.castShadow ?? false} onChange={e => updateNested('style', 'castShadow', e.target.checked)} />
+                  投射阴影
+                </label>
+              </div>
+              {el.style?.castShadow && (
+                <div className={styles.row} style={{ marginTop: 4 }}>
+                  <span className={styles.label}>精度</span>
+                  <select className={styles.select} value={el.style?.shadowMapSize ?? 1024} onChange={e => updateNested('style', 'shadowMapSize', +e.target.value)}>
+                    <option value={256}>256</option>
+                    <option value={512}>512</option>
+                    <option value={1024}>1024</option>
+                    <option value={2048}>2048</option>
+                  </select>
+                </div>
+              )}
+            </>
+          )}
+          {/* Light target for directional/spot */}
+          {isDirectionalOrSpot && (
+            <div className={styles.row} style={{ marginTop: 6 }}>
+              <span className={styles.label}>目标X</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="0.5" value={el.style?.targetX ?? 0} onChange={e => updateNested('style', 'targetX', +e.target.value)} />
+              <span className={styles.label}>Y</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="0.5" value={el.style?.targetY ?? 0} onChange={e => updateNested('style', 'targetY', +e.target.value)} />
+              <span className={styles.label}>Z</span>
+              <input className={`input ${styles.inputSmall}`} type="number" step="0.5" value={el.style?.targetZ ?? 0} onChange={e => updateNested('style', 'targetZ', +e.target.value)} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== Skybox Properties ===== */}
+      {is3D && isSkybox && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}><Globe size={14} className={styles.sectionIcon} /> 天空盒</div>
+          <div className={styles.row}>
+            <span className={styles.label}>类型</span>
+            <select className={styles.select} value={el.style?.skyType || 'color'} onChange={e => updateNested('style', 'skyType', e.target.value)}>
+              <option value="color">纯色</option>
+              <option value="image">全景图</option>
+            </select>
+          </div>
+          {el.style?.skyType === 'color' || !el.style?.skyType ? (
+            <div className={styles.colorRow} style={{ marginTop: 6 }}>
+              <input className={styles.colorInput} type="color" value={el.style?.skyColor || '#111827'} onChange={e => updateNested('style', 'skyColor', e.target.value)} />
+              <input className={`input ${styles.colorHex}`} value={el.style?.skyColor || '#111827'} onChange={e => updateNested('style', 'skyColor', e.target.value)} />
+              <span className={styles.label} style={{ minWidth: 'auto' }}>天空色</span>
+            </div>
+          ) : (
+            <div style={{ marginTop: 6 }}>
+              {el.style?.imageUrl && (
+                <div style={{ fontSize: 11, color: 'var(--color-text-secondary)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  ✅ 已加载全景图
+                </div>
+              )}
+              <button className="btn btn-secondary btn-sm" style={{ width: '100%' }} onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.jpg,.jpeg,.png,.hdr,.exr,.webp';
+                input.onchange = (ev) => {
+                  const file = ev.target.files?.[0];
+                  if (!file) return;
+                  const url = URL.createObjectURL(file);
+                  updateNested('style', 'imageUrl', url);
+                };
+                input.click();
+              }}>
+                <Upload size={12} style={{ marginRight: 4 }} /> 上传全景图
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ===== Mesh Material (metalness/roughness) ===== */}
+      {is3D && el.category === 'mesh' && el.style?.material !== 'basic' && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}><Palette size={14} className={styles.sectionIcon} /> 材质属性</div>
+          <div className={styles.row}>
+            <span className={styles.label}>金属度</span>
+            <input className={`input ${styles.inputSmall}`} type="number" step="0.05" min="0" max="1" value={el.style?.metalness ?? 0.1} onChange={e => updateNested('style', 'metalness', +e.target.value)} />
+            <span className={styles.label}>粗糙度</span>
+            <input className={`input ${styles.inputSmall}`} type="number" step="0.05" min="0" max="1" value={el.style?.roughness ?? 0.7} onChange={e => updateNested('style', 'roughness', +e.target.value)} />
+          </div>
         </div>
       )}
 

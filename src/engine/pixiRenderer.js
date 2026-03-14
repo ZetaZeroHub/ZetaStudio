@@ -20,13 +20,16 @@ export function renderAll(app, elements, variables = {}, editMode = false) {
     .sort((a, b) => (a.transform?.depth || 0) - (b.transform?.depth || 0));
 
   for (const el of sorted) {
+    // Skip non-visual elements (events and data are logical only)
+    if (el.category === 'event' || el.category === 'data') continue;
+
     const pixiObj = createElement(el, variables);
     if (pixiObj) {
       // 保证 Pixi 对象本身的可见性与数据同步
       pixiObj.visible = el.visible !== false;
       
       // 编辑模式下启用交互
-      if (editMode && el.category !== 'event' && el.category !== 'data') {
+      if (editMode) {
         pixiObj.eventMode = 'static';
         pixiObj.cursor = 'pointer';
         // 存储元素 ID 以便点击识别
@@ -85,6 +88,9 @@ export function syncElements(app, elements, variables = {}, editMode = false) {
 
   // 3. Update or recreate
   for (const el of sorted) {
+    // Skip non-visual elements (events and data are logical only)
+    if (el.category === 'event' || el.category === 'data') continue;
+
     let obj = pixiObjectMap.get(el.id);
     let needsRecreate = !obj;
 
@@ -108,7 +114,7 @@ export function syncElements(app, elements, variables = {}, editMode = false) {
     if (needsRecreate) {
       obj = createElement(el, variables);
       if (obj) {
-        if (editMode && el.category !== 'event' && el.category !== 'data') {
+        if (editMode) {
           obj.eventMode = 'static';
           obj.cursor = 'pointer';
           obj.__elementId = el.id;

@@ -132,6 +132,8 @@ export function updateElementVisual(elementId, updates, variables = {}) {
 }
 
 function createElement(el, variables) {
+  // Skip non-visual elements
+  if (el.category === 'event' || el.category === 'data') return null;
   switch (el.type) {
     case 'box': return createBox(el);
     case 'sphere': return createSphere(el);
@@ -141,6 +143,9 @@ function createElement(el, variables) {
     case 'ambientLight': return createAmbientLight(el);
     case 'directionalLight': return createDirectionalLight(el);
     case 'pointLight': return createPointLight(el);
+    case 'spotLight': return createSpotLight(el);
+    case 'hemisphereLight': return createHemisphereLight(el);
+    case 'skybox': return createSkybox(el);
     case 'perspectiveCamera': return createPerspectiveCamera(el);
     default: return null;
   }
@@ -151,8 +156,10 @@ function createBox(el) {
   const s = el.style || {};
   const geometry = new THREE.BoxGeometry(t.width || 1, t.height || 1, t.depth || 1);
   const color = parseColor(s.color || '#00ff00');
-  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshStandardMaterial({ color });
-  const mesh = new THREE.Mesh(geometry, material);
+  const mat = createMeshMaterial(s, color);
+  const mesh = new THREE.Mesh(geometry, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   applyTransform(mesh, t);
   return mesh;
 }
@@ -162,8 +169,10 @@ function createSphere(el) {
   const s = el.style || {};
   const geometry = new THREE.SphereGeometry(t.radius || 1, 32, 16);
   const color = parseColor(s.color || '#00ff00');
-  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshStandardMaterial({ color });
-  const mesh = new THREE.Mesh(geometry, material);
+  const mat = createMeshMaterial(s, color);
+  const mesh = new THREE.Mesh(geometry, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   applyTransform(mesh, t);
   return mesh;
 }
@@ -173,8 +182,10 @@ function createPlane(el) {
   const s = el.style || {};
   const geometry = new THREE.PlaneGeometry(t.width || 10, t.height || 10);
   const color = parseColor(s.color || '#808080');
-  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }) : new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide });
-  const mesh = new THREE.Mesh(geometry, material);
+  const mat = createMeshMaterial(s, color, { side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(geometry, mat);
+  mesh.castShadow = false;
+  mesh.receiveShadow = true;
   applyTransform(mesh, t);
   return mesh;
 }
@@ -184,8 +195,10 @@ function createCylinder(el) {
   const s = el.style || {};
   const geometry = new THREE.CylinderGeometry(t.radiusTop || 0.5, t.radiusBottom || 0.5, t.height || 1, 32);
   const color = parseColor(s.color || '#00ff00');
-  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshStandardMaterial({ color });
-  const mesh = new THREE.Mesh(geometry, material);
+  const mat = createMeshMaterial(s, color);
+  const mesh = new THREE.Mesh(geometry, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   applyTransform(mesh, t);
   return mesh;
 }
@@ -252,7 +265,27 @@ function createDirectionalLight(el) {
   const color = parseColor(s.color || '#ffffff');
   const light = new THREE.DirectionalLight(color, s.intensity ?? 1);
   applyTransform(light, t);
-  light.castShadow = s.castShadow ?? false;
+  
+  // Shadow configuration
+  light.castShadow = s.castShadow ?? true;
+  if (light.castShadow) {
+    const mapSize = s.shadowMapSize ?? 1024;
+    light.shadow.mapSize.width = mapSize;
+    light.shadow.mapSize.height = mapSize;
+    light.shadow.bias = s.shadowBias ?? -0.001;
+    light.shadow.radius = s.shadowRadius ?? 2;
+    const bounds = s.shadowCameraBounds ?? 20;
+    light.shadow.camera.left = -bounds;
+    light.shadow.camera.right = bounds;
+    light.shadow.camera.top = bounds;
+    light.shadow.camera.bottom = -bounds;
+    light.shadow.camera.near = 0.1;
+    light.shadow.camera.far = s.shadowCameraFar ?? 100;
+  }
+  // Light target
+  if (s.targetX !== undefined) {
+    light.target.position.set(s.targetX ?? 0, s.targetY ?? 0, s.targetZ ?? 0);
+  }
   return light;
 }
 
@@ -260,9 +293,70 @@ function createPointLight(el) {
   const t = el.transform || {};
   const s = el.style || {};
   const color = parseColor(s.color || '#ffffff');
-  const light = new THREE.PointLight(color, s.intensity ?? 1, s.distance ?? 0);
+  const light = new THREE.PointLight(color, s.intensity ?? 1, s.distance ?? 0, s.decay ?? 2);
   applyTransform(light, t);
+  light.castShadow = s.castShadow ?? false;
+  if (light.castShadow) {
+    light.shadow.mapSize.width = s.shadowMapSize ?? 512;
+    light.shadow.mapSize.height = s.shadowMapSize ?? 512;
+  }
   return light;
+}
+
+function createSpotLight(el) {
+  const t = el.transform || {};
+  const s = el.style || {};
+  const color = parseColor(s.color || '#ffffff');
+  const light = new THREE.SpotLight(
+    color,
+    s.intensity ?? 1,
+    s.distance ?? 0,
+    (s.angle ?? 45) * Math.PI / 180,
+    s.penumbra ?? 0.1,
+    s.decay ?? 2
+  );
+  applyTransform(light, t);
+  light.castShadow = s.castShadow ?? true;
+  if (light.castShadow) {
+    light.shadow.mapSize.width = s.shadowMapSize ?? 1024;
+    light.shadow.mapSize.height = s.shadowMapSize ?? 1024;
+  }
+  if (s.targetX !== undefined) {
+    light.target.position.set(s.targetX ?? 0, s.targetY ?? 0, s.targetZ ?? 0);
+  }
+  return light;
+}
+
+function createHemisphereLight(el) {
+  const s = el.style || {};
+  const skyColor = parseColor(s.color || '#87ceeb');
+  const groundColor = parseColor(s.groundColor || '#362907');
+  const light = new THREE.HemisphereLight(skyColor, groundColor, s.intensity ?? 0.6);
+  return light;
+}
+
+function createSkybox(el) {
+  const s = el.style || {};
+  // Skybox is handled at scene level, return a dummy invisible object
+  // The actual scene.background is set in ThreeCanvas via __skyboxData
+  const group = new THREE.Group();
+  group.__isSkybox = true;
+  group.__skyboxData = s;
+  group.visible = false;
+  return group;
+}
+
+// Helper: create mesh material with metalness/roughness support
+function createMeshMaterial(s, color, extra = {}) {
+  if (s.material === 'basic') {
+    return new THREE.MeshBasicMaterial({ color, ...extra });
+  }
+  return new THREE.MeshStandardMaterial({
+    color,
+    metalness: s.metalness ?? 0.1,
+    roughness: s.roughness ?? 0.7,
+    ...extra,
+  });
 }
 
 function createPerspectiveCamera(el) {

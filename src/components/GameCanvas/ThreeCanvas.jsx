@@ -97,6 +97,11 @@ export default function ThreeCanvas({ mode }) {
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(w, h);
       renderer.setPixelRatio(window.devicePixelRatio);
+      // Enable shadow mapping for realistic lighting
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
       canvasMountRef.current.appendChild(renderer.domElement);
 
       sceneRef.current = scene;
@@ -104,6 +109,23 @@ export default function ThreeCanvas({ mode }) {
 
       let camera = null;
       const threeMap = renderAll(scene, elements, variables, mode === 'edit');
+      
+      // Process skybox elements
+      for (const [, obj] of threeMap) {
+        if (obj.__isSkybox && obj.__skyboxData) {
+          const skyData = obj.__skyboxData;
+          if (skyData.skyType === 'image' && skyData.imageUrl) {
+            const loader = new THREE.TextureLoader();
+            loader.load(skyData.imageUrl, (texture) => {
+              texture.mapping = THREE.EquirectangularReflectionMapping;
+              scene.background = texture;
+              scene.environment = texture;
+            });
+          } else {
+            scene.background = new THREE.Color(skyData.skyColor || '#111827');
+          }
+        }
+      }
       
       const camEl = [...threeMap.values()].find(c => c.isPerspectiveCamera);
       if (camEl) {
