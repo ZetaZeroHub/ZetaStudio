@@ -37,6 +37,21 @@ export default function ThreeCanvas({ mode }) {
       containerRef.current.removeEventListener('keydown', keyHandlerRef.current);
       keyHandlerRef.current = null;
     }
+    // Exit pointer lock if active (FPS scripts may have locked it)
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+    // Remove any script-injected DOM elements from containerRef
+    // (FPS scripts append HUD, crosshair, flash divs to #game-canvas-three)
+    if (containerRef.current) {
+      const injected = containerRef.current.querySelectorAll('div[style*="z-index"], div[style*="pointer-events"]');
+      injected.forEach(el => {
+        // Only remove non-React elements (those without data-reactroot or __reactFiber)
+        if (!el.className && !el.dataset.reactroot) {
+          el.remove();
+        }
+      });
+    }
     if (canvasMountRef.current) canvasMountRef.current.innerHTML = '';
     sceneRef.current = null;
     rendererRef.current = null;
@@ -108,6 +123,10 @@ export default function ThreeCanvas({ mode }) {
         });
 
         // Sync transform back to store on change
+        const safeFloat = (v, fallback = 0) => {
+          const n = parseFloat(v);
+          return (Number.isFinite(n)) ? parseFloat(n.toFixed(3)) : fallback;
+        };
         transformControls.addEventListener('objectChange', () => {
           const obj = transformControls.object;
           if (!obj || !obj.__elementId) return;
@@ -115,15 +134,15 @@ export default function ThreeCanvas({ mode }) {
           store.updateElement(obj.__elementId, {
             transform: {
               ...store.elements.find(e => e.id === obj.__elementId)?.transform,
-              x: parseFloat(obj.position.x.toFixed(3)),
-              y: parseFloat(obj.position.y.toFixed(3)),
-              z: parseFloat(obj.position.z.toFixed(3)),
-              rotationX: parseFloat(obj.rotation.x.toFixed(3)),
-              rotationY: parseFloat(obj.rotation.y.toFixed(3)),
-              rotationZ: parseFloat(obj.rotation.z.toFixed(3)),
-              scaleX: parseFloat(obj.scale.x.toFixed(3)),
-              scaleY: parseFloat(obj.scale.y.toFixed(3)),
-              scaleZ: parseFloat(obj.scale.z.toFixed(3)),
+              x: safeFloat(obj.position.x),
+              y: safeFloat(obj.position.y),
+              z: safeFloat(obj.position.z),
+              rotationX: safeFloat(obj.rotation.x),
+              rotationY: safeFloat(obj.rotation.y),
+              rotationZ: safeFloat(obj.rotation.z),
+              scaleX: safeFloat(obj.scale.x, 1),
+              scaleY: safeFloat(obj.scale.y, 1),
+              scaleZ: safeFloat(obj.scale.z, 1),
             }
           });
         });
