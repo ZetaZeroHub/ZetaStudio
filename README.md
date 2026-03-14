@@ -6,6 +6,8 @@ Natural language driven 2D/3D game generation. Fusing generative audiovisuals an
 
 [中文文档](./README_zh.md)
 
+✨ **[Experience Online Now: https://studio.zzh.app/](https://studio.zzh.app/)** ✨
+
 ---
 
 ## Overview
@@ -225,11 +227,11 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 
 | Version | Date | Changes |
 |---------|------|---------|
-| **v0.4.0** | 2025-03-15 | 🎬 **Multi-scene management** — Independent scenes (elements/scripts/background isolation), scene selector UI, per-scene background customization (color/image upload), script `switchScene()` navigation API, backward-compatible auto-migration |
-| **v0.3.0** | 2025-03-15 | 🔦 **Advanced 3D lighting** — Spot light, hemisphere light, PCFSoft shadow mapping, PBR materials (metalness/roughness); 🌌 **Skybox** — Solid color / panorama mode + environment mapping; 🐛 Fixed 2D event/data elements rendering spurious blue squares |
-| **v0.2.1** | 2025-03-15 | 🎮 Fixed 3D editor shortcuts (G/R/S/Del/1/3/7); 🖱️ Fixed FPS preview pointer lock persistence; ⚡ Fixed element disappearance during fast editing (async race); 🛡️ NaN/Infinity transform value guards |
-| **v0.2.0** | 2025-03-14 | 📦 3D/2D asset libraries — Built-in open-source models and sprites; ⌨️ Blender-style 3D editor shortcut system; 📱 Mobile/tablet responsive layouts; 🖼️ 2D image element upload with async loading |
-| **v0.1.0** | 2025-03-13 | 🎮 Dual engine architecture (PixiJS + Three.js); 🤖 AI code generation; 🧩 6 game templates; 🎨 Visual scene editor; 🌐 Chinese/English i18n |
+| **v0.4.0** | 2026-03-15 | 🎬 **Multi-scene management** — Independent scenes (elements/scripts/background isolation), scene selector UI, per-scene background customization (color/image upload), script `switchScene()` navigation API, backward-compatible auto-migration |
+| **v0.3.0** | 2026-03-15 | 🔦 **Advanced 3D lighting** — Spot light, hemisphere light, PCFSoft shadow mapping, PBR materials (metalness/roughness); 🌌 **Skybox** — Solid color / panorama mode + environment mapping; 🐛 Fixed 2D event/data elements rendering spurious blue squares |
+| **v0.2.1** | 2026-03-15 | 🎮 Fixed 3D editor shortcuts (G/R/S/Del/1/3/7); 🖱️ Fixed FPS preview pointer lock persistence; ⚡ Fixed element disappearance during fast editing (async race); 🛡️ NaN/Infinity transform value guards |
+| **v0.2.0** | 2026-03-14 | 📦 3D/2D asset libraries — Built-in open-source models and sprites; ⌨️ Blender-style 3D editor shortcut system; 📱 Mobile/tablet responsive layouts; 🖼️ 2D image element upload with async loading |
+| **v0.1.0** | 2026-03-13 | 🎮 Dual engine architecture (PixiJS + Three.js); 🤖 AI code generation; 🧩 6 game templates; 🎨 Visual scene editor; 🌐 Chinese/English i18n |
 
 ---
 
