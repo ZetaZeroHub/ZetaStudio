@@ -9,6 +9,7 @@ import styles from './GameCanvas.module.css';
 
 export default function ThreeCanvas({ mode }) {
   const containerRef = useRef(null);
+  const canvasMountRef = useRef(null);
   const rendererRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
@@ -30,7 +31,7 @@ export default function ThreeCanvas({ mode }) {
     if (transformRef.current) transformRef.current.dispose();
     if (rendererRef.current) rendererRef.current.dispose();
     if (controlsRef.current) controlsRef.current.dispose();
-    if (containerRef.current) containerRef.current.innerHTML = '';
+    if (canvasMountRef.current) canvasMountRef.current.innerHTML = '';
     sceneRef.current = null;
     rendererRef.current = null;
     cameraRef.current = null;
@@ -40,14 +41,14 @@ export default function ThreeCanvas({ mode }) {
 
   const initApp = useCallback(async () => {
     destroyApp();
-    if (!containerRef.current) return;
+    if (!canvasMountRef.current) return;
 
     const currentId = ++initIdRef.current;
     setLoading(true);
 
     try {
-      const w = containerRef.current.clientWidth || 800;
-      const h = containerRef.current.clientHeight || 600;
+      const w = canvasMountRef.current.clientWidth || 800;
+      const h = canvasMountRef.current.clientHeight || 600;
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x111827);
@@ -62,7 +63,7 @@ export default function ThreeCanvas({ mode }) {
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(w, h);
       renderer.setPixelRatio(window.devicePixelRatio);
-      containerRef.current.appendChild(renderer.domElement);
+      canvasMountRef.current.appendChild(renderer.domElement);
 
       sceneRef.current = scene;
       rendererRef.current = renderer;
@@ -324,15 +325,15 @@ export default function ThreeCanvas({ mode }) {
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver(() => {
-      if (rendererRef.current && containerRef.current && cameraRef.current) {
-         const w = containerRef.current.clientWidth;
-         const h = containerRef.current.clientHeight;
+      if (rendererRef.current && canvasMountRef.current && cameraRef.current) {
+         const w = canvasMountRef.current.clientWidth;
+         const h = canvasMountRef.current.clientHeight;
          rendererRef.current.setSize(w, h);
          cameraRef.current.aspect = w / h;
          cameraRef.current.updateProjectionMatrix();
       }
     });
-    if (containerRef.current) resizeObserver.observe(containerRef.current);
+    if (canvasMountRef.current) resizeObserver.observe(canvasMountRef.current);
     return () => resizeObserver.disconnect();
   }, []);
 
@@ -378,6 +379,7 @@ export default function ThreeCanvas({ mode }) {
 
   return (
     <div className={styles.canvasWrapper} tabIndex={0} ref={containerRef} id="game-canvas-three" style={{ outline: 'none' }}>
+      <div ref={canvasMountRef} style={{ width: '100%', height: '100%' }} />
       <span className={`${styles.modeLabel} ${mode === 'edit' ? styles.modeEdit : styles.modePreview}`}>
         {mode === 'edit' ? t('gameCanvas.editMode') : t('gameCanvas.previewMode')}
       </span>
@@ -392,7 +394,7 @@ export default function ThreeCanvas({ mode }) {
             className={styles.controlsToggle}
             onClick={() => setShowHelp(!showHelp)}
           >
-            ⌨ {showHelp ? '▾' : '▸'}
+            ⌨ {language === 'zh' ? '操作指南' : 'Controls'} {showHelp ? '▾' : '▸'}
           </button>
           {showHelp && (
             <div className={styles.controlsList}>

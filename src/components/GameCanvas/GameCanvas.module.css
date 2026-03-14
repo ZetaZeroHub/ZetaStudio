@@ -61,9 +61,9 @@
 /* Controls Help Overlay */
 .controlsHelp {
   position: absolute;
-  bottom: var(--space-md);
-  left: var(--space-md);
-  z-index: 15;
+  top: 36px;
+  right: var(--space-md);
+  z-index: 20;
   font-family: var(--font-sans);
 }
 

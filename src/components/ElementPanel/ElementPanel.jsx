@@ -111,6 +111,11 @@ export default function ElementPanel() {
       setShowAdd(false);
       return;
     }
+    if (type === 'image') {
+      imageInputRef.current?.click();
+      setShowAdd(false);
+      return;
+    }
     const el = createNewElement(activeTab, type);
     addElement(el);
     selectElement(el.id);
@@ -118,6 +123,7 @@ export default function ElementPanel() {
   };
 
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const handleModelFile = (e) => {
     const file = e.target.files?.[0];
@@ -128,6 +134,23 @@ export default function ElementPanel() {
     el.name = file.name.replace(/\.[^.]+$/, '');
     addElement(el);
     selectElement(el.id);
+    e.target.value = '';
+  };
+
+  const handleImageFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const el = createNewElement('sprite', 'image');
+      el.style = { ...el.style, src: dataUrl };
+      el.name = file.name.replace(/\.[^.]+$/, '');
+      el.transform = { ...el.transform, width: 64, height: 64, x: 400, y: 300 };
+      addElement(el);
+      selectElement(el.id);
+    };
+    reader.readAsDataURL(file);
     e.target.value = '';
   };
 
@@ -230,7 +253,7 @@ export default function ElementPanel() {
             ))}
           </div>
           <div className={styles.assetCredit}>
-            Models: Khronos glTF Samples · CC0
+            {dimension === '3D' ? 'Models: Khronos glTF Samples · CC0' : 'Sprites: AI-generated pixel art'}
           </div>
         </div>
       ) : (
@@ -273,6 +296,13 @@ export default function ElementPanel() {
         accept=".glb,.gltf,.obj,.fbx"
         style={{ display: 'none' }}
         onChange={handleModelFile}
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/gif,image/svg+xml,image/webp"
+        style={{ display: 'none' }}
+        onChange={handleImageFile}
       />
     </div>
   );

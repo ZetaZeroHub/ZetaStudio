@@ -333,30 +333,55 @@ function createGraphics(el) {
  * 图片精灵 (placeholder with colored rect)
  */
 function createImage(el) {
-  // If no texture available, render as colored graphics placeholder
-  const g = new PIXI.Graphics();
   const t = el.transform || {};
   const s = el.style || {};
   const w = t.width || 64;
   const h = t.height || 64;
+
+  // Use a Container so we can async-load the image
+  const container = new PIXI.Container();
+  container.x = t.x || 0;
+  container.y = t.y || 0;
+  if (t.rotation) container.rotation = (t.rotation * Math.PI) / 180;
+  container.__elementData = el;
+
+  // Create placeholder first
+  const placeholder = new PIXI.Graphics();
   const color = parseColor(s.fillColor || '#06b6d4');
+  placeholder.roundRect(-w / 2, -h / 2, w, h, 4);
+  placeholder.fill({ color, alpha: s.alpha ?? 0.5 });
+  placeholder.moveTo(-w * 0.2, 0);
+  placeholder.lineTo(0, -h * 0.15);
+  placeholder.lineTo(w * 0.2, 0);
+  placeholder.stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 });
+  placeholder.circle(w * 0.15, -h * 0.2, w * 0.06);
+  placeholder.fill({ color: 0xffffff, alpha: 0.5 });
+  container.addChild(placeholder);
 
-  g.roundRect(-w / 2, -h / 2, w, h, 4);
-  g.fill({ color, alpha: s.alpha ?? 1 });
+  // Async load the actual image
+  if (s.src) {
+    const src = s.src;
+    // Use a unique key for the asset to avoid cache conflicts
+    const assetKey = 'img_' + (el.id || src);
+    
+    PIXI.Assets.load({ alias: assetKey, src }).then((texture) => {
+      if (!texture) return;
+      const sprite = new PIXI.Sprite(texture);
+      sprite.width = w;
+      sprite.height = h;
+      sprite.anchor.set(0.5);
+      sprite.alpha = s.alpha ?? 1;
+      // Remove placeholder, add real sprite
+      container.removeChild(placeholder);
+      placeholder.destroy();
+      container.addChild(sprite);
+    }).catch((err) => {
+      console.warn('Failed to load image:', src, err);
+      // Placeholder stays visible
+    });
+  }
 
-  // Image icon indicator
-  g.moveTo(-w * 0.2, 0);
-  g.lineTo(0, -h * 0.15);
-  g.lineTo(w * 0.2, 0);
-  g.stroke({ width: 1.5, color: 0xffffff, alpha: 0.5 });
-  g.circle(w * 0.15, -h * 0.2, w * 0.06);
-  g.fill({ color: 0xffffff, alpha: 0.5 });
-
-  g.x = t.x || 0;
-  g.y = t.y || 0;
-  if (t.rotation) g.rotation = (t.rotation * Math.PI) / 180;
-  g.__elementData = el;
-  return g;
+  return container;
 }
 
 /**
