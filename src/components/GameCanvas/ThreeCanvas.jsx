@@ -16,6 +16,7 @@ export default function ThreeCanvas({ mode }) {
   const controlsRef = useRef(null);
   const transformRef = useRef(null);
   const keyHandlerRef = useRef(null);
+  const modeRef = useRef(mode);
   const initIdRef = useRef(0);
   const reqIdRef = useRef(0);
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,18 @@ export default function ThreeCanvas({ mode }) {
   const selectedElementId = useEditorStore(s => s.selectedElementId);
   const variables = useEditorStore(s => s.variables);
   const { t, language } = useI18nStore();
+
+  // Keep modeRef in sync + guard against pointer lock in edit mode
+  modeRef.current = mode;
+  useEffect(() => {
+    const guardPointerLock = () => {
+      if (modeRef.current === 'edit' && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    };
+    document.addEventListener('pointerlockchange', guardPointerLock);
+    return () => document.removeEventListener('pointerlockchange', guardPointerLock);
+  }, []);
 
   const destroyApp = useCallback(() => {
     if (reqIdRef.current) cancelAnimationFrame(reqIdRef.current);
