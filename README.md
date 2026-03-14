@@ -131,6 +131,15 @@ All features follow a "Script Code · Visual Panel · AI Assistant" triple-bindi
 2. **Panel Visual** — Left-side property panels display and modify all element properties in real-time
 3. **AI Adjustable** — Right-side AI assistant dynamically generates/modifies code via natural language
 
+### 🎬 Multi-Scene Management
+
+- **Independent Scenes** — Each scene has its own element list, scripts, and background settings
+- **Scene Selector** — Horizontal card-style scene switcher at top of Scene tab, with add/delete controls
+- **Scene Backgrounds** — Per-scene customizable backgrounds (color picker / local image upload)
+- **Script Scene Navigation** — Preview mode scripts can call `switchScene(sceneId)` for scene transitions
+- **Runtime API** — `getCurrentSceneId()` / `getSceneList()` for querying scene info
+- **Backward Compatible** — Legacy projects auto-migrate to single-scene format with zero data loss
+
 ---
 
 ## Tech Stack
@@ -220,6 +229,7 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **v0.4.0** | 2025-03-15 | 🎬 **Multi-scene management** — Independent scenes (elements/scripts/background isolation), scene selector UI, per-scene background customization (color/image upload), script `switchScene()` navigation API, backward-compatible auto-migration |
 | **v0.3.0** | 2025-03-15 | 🔦 **Advanced 3D lighting** — Spot light, hemisphere light, PCFSoft shadow mapping, PBR materials (metalness/roughness); 🌌 **Skybox** — Solid color / panorama mode + environment mapping; 🐛 Fixed 2D event/data elements rendering spurious blue squares |
 | **v0.2.1** | 2025-03-15 | 🎮 Fixed 3D editor shortcuts (G/R/S/Del/1/3/7); 🖱️ Fixed FPS preview pointer lock persistence; ⚡ Fixed element disappearance during fast editing (async race); 🛡️ NaN/Infinity transform value guards |
 | **v0.2.0** | 2025-03-14 | 📦 3D/2D asset libraries — Built-in open-source models and sprites; ⌨️ Blender-style 3D editor shortcut system; 📱 Mobile/tablet responsive layouts; 🖼️ 2D image element upload with async loading |
