@@ -4,15 +4,25 @@ import {
   PaintBucket, Repeat, Sparkles, Shapes, Image as ImageIcon,
   Type, Clapperboard, MousePointerClick, Box, Keyboard,
   Swords, Timer, Pointer, Hash, Link, Copy, Trash2, Eye, EyeOff, Plus,
-  Camera, Sun, Circle, FileBox, Cylinder
+  Camera, Sun, Circle, FileBox, Cylinder, PackageOpen
 } from 'lucide-react';
 import useEditorStore, { createNewElement } from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
+import PRESET_MODELS, { MODEL_CATEGORIES, PRESET_SPRITES, SPRITE_CATEGORIES } from '../../data/assetLibrary';
 import styles from './ElementPanel.module.css';
 
 const TABS = [
   { key: 'scene', labelKey: 'scene', icon: <LayoutTemplate size={16} /> },
   { key: 'sprite', labelKey: 'sprite', icon: <Component size={16} /> },
+  { key: 'assets', labelKey: 'assets', icon: <PackageOpen size={16} /> },
+  { key: 'event', labelKey: 'event', icon: <Zap size={16} /> },
+  { key: 'data', labelKey: 'data', icon: <Database size={16} /> },
+];
+
+const TABS_3D = [
+  { key: 'scene', labelKey: 'scene', icon: <LayoutTemplate size={16} /> },
+  { key: 'sprite', labelKey: 'sprite', icon: <Component size={16} /> },
+  { key: 'assets', labelKey: 'assets', icon: <PackageOpen size={16} /> },
   { key: 'event', labelKey: 'event', icon: <Zap size={16} /> },
   { key: 'data', labelKey: 'data', icon: <Database size={16} /> },
 ];
@@ -78,11 +88,17 @@ export default function ElementPanel() {
     selectElement, addElement, removeElement, duplicateElement,
     updateElement,
   } = useEditorStore();
-  const { t } = useI18nStore();
+  const { t, language } = useI18nStore();
   
   const ADD_OPTIONS = dimension === '3D' ? ADD_OPTIONS_3D : ADD_OPTIONS_2D;
+  const currentTabs = dimension === '3D' ? TABS_3D : TABS;
+
+  // Select correct preset assets and categories based on dimension
+  const presetAssets = dimension === '3D' ? PRESET_MODELS : PRESET_SPRITES;
+  const assetCategories = dimension === '3D' ? MODEL_CATEGORIES : SPRITE_CATEGORIES;
 
   const [showAdd, setShowAdd] = useState(false);
+  const [assetCategory, setAssetCategory] = useState('all');
 
   const filtered = elements.filter((el) => {
     if (activeTab === 'sprite') return el.category === 'sprite' || el.category === 'mesh';
@@ -125,11 +141,34 @@ export default function ElementPanel() {
     updateElement(el.id, { visible: !el.visible });
   };
 
+  const handlePresetImport = (asset) => {
+    if (dimension === '3D') {
+      // 3D: import as importedModel
+      const el = createNewElement('sprite', 'importedModel');
+      el.style = { ...el.style, modelUrl: asset.path, modelFileName: asset.path.split('/').pop() };
+      el.name = language === 'zh' ? asset.nameZh : asset.name;
+      addElement(el);
+      selectElement(el.id);
+    } else {
+      // 2D: import as image sprite
+      const el = createNewElement('sprite', 'image');
+      el.style = { ...el.style, src: asset.path };
+      el.name = language === 'zh' ? asset.nameZh : asset.name;
+      el.transform = { ...el.transform, width: 64, height: 64, x: 400, y: 300 };
+      addElement(el);
+      selectElement(el.id);
+    }
+  };
+
+  const filteredAssets = assetCategory === 'all'
+    ? presetAssets
+    : presetAssets.filter(a => a.category === assetCategory);
+
   return (
     <div className={styles.panel}>
       {/* Category Tabs */}
       <div className={styles.tabs}>
-        {TABS.map((tab) => (
+        {currentTabs.map((tab) => (
           <button
             key={tab.key}
             className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
@@ -163,7 +202,39 @@ export default function ElementPanel() {
         </div>
       </div>
 
-      {/* Element List */}
+      {/* Asset Library (3D only) */}
+      {activeTab === 'assets' ? (
+        <div className={styles.assetLibrary}>
+          <div className={styles.assetCategoryBar}>
+            {assetCategories.map(cat => (
+              <button
+                key={cat.key}
+                className={`${styles.assetCatBtn} ${assetCategory === cat.key ? styles.assetCatActive : ''}`}
+                onClick={() => setAssetCategory(cat.key)}
+              >
+                {language === 'zh' ? cat.nameZh : cat.name}
+              </button>
+            ))}
+          </div>
+          <div className={styles.assetGrid}>
+            {filteredAssets.map(asset => (
+              <button
+                key={asset.id}
+                className={styles.assetCard}
+                onClick={() => handlePresetImport(asset)}
+                title={language === 'zh' ? asset.nameZh : asset.name}
+              >
+                <span className={styles.assetIcon}>{asset.icon}</span>
+                <span className={styles.assetName}>{language === 'zh' ? asset.nameZh : asset.name}</span>
+              </button>
+            ))}
+          </div>
+          <div className={styles.assetCredit}>
+            Models: Khronos glTF Samples · CC0
+          </div>
+        </div>
+      ) : (
+      /* Element List */
       <div className={styles.elementList} onClick={() => { setShowAdd(false); }}>
         {filtered.length === 0 ? (
           <div className={styles.empty}>
@@ -195,6 +266,7 @@ export default function ElementPanel() {
           ))
         )}
       </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"

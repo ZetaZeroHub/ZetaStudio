@@ -55,6 +55,7 @@ export default {
     tabs: {
       scene: 'Scene',
       sprite: 'Sprite',
+      assets: 'Library',
       event: 'Event',
       data: 'Data',
     },

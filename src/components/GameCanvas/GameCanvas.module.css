@@ -57,3 +57,69 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
+/* Controls Help Overlay */
+.controlsHelp {
+  position: absolute;
+  bottom: var(--space-md);
+  left: var(--space-md);
+  z-index: 15;
+  font-family: var(--font-sans);
+}
+
+.controlsToggle {
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(8px);
+}
+
+.controlsToggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-accent);
+}
+
+.controlsList {
+  margin-top: 6px;
+  background: rgba(17, 24, 39, 0.9);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  backdrop-filter: blur(12px);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.kbd {
+  display: inline-block;
+  min-width: 28px;
+  text-align: center;
+  padding: 1px 5px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  color: var(--text-primary);
+}
+
+@media (max-width: 767px) {
+  .controlsHelp { display: none; }
+}
+

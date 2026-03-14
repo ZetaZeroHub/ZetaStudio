@@ -55,6 +55,7 @@ export default {
     tabs: {
       scene: '场景',
       sprite: '素材',
+      assets: '素材库',
       event: '事件',
       data: '数据',
     },
