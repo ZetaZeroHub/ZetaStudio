@@ -20,32 +20,42 @@
 
 ![首页 — 粒子动画 Hero 区与功能特性展示](./docs/screenshots/homepage.png)
 
-### 项目画廊
+### 功能特性展示
 
-![项目列表，支持 2D/3D 标签](./docs/screenshots/projects.png)
+![核心功能卡片 — 2D 引擎、3D 空间、AI 助手](./docs/screenshots/homepage_features.png)
 
-### 模板选择
+### 模板选择 — 2D 游戏
 
-![创建项目模态框 — 2D/3D 维度切换与模板卡片](./docs/screenshots/template_modal.png)
+![2D 游戏模板选择 — 太空射击、像素冒险、知识竞赛等](./docs/screenshots/template_2d.png)
+
+### 模板选择 — 3D 游戏
+
+![3D 游戏模板选择 — 魔方、太阳系、第一人称射击](./docs/screenshots/template_3d.png)
 
 ### 2D 编辑器
 
-![2D 游戏编辑器 — 场景画布、代码编辑器、AI 助手](./docs/screenshots/editor_2d.png)
+![2D 游戏编辑器 — 场景画布、代码编辑器、AI 助手三栏联动](./docs/screenshots/editor_2d.png)
 
-### 3D 编辑器
+### 3D 编辑器 — 高级光照
 
-![3D 编辑器，Three.js 立方体渲染与旋转脚本](./docs/screenshots/editor_3d.png)
+![3D 编辑器 — 聚光灯属性面板、阴影配置、Three.js 画布](./docs/screenshots/editor_3d_lighting.png)
 
-### 游戏预览
+### 3D 编辑器 — 快捷键指南
 
-![跳跃游戏在预览模式下运行，含计分系统](./docs/screenshots/gameplay_platformer.png)
+![3D 编辑器 — 操作指南覆盖层、变换控制器、材质属性](./docs/screenshots/editor_3d_shortcuts.png)
+
+### 完整功能演示
+
+![完整编辑器工作流演示](./docs/screenshots/demo_walkthrough.webp)
+
+---
 
 ## 功能特性
 
 ### 🎮 双引擎架构
 
 - **2D 引擎** — 基于 [PixiJS](https://pixijs.com/) v8，支持高性能精灵渲染、粒子系统与碰撞检测
-- **3D 引擎** — 基于 [Three.js](https://threejs.org/)，支持沉浸式 3D 场景、光照、材质与相机控制
+- **3D 引擎** — 基于 [Three.js](https://threejs.org/)，支持沉浸式 3D 场景、PBR 材质与实时阴影
 
 ### 🤖 AI 代码生成
 
@@ -62,8 +72,9 @@
 | 像素冒险 | 2D | 横版跳跃冒险，含收集品与计分系统 |
 | 知识竞赛 | 2D | 互动答题游戏，含分数追踪 |
 | NPC 剧情对话 | 2D | 视觉小说 / Galgame 风格对话系统 |
-| 3D 立方体 | 3D | 可交互的 3D 几何场景 |
+| 3D 魔方 | 3D | 可交互的 3D 几何场景 |
 | 太阳系 | 3D | 带轨道动画的太阳系模拟 |
+| 3D 第一人称射击 | 3D | FPS 射击游戏，含指针锁定与计分 |
 
 ### 🎨 可视化场景编辑器
 
@@ -71,11 +82,56 @@
 - 实时属性编辑器（位置、尺寸、颜色、样式）
 - 场景层级面板与元素管理
 - 编辑 / 预览模式一键切换
+- 3D 编辑器操作指南面板（G/R/S 变换、X/Y/Z 轴约束、1/3/7 视角切换）
 
-### 🌐 国际化
+### 💡 高级 3D 光照系统
+
+| 光源类型 | 功能特性 |
+|---------|---------|
+| 环境光 | 全局均匀照明，颜色 + 强度可调 |
+| 平行光 | 方向光照 + PCFSoft 阴影映射 + 阴影精度/偏移/范围配置 + 目标坐标 |
+| 点光源 | 辐射光照 + 距离衰减 + 可选阴影 |
+| 聚光灯 ✨ | 锥形光照 + 角度/半影/衰减 + 阴影 + 目标坐标 |
+| 半球光 ✨ | 天空色 + 地面色双色照明 |
+
+- **PBR 材质** — MeshStandardMaterial 支持金属度（Metalness）与粗糙度（Roughness）调节
+- **实时阴影** — PCFSoftShadowMap + ACES Filmic 色调映射
+- **脚本可控** — 所有光照属性可通过 `elements['light_id']` 在脚本中动态修改
+
+### 🌌 天空盒 / 环境映射
+
+- **纯色模式** — 自定义背景颜色
+- **全景图模式** — 上传 equirectangular 全景图作为环境贴图
+- 支持 `.jpg`, `.png`, `.hdr`, `.webp` 格式
+- 全景图自动应用为 `scene.background` + `scene.environment`（PBR 环境反射）
+
+### 📦 3D 素材库
+
+- 内置 12+ 开源 3D 模型（交通工具、动物、建筑等）
+- 支持 `.glb/.gltf/.obj` 格式模型导入
+- 自动归一化缩放 + 场景集成
+
+### 🖼️ 2D 素材库
+
+- 内置 20+ 精灵素材（角色、道具、地形等）
+- 支持本地图片上传（存储至 localStorage）
+- 图片异步加载，占位符自动替换
+
+### 🌐 国际化 & 响应式
 
 - 完整的中文 / 英文双语支持
 - 导航栏一键切换语言
+- 移动端、平板端自适应布局
+
+### 🔗 三元联动架构
+
+所有功能遵循「脚本代码 · 可视化面板 · AI 助手」三元联动设计：
+
+1. **脚本可编辑** — Monaco 代码编辑器支持完整的 JavaScript 编程
+2. **面板可视化** — 左侧属性面板实时展示与修改所有元素属性
+3. **AI 可调整** — 右侧 AI 助手可通过自然语言动态生成/修改代码
+
+---
 
 ## 技术栈
 
@@ -83,7 +139,7 @@
 |------|------|
 | 应用框架 | React 18 + Vite 6 |
 | 2D 渲染 | PixiJS 8 |
-| 3D 渲染 | Three.js |
+| 3D 渲染 | Three.js (WebGLRenderer + PCFSoftShadowMap) |
 | 代码编辑器 | Monaco Editor |
 | 状态管理 | Zustand |
 | 路由 | React Router v6 |
@@ -128,15 +184,17 @@ npm run build
 src/
 ├── components/          # 可复用 UI 组件
 │   ├── AiPanel/         # AI 助手聊天面板
-│   ├── ElementPanel/    # 场景元素列表
+│   ├── ElementPanel/    # 场景元素列表 + 素材库
 │   ├── GameCanvas/      # 2D/3D 渲染画布
 │   ├── Navbar/          # 导航栏
 │   ├── ParticleField/   # 生成式粒子背景
-│   ├── PropertyEditor/  # 元素属性检查器
+│   ├── PropertyEditor/  # 元素属性检查器（含光照/天空盒面板）
 │   └── ScriptEditor/    # Monaco 代码编辑器
+├── data/                # 素材库定义
+│   └── assetLibrary.js  # 3D 模型 + 2D 精灵预设
 ├── engine/              # 渲染引擎
 │   ├── pixiRenderer.js  # PixiJS 2D 引擎
-│   ├── threeRenderer.js # Three.js 3D 引擎
+│   ├── threeRenderer.js # Three.js 3D 引擎（含高级光照/天空盒）
 │   └── behaviorEngine.js# 游戏逻辑运行时
 ├── locales/             # 国际化翻译（中/英）
 ├── pages/               # 路由页面
@@ -144,7 +202,7 @@ src/
 │   └── EditorPage/      # 主编辑器工作区
 ├── services/            # API 服务（LLM 集成）
 ├── stores/              # Zustand 状态仓库
-└── templates/           # 游戏模板预设
+└── templates/           # 游戏模板预设（含 FPS 射击）
 ```
 
 ## 设计风格
@@ -155,6 +213,19 @@ Zeta Studio 遵循 **社论式极简主义** 设计语言，灵感来源于 Appl
 - 锐角几何，极简圆角
 - 首页主视觉区采用算法粒子场画布
 - 克制的动效，支持 `prefers-reduced-motion`
+
+---
+
+## 版本更新日志
+
+| 版本 | 日期 | 更新内容 |
+|------|------|---------|
+| **v0.3.0** | 2025-03-15 | 🔦 **高级 3D 光照系统** — 聚光灯、半球光、PCFSoft 阴影映射、PBR 材质（金属度/粗糙度）；🌌 **天空盒** — 纯色/全景图模式 + 环境映射；🐛 修复 2D 事件/数据元素渲染多余蓝色方块 |
+| **v0.2.1** | 2025-03-15 | 🎮 修复 3D 编辑器快捷键（G/R/S/Del/1/3/7）；🖱️ 修复 FPS 预览模式指针锁定残留；⚡ 修复快速编辑时元素消失（async 竞态）；🛡️ NaN/Infinity 变换值防护 |
+| **v0.2.0** | 2025-03-14 | 📦 3D/2D 素材库 — 内置开源模型与精灵素材；⌨️ 3D 编辑器 Blender 风格快捷键系统；📱 移动端/平板自适应布局；🖼️ 2D 图片元素上传与异步加载 |
+| **v0.1.0** | 2025-03-13 | 🎮 双引擎架构（PixiJS + Three.js）；🤖 AI 代码生成；🧩 6 款游戏模板；🎨 可视化场景编辑器；🌐 中英双语 |
+
+---
 
 ## 贡献者
 

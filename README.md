@@ -20,32 +20,42 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 
 ![Homepage — Hero section with particle canvas and feature highlights](./docs/screenshots/homepage.png)
 
-### Project Gallery
+### Feature Showcase
 
-![Project gallery with 2D/3D badges](./docs/screenshots/projects.png)
+![Core feature cards — 2D Engine, 3D Space, AI Assistant](./docs/screenshots/homepage_features.png)
 
-### Template Selection
+### Template Selection — 2D Games
 
-![Create project modal — 2D/3D dimension toggle and template cards](./docs/screenshots/template_modal.png)
+![2D game template selection — Space Shooter, Pixel Platformer, Quiz, etc.](./docs/screenshots/template_2d.png)
+
+### Template Selection — 3D Games
+
+![3D game template selection — Cube, Solar System, FPS Shooter](./docs/screenshots/template_3d.png)
 
 ### 2D Editor
 
-![2D game editor — scene canvas, code editor, AI assistant](./docs/screenshots/editor_2d.png)
+![2D game editor — scene canvas, code editor, AI assistant tri-pane layout](./docs/screenshots/editor_2d.png)
 
-### 3D Editor
+### 3D Editor — Advanced Lighting
 
-![3D editor with Three.js cube rendering and rotation script](./docs/screenshots/editor_3d.png)
+![3D editor — Spot light property panel, shadow config, Three.js canvas](./docs/screenshots/editor_3d_lighting.png)
 
-### Gameplay Preview
+### 3D Editor — Shortcuts Guide
 
-![Platformer game running in preview mode with scoring](./docs/screenshots/gameplay_platformer.png)
+![3D editor — Controls help overlay, transform gizmo, material properties](./docs/screenshots/editor_3d_shortcuts.png)
+
+### Full Feature Demo
+
+![Complete editor workflow demonstration](./docs/screenshots/demo_walkthrough.webp)
+
+---
 
 ## Features
 
 ### 🎮 Dual Engine Architecture
 
 - **2D Engine** — Built on [PixiJS](https://pixijs.com/) v8 for high-performance sprite rendering, particle systems, and collision detection
-- **3D Engine** — Powered by [Three.js](https://threejs.org/) for immersive 3D scenes with lighting, materials, and camera controls
+- **3D Engine** — Powered by [Three.js](https://threejs.org/) for immersive 3D scenes with PBR materials and real-time shadows
 
 ### 🤖 AI Code Generation
 
@@ -64,6 +74,7 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 | NPC Dialogue | 2D | Visual novel / Galgame-style dialogue system |
 | 3D Cube | 3D | Interactive 3D scene with geometry manipulation |
 | Solar System | 3D | Animated solar system with orbital mechanics |
+| 3D FPS Shooter | 3D | First-person shooter with pointer lock and scoring |
 
 ### 🎨 Visual Scene Editor
 
@@ -71,11 +82,56 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 - Real-time property editor (position, size, color, style)
 - Scene hierarchy panel with element management
 - Edit / Preview mode toggle
+- 3D editor controls guide panel (G/R/S transform, X/Y/Z axis constraints, 1/3/7 camera views)
 
-### 🌐 Internationalization
+### 💡 Advanced 3D Lighting System
+
+| Light Type | Features |
+|-----------|----------|
+| Ambient Light | Uniform global illumination, color + intensity |
+| Directional Light | Directional lighting + PCFSoft shadow mapping + shadow precision/bias/bounds config + target coordinates |
+| Point Light | Radial illumination + distance decay + optional shadows |
+| Spot Light ✨ | Cone lighting + angle/penumbra/decay + shadows + target coordinates |
+| Hemisphere Light ✨ | Sky color + ground color dual-tone illumination |
+
+- **PBR Materials** — MeshStandardMaterial with metalness and roughness controls
+- **Real-time Shadows** — PCFSoftShadowMap + ACES Filmic tone mapping
+- **Script-controllable** — All lighting properties accessible via `elements['light_id']` in scripts
+
+### 🌌 Skybox / Environment Mapping
+
+- **Solid Color Mode** — Custom background color
+- **Panorama Mode** — Upload equirectangular panorama images as environment maps
+- Supports `.jpg`, `.png`, `.hdr`, `.webp` formats
+- Panorama automatically applied as `scene.background` + `scene.environment` (PBR environment reflections)
+
+### 📦 3D Asset Library
+
+- 12+ built-in open-source 3D models (vehicles, animals, buildings, etc.)
+- Import `.glb/.gltf/.obj` format models
+- Auto-normalized scaling + scene integration
+
+### 🖼️ 2D Sprite Library
+
+- 20+ built-in sprite assets (characters, items, terrain, etc.)
+- Local image upload support (stored in localStorage)
+- Async image loading with automatic placeholder replacement
+
+### 🌐 Internationalization & Responsive Design
 
 - Full Chinese (中文) and English (EN) language support
 - One-click language toggle in the navbar
+- Mobile and tablet adaptive layouts
+
+### 🔗 Three-Way Binding Architecture
+
+All features follow a "Script Code · Visual Panel · AI Assistant" triple-binding design:
+
+1. **Script Editable** — Monaco code editor for full JavaScript programming
+2. **Panel Visual** — Left-side property panels display and modify all element properties in real-time
+3. **AI Adjustable** — Right-side AI assistant dynamically generates/modifies code via natural language
+
+---
 
 ## Tech Stack
 
@@ -83,7 +139,7 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 |-------|-----------|
 | Framework | React 18 + Vite 6 |
 | 2D Rendering | PixiJS 8 |
-| 3D Rendering | Three.js |
+| 3D Rendering | Three.js (WebGLRenderer + PCFSoftShadowMap) |
 | Code Editor | Monaco Editor |
 | State Management | Zustand |
 | Routing | React Router v6 |
@@ -128,15 +184,17 @@ Production output is in the `dist/` directory.
 src/
 ├── components/          # Reusable UI components
 │   ├── AiPanel/         # AI assistant chat panel
-│   ├── ElementPanel/    # Scene element list
+│   ├── ElementPanel/    # Scene element list + asset library
 │   ├── GameCanvas/      # 2D/3D rendering canvas
 │   ├── Navbar/          # Navigation bar
 │   ├── ParticleField/   # Generative particle background
-│   ├── PropertyEditor/  # Element property inspector
+│   ├── PropertyEditor/  # Element property inspector (with light/skybox panels)
 │   └── ScriptEditor/    # Monaco code editor
+├── data/                # Asset library definitions
+│   └── assetLibrary.js  # 3D models + 2D sprite presets
 ├── engine/              # Rendering engines
 │   ├── pixiRenderer.js  # PixiJS 2D engine
-│   ├── threeRenderer.js # Three.js 3D engine
+│   ├── threeRenderer.js # Three.js 3D engine (advanced lighting/skybox)
 │   └── behaviorEngine.js# Game logic runtime
 ├── locales/             # i18n translations (zh/en)
 ├── pages/               # Route pages
@@ -144,7 +202,7 @@ src/
 │   └── EditorPage/      # Main editor workspace
 ├── services/            # API services (LLM integration)
 ├── stores/              # Zustand state stores
-└── templates/           # Game template presets
+└── templates/           # Game template presets (incl. FPS shooter)
 ```
 
 ## Design
@@ -155,6 +213,19 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 - Sharp geometry with minimal border-radius
 - Algorithmic particle field canvas in the hero section
 - Restrained animations with `prefers-reduced-motion` support
+
+---
+
+## Changelog
+
+| Version | Date | Changes |
+|---------|------|---------|
+| **v0.3.0** | 2025-03-15 | 🔦 **Advanced 3D lighting** — Spot light, hemisphere light, PCFSoft shadow mapping, PBR materials (metalness/roughness); 🌌 **Skybox** — Solid color / panorama mode + environment mapping; 🐛 Fixed 2D event/data elements rendering spurious blue squares |
+| **v0.2.1** | 2025-03-15 | 🎮 Fixed 3D editor shortcuts (G/R/S/Del/1/3/7); 🖱️ Fixed FPS preview pointer lock persistence; ⚡ Fixed element disappearance during fast editing (async race); 🛡️ NaN/Infinity transform value guards |
+| **v0.2.0** | 2025-03-14 | 📦 3D/2D asset libraries — Built-in open-source models and sprites; ⌨️ Blender-style 3D editor shortcut system; 📱 Mobile/tablet responsive layouts; 🖼️ 2D image element upload with async loading |
+| **v0.1.0** | 2025-03-13 | 🎮 Dual engine architecture (PixiJS + Three.js); 🤖 AI code generation; 🧩 6 game templates; 🎨 Visual scene editor; 🌐 Chinese/English i18n |
+
+---
 
 ## Contributors
 
