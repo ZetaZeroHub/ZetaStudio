@@ -130,6 +130,31 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 - Algorithmic particle field canvas in the hero section
 - Restrained animations with `prefers-reduced-motion` support
 
+## Contributors
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/ZetaZeroHub">
+        <img src="https://github.com/ZetaZeroHub.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>ZetaZeroHub</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/kinglegendzzh">
+        <img src="https://github.com/kinglegendzzh.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>kinglegendzzh</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/maxwellsection">
+        <img src="https://github.com/maxwellsection.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>maxwellsection</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## License
 
 This project is part of The Reality Lab's multimodal creation suite.

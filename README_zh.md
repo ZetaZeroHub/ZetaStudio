@@ -130,6 +130,31 @@ Zeta Studio 遵循 **社论式极简主义** 设计语言，灵感来源于 Appl
 - 首页主视觉区采用算法粒子场画布
 - 克制的动效，支持 `prefers-reduced-motion`
 
+## 贡献者
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/ZetaZeroHub">
+        <img src="https://github.com/ZetaZeroHub.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>ZetaZeroHub</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/kinglegendzzh">
+        <img src="https://github.com/kinglegendzzh.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>kinglegendzzh</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/maxwellsection">
+        <img src="https://github.com/maxwellsection.png" width="80" style="border-radius:50%" /><br />
+        <sub><b>maxwellsection</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## 许可
 
 本项目是现实实验室多模态创作套件的一部分。
