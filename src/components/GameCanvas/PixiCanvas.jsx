@@ -16,6 +16,8 @@ export default function GameCanvas({ mode }) {
   const elements = useEditorStore(s => s.elements);
   const selectedElementId = useEditorStore(s => s.selectedElementId);
   const variables = useEditorStore(s => s.variables);
+  const activeSceneId = useEditorStore(s => s.activeSceneId);
+  const scenes = useEditorStore(s => s.scenes);
 
   const destroyApp = useCallback(() => {
     if (appRef.current) {
@@ -58,6 +60,26 @@ export default function GameCanvas({ mode }) {
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
 
+      // Apply scene background
+      const sceneBackground = useEditorStore.getState().getActiveSceneBackground();
+      if (sceneBackground) {
+        if (sceneBackground.type === 'color' && sceneBackground.color) {
+          app.renderer.background.color = sceneBackground.color;
+        }
+        if (sceneBackground.type === 'image' && sceneBackground.imageUrl) {
+          try {
+            const bgTexture = await PIXI.Assets.load(sceneBackground.imageUrl);
+            const bgSprite = new PIXI.Sprite(bgTexture);
+            bgSprite.width = app.screen.width;
+            bgSprite.height = app.screen.height;
+            bgSprite.zIndex = -1000;
+            app.stage.addChildAt(bgSprite, 0);
+          } catch (e) {
+            console.warn('Failed to load background image:', e);
+          }
+        }
+      }
+
       // Render elements
       const isEdit = mode === 'edit';
       const pixiMap = renderAll(app, elements, variables, isEdit);
@@ -85,6 +107,9 @@ export default function GameCanvas({ mode }) {
               'store',
               'variables',
               'setVariable',
+              'switchScene',
+              'getCurrentSceneId',
+              'getSceneList',
               script.content
             );
             
@@ -94,7 +119,14 @@ export default function GameCanvas({ mode }) {
               elementsObj[id] = obj;
             }
 
-            executor(appRef.current, PIXI, elementsObj, store, store.variables, store.setVariable);
+            // Scene management API for scripts
+            const switchScene = (sceneId) => {
+              useEditorStore.getState().switchScene(sceneId);
+            };
+            const getCurrentSceneId = () => useEditorStore.getState().activeSceneId;
+            const getSceneList = () => useEditorStore.getState().scenes.map(s => ({ id: s.id, name: s.name }));
+
+            executor(appRef.current, PIXI, elementsObj, store, store.variables, store.setVariable, switchScene, getCurrentSceneId, getSceneList);
           } catch (err) {
             console.error(`Error executing script "${script.name}":`, err);
           }
@@ -235,7 +267,7 @@ export default function GameCanvas({ mode }) {
   useEffect(() => {
     initApp();
     return () => destroyApp();
-  }, [mode]);
+  }, [mode, activeSceneId]);
 
   // Auto-focus canvas in preview mode
   useEffect(() => {

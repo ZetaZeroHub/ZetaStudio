@@ -46,3 +46,18 @@
 .assetName { font-size: 0.7rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .assetCredit { padding: 8px; text-align: center; font-size: 0.6rem; color: var(--text-muted); opacity: 0.5; border-top: 1px solid var(--border-subtle); }
 
+/* Scene Manager */
+.sceneManager { padding: 8px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-secondary); }
+.sceneManagerTitle { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.sceneList { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+.sceneList::-webkit-scrollbar { height: 3px; }
+.sceneList::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 3px; }
+.sceneCard { display: flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-default); background: var(--bg-elevated); cursor: pointer; font-size: 0.7rem; color: var(--text-secondary); white-space: nowrap; transition: all var(--transition-fast); min-width: 0; flex-shrink: 0; }
+.sceneCard:hover { border-color: var(--border-accent); color: var(--text-primary); }
+.sceneCardActive { background: var(--bg-hover); color: var(--text-primary); border-color: var(--text-primary); box-shadow: 0 0 0 1px var(--text-primary); }
+.sceneCardName { font-weight: 500; }
+.sceneCardDel { display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 2px; border-radius: 3px; opacity: 0; transition: opacity var(--transition-fast); }
+.sceneCard:hover .sceneCardDel { opacity: 1; }
+.sceneCardDel:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+.sceneBgSettings { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: var(--bg-elevated); border: 1px solid var(--border-subtle); }
+.select { padding: 3px 6px; border-radius: 4px; border: 1px solid var(--border-default); background: var(--bg-primary); color: var(--text-primary); font-size: 0.75rem; }

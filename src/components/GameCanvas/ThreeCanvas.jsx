@@ -25,6 +25,7 @@ export default function ThreeCanvas({ mode }) {
   const elements = useEditorStore(s => s.elements);
   const selectedElementId = useEditorStore(s => s.selectedElementId);
   const variables = useEditorStore(s => s.variables);
+  const activeSceneId = useEditorStore(s => s.activeSceneId);
   const { t, language } = useI18nStore();
 
   // Keep modeRef in sync + guard against pointer lock in edit mode
@@ -85,7 +86,22 @@ export default function ThreeCanvas({ mode }) {
       const h = canvasMountRef.current.clientHeight || 600;
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x111827);
+
+      // Apply scene background from store
+      const sceneBackground = useEditorStore.getState().getActiveSceneBackground();
+      if (sceneBackground?.type === 'image' && sceneBackground.imageUrl) {
+        const loader = new THREE.TextureLoader();
+        try {
+          const texture = await new Promise((resolve, reject) => loader.load(sceneBackground.imageUrl, resolve, undefined, reject));
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          scene.background = texture;
+          scene.environment = texture;
+        } catch {
+          scene.background = new THREE.Color(sceneBackground?.color || 0x111827);
+        }
+      } else {
+        scene.background = new THREE.Color(sceneBackground?.color || 0x111827);
+      }
 
       // Grid helper for edit mode
       if (mode === 'edit') {
@@ -207,13 +223,20 @@ export default function ThreeCanvas({ mode }) {
         scripts.forEach(script => {
           try {
             const executor = new Function(
-              'app', 'THREE', 'elements', 'store', 'variables', 'setVariable', script.content
+              'app', 'THREE', 'elements', 'store', 'variables', 'setVariable',
+              'switchScene', 'getCurrentSceneId', 'getSceneList',
+              script.content
             );
             
             const elementsObj = {};
             for (const [id, obj] of threeMap.entries()) elementsObj[id] = obj;
 
-            executor(customApp, THREE, elementsObj, store, store.variables, store.setVariable);
+            // Scene management API for scripts
+            const switchScene = (sceneId) => useEditorStore.getState().switchScene(sceneId);
+            const getCurrentSceneId = () => useEditorStore.getState().activeSceneId;
+            const getSceneList = () => useEditorStore.getState().scenes.map(s => ({ id: s.id, name: s.name }));
+
+            executor(customApp, THREE, elementsObj, store, store.variables, store.setVariable, switchScene, getCurrentSceneId, getSceneList);
           } catch (err) {
             console.error(`Error executing script "${script.name}":`, err);
           }
@@ -238,7 +261,7 @@ export default function ThreeCanvas({ mode }) {
     } finally {
       if (currentId === initIdRef.current) setLoading(false);
     }
-  }, [elements, mode, destroyApp]);
+  }, [elements, mode, activeSceneId, destroyApp]);
 
   const attachGizmoToObject = (elementId, objMap, tc, scene) => {
     if (!tc || !scene) return;

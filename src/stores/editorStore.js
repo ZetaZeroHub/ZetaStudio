@@ -55,12 +55,54 @@ function getElementDefaults(category, type) {
   return { ...base, ...(typeDefaults[type] || {}) };
 }
 
+// Helper: create a default scene object
+function createDefaultScene(name = '场景 1', elements = [], scripts = null) {
+  const id = `scene_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+  const defaultScripts = scripts || [{ id: 's_main', name: 'main.js', content: '// 游戏主脚本\n\napp.ticker.add((ticker) => {\n  // 每帧更新逻辑\n});\n' }];
+  return {
+    id,
+    name,
+    background: { type: 'color', color: '#111827', imageUrl: '' },
+    elements: elements,
+    scripts: defaultScripts,
+  };
+}
+
+// Helper: get active scene from state
+function getActiveScene(state) {
+  return state.scenes.find(s => s.id === state.activeSceneId) || state.scenes[0];
+}
+
+// Helper: update active scene with a modification function
+function updateActiveScene(state, modifier) {
+  const newScenes = state.scenes.map(s => {
+    if (s.id === state.activeSceneId) {
+      return modifier(s);
+    }
+    return s;
+  });
+  const active = newScenes.find(s => s.id === state.activeSceneId) || newScenes[0];
+  return {
+    scenes: newScenes,
+    // Keep elements/scripts in sync for backward compatibility
+    elements: active.elements,
+    scripts: active.scripts,
+  };
+}
+
 const useEditorStore = create((set, get) => ({
   currentProject: null,
   dimension: '2D',
+  
+  // === Multi-scene state ===
+  scenes: [],
+  activeSceneId: null,
+  
+  // === Backward-compatible flat accessors (always mirror active scene) ===
   elements: [],
-  code: '', // kept for backwards compatibility but unused
   scripts: [],
+  
+  code: '', // kept for backwards compatibility but unused
   selectedElementId: null,
   activeScriptId: null,
   mode: 'edit',
@@ -72,24 +114,38 @@ const useEditorStore = create((set, get) => ({
   variables: {},
 
   initEditor: (project, templateData) => {
-    const elements = project.elements?.length > 0
+    const rawElements = project.elements?.length > 0
       ? project.elements
       : (templateData?.elements || []);
     
     // Load scripts or fallback
     const defaultScripts = [{ id: 's_main', name: 'main.js', content: '// 游戏主脚本\n\napp.ticker.add((ticker) => {\n  // 每帧更新逻辑\n});\n' }];
-    const scripts = project.scripts?.length > 0 
+    const rawScripts = project.scripts?.length > 0 
       ? project.scripts 
       : (templateData?.scripts || defaultScripts);
 
     const dimension = project.dimension || templateData?.dimension || '2D';
 
+    // === Backward-compatible migration ===
+    // If project already has scenes array, use it; otherwise, migrate flat format
+    let scenes;
+    if (project.scenes?.length > 0) {
+      scenes = project.scenes;
+    } else {
+      scenes = [createDefaultScene('场景 1', rawElements, rawScripts)];
+    }
+
+    const activeSceneId = scenes[0].id;
+    const activeScene = scenes[0];
+
     set({
       currentProject: project,
       dimension,
-      elements,
-      scripts,
-      activeScriptId: scripts[0]?.id || null,
+      scenes,
+      activeSceneId,
+      elements: activeScene.elements,
+      scripts: activeScene.scripts,
+      activeScriptId: activeScene.scripts[0]?.id || null,
       code: '',
       selectedElementId: null,
       mode: 'edit',
@@ -100,39 +156,119 @@ const useEditorStore = create((set, get) => ({
     });
   },
 
-  // Element operations
+  // ========== Scene Management ==========
+
+  addScene: (name) => {
+    const newScene = createDefaultScene(name || `场景 ${get().scenes.length + 1}`);
+    set((state) => ({
+      scenes: [...state.scenes, newScene],
+    }));
+    // Optionally auto-switch to the new scene
+    get().switchScene(newScene.id);
+  },
+
+  removeScene: (id) => {
+    const state = get();
+    if (state.scenes.length <= 1) return; // Prevent deleting last scene
+    const idx = state.scenes.findIndex(s => s.id === id);
+    const newScenes = state.scenes.filter(s => s.id !== id);
+    let newActiveId = state.activeSceneId;
+    if (state.activeSceneId === id) {
+      newActiveId = newScenes[Math.max(0, idx - 1)]?.id || newScenes[0]?.id;
+    }
+    const active = newScenes.find(s => s.id === newActiveId) || newScenes[0];
+    set({
+      scenes: newScenes,
+      activeSceneId: newActiveId,
+      elements: active.elements,
+      scripts: active.scripts,
+      activeScriptId: active.scripts[0]?.id || null,
+      selectedElementId: null,
+    });
+  },
+
+  switchScene: (id) => {
+    const state = get();
+    const target = state.scenes.find(s => s.id === id);
+    if (!target) return;
+    set({
+      activeSceneId: id,
+      elements: target.elements,
+      scripts: target.scripts,
+      activeScriptId: target.scripts[0]?.id || null,
+      selectedElementId: null,
+    });
+  },
+
+  renameScene: (id, newName) => {
+    set((state) => ({
+      scenes: state.scenes.map(s => s.id === id ? { ...s, name: newName } : s),
+    }));
+  },
+
+  updateSceneBackground: (bgUpdates) => {
+    set((state) => {
+      const newScenes = state.scenes.map(s => {
+        if (s.id === state.activeSceneId) {
+          return { ...s, background: { ...s.background, ...bgUpdates } };
+        }
+        return s;
+      });
+      return { scenes: newScenes };
+    });
+  },
+
+  getActiveSceneBackground: () => {
+    const state = get();
+    const scene = state.scenes.find(s => s.id === state.activeSceneId);
+    return scene?.background || { type: 'color', color: '#111827', imageUrl: '' };
+  },
+
+  // ========== Element Operations (operate on active scene) ==========
+
   setElements: (elements) => {
-    set({ elements });
+    set((state) => updateActiveScene(state, (s) => ({ ...s, elements })));
   },
 
   addElement: (element) => {
-    set((state) => ({ elements: [...state.elements, element] }));
+    set((state) => updateActiveScene(state, (s) => ({
+      ...s,
+      elements: [...s.elements, element],
+    })));
   },
 
   updateElement: (id, updates) => {
     set((state) => {
-      const newElements = state.elements.map((el) => {
-        if (el.id !== id) return el;
-        // Deep merge for nested objects
-        const merged = { ...el };
-        for (const key of Object.keys(updates)) {
-          if (typeof updates[key] === 'object' && !Array.isArray(updates[key]) && updates[key] !== null && el[key]) {
-            merged[key] = { ...el[key], ...updates[key] };
-          } else {
-            merged[key] = updates[key];
+      const modifier = (s) => {
+        const newElements = s.elements.map((el) => {
+          if (el.id !== id) return el;
+          const merged = { ...el };
+          for (const key of Object.keys(updates)) {
+            if (typeof updates[key] === 'object' && !Array.isArray(updates[key]) && updates[key] !== null && el[key]) {
+              merged[key] = { ...el[key], ...updates[key] };
+            } else {
+              merged[key] = updates[key];
+            }
           }
-        }
-        return merged;
-      });
-      return { elements: newElements };
+          return merged;
+        });
+        return { ...s, elements: newElements };
+      };
+      return updateActiveScene(state, modifier);
     });
   },
 
   removeElement: (id) => {
-    set((state) => ({
-      elements: state.elements.filter((el) => el.id !== id),
-      selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
-    }));
+    set((state) => {
+      const result = updateActiveScene(state, (s) => ({
+        ...s,
+        elements: s.elements.filter((el) => el.id !== id),
+      }));
+      return {
+        ...result,
+        selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
+      };
+    });
   },
 
   duplicateElement: (id) => {
@@ -149,50 +285,62 @@ const useEditorStore = create((set, get) => ({
 
   moveElement: (id, direction) => {
     set((state) => {
-      const idx = state.elements.findIndex(e => e.id === id);
-      if (idx < 0) return state;
-      const newElements = [...state.elements];
-      const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (targetIdx < 0 || targetIdx >= newElements.length) return state;
-      [newElements[idx], newElements[targetIdx]] = [newElements[targetIdx], newElements[idx]];
-      return { elements: newElements };
+      const modifier = (s) => {
+        const idx = s.elements.findIndex(e => e.id === id);
+        if (idx < 0) return s;
+        const newElements = [...s.elements];
+        const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= newElements.length) return s;
+        [newElements[idx], newElements[targetIdx]] = [newElements[targetIdx], newElements[idx]];
+        return { ...s, elements: newElements };
+      };
+      return updateActiveScene(state, modifier);
     });
   },
 
   selectElement: (id) => set({ selectedElementId: id }),
   setActiveTab: (tab) => set({ activeTab: tab }),
 
-  // Script operations
+  // ========== Script Operations (operate on active scene) ==========
+
   setActiveScriptId: (id) => set({ activeScriptId: id }),
   
   addScript: () => {
     const id = `s_${Date.now()}`;
     set((state) => {
-      const copyNum = state.scripts.filter(s => s.name.startsWith('script')).length + 1;
+      const scene = getActiveScene(state);
+      const copyNum = scene.scripts.filter(s => s.name.startsWith('script')).length + 1;
       const newScript = { id, name: `script${copyNum}.js`, content: '// 新脚本\n' };
-      return { 
-        scripts: [...state.scripts, newScript],
-        activeScriptId: id
-      };
+      const result = updateActiveScene(state, (s) => ({
+        ...s,
+        scripts: [...s.scripts, newScript],
+      }));
+      return { ...result, activeScriptId: id };
     });
   },
 
   updateScript: (id, updates) => {
-    set((state) => ({
-      scripts: state.scripts.map(s => s.id === id ? { ...s, ...updates } : s)
-    }));
+    set((state) => updateActiveScene(state, (s) => ({
+      ...s,
+      scripts: s.scripts.map(sc => sc.id === id ? { ...sc, ...updates } : sc),
+    })));
   },
 
   removeScript: (id) => {
     set((state) => {
-      if (state.scripts.length <= 1) return state; // Prevent deleting last script
-      const idx = state.scripts.findIndex(s => s.id === id);
-      const newScripts = state.scripts.filter(s => s.id !== id);
+      const scene = getActiveScene(state);
+      if (scene.scripts.length <= 1) return state; // Prevent deleting last script
+      const idx = scene.scripts.findIndex(s => s.id === id);
+      const result = updateActiveScene(state, (s) => ({
+        ...s,
+        scripts: s.scripts.filter(sc => sc.id !== id),
+      }));
       let newActiveId = state.activeScriptId;
       if (state.activeScriptId === id) {
-         newActiveId = newScripts[Math.max(0, idx - 1)]?.id || newScripts[0]?.id;
+        const remaining = scene.scripts.filter(sc => sc.id !== id);
+        newActiveId = remaining[Math.max(0, idx - 1)]?.id || remaining[0]?.id;
       }
-      return { scripts: newScripts, activeScriptId: newActiveId };
+      return { ...result, activeScriptId: newActiveId };
     });
   },
 
@@ -215,13 +363,15 @@ const useEditorStore = create((set, get) => ({
   clearAiMessages: () => set({ aiMessages: [] }),
 
   clearEditor: () => set({
-    currentProject: null, elements: [], scripts: [], activeScriptId: null, selectedElementId: null,
+    currentProject: null, scenes: [], activeSceneId: null,
+    elements: [], scripts: [], activeScriptId: null, selectedElementId: null,
     mode: 'edit', activeTab: 'sprite', aiMessages: [], aiLoading: false, variables: {},
   }),
 
   getProjectData: () => {
-    const { currentProject, elements, scripts } = get();
-    return { ...currentProject, elements, scripts, updatedAt: Date.now() };
+    const { currentProject, scenes } = get();
+    // Save in the new scenes format
+    return { ...currentProject, scenes, updatedAt: Date.now() };
   },
 }));
 

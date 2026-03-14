@@ -91,6 +91,8 @@ export default function ElementPanel() {
     dimension, elements, selectedElementId, activeTab, setActiveTab,
     selectElement, addElement, removeElement, duplicateElement,
     updateElement,
+    scenes, activeSceneId, addScene, removeScene, switchScene, renameScene,
+    updateSceneBackground, getActiveSceneBackground,
   } = useEditorStore();
   const { t, language } = useI18nStore();
   
@@ -229,7 +231,108 @@ export default function ElementPanel() {
         </div>
       </div>
 
-      {/* Asset Library (3D only) */}
+      {/* ====== Scene Manager (visible on scene tab) ====== */}
+      {activeTab === 'scene' && scenes.length > 0 && (
+        <div className={styles.sceneManager}>
+          <div className={styles.sceneManagerTitle}>
+            <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)' }}>
+              {language === 'zh' ? '场景管理' : 'Scenes'}
+            </span>
+            <button
+              className={styles.addBtn}
+              style={{ width: 22, height: 22, padding: 0 }}
+              onClick={() => addScene()}
+              title={language === 'zh' ? '新增场景' : 'Add Scene'}
+            >
+              <Plus size={12} />
+            </button>
+          </div>
+          <div className={styles.sceneList}>
+            {scenes.map((sc, i) => (
+              <div
+                key={sc.id}
+                className={`${styles.sceneCard} ${sc.id === activeSceneId ? styles.sceneCardActive : ''}`}
+                onClick={() => switchScene(sc.id)}
+              >
+                <span className={styles.sceneCardName}>{sc.name}</span>
+                {scenes.length > 1 && (
+                  <button
+                    className={styles.sceneCardDel}
+                    onClick={(e) => { e.stopPropagation(); removeScene(sc.id); }}
+                    title={language === 'zh' ? '删除场景' : 'Delete'}
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Background Settings */}
+          {(() => {
+            const bg = getActiveSceneBackground();
+            return (
+              <div className={styles.sceneBgSettings}>
+                <span style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginBottom: 4, display: 'block' }}>
+                  {language === 'zh' ? '场景背景' : 'Background'}
+                </span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                  <select
+                    className={styles.select}
+                    style={{ flex: 1, fontSize: 11 }}
+                    value={bg.type || 'color'}
+                    onChange={(e) => updateSceneBackground({ type: e.target.value })}
+                  >
+                    <option value="color">{language === 'zh' ? '纯色' : 'Color'}</option>
+                    <option value="image">{language === 'zh' ? '图片' : 'Image'}</option>
+                  </select>
+                </div>
+                {bg.type === 'color' || !bg.type ? (
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={bg.color || '#111827'}
+                      onChange={(e) => updateSceneBackground({ color: e.target.value })}
+                      style={{ width: 24, height: 24, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 4 }}
+                    />
+                    <input
+                      className="input"
+                      value={bg.color || '#111827'}
+                      onChange={(e) => updateSceneBackground({ color: e.target.value })}
+                      style={{ flex: 1, fontSize: 11, height: 24, padding: '0 6px' }}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    {bg.imageUrl && (
+                      <div style={{ fontSize: 10, color: 'var(--color-accent)', marginBottom: 2 }}>✅ {language === 'zh' ? '已上传' : 'Uploaded'}</div>
+                    )}
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{ width: '100%', fontSize: 11, height: 26 }}
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.jpg,.jpeg,.png,.webp,.svg';
+                        input.onchange = (ev) => {
+                          const file = ev.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => updateSceneBackground({ imageUrl: reader.result });
+                          reader.readAsDataURL(file);
+                        };
+                        input.click();
+                      }}
+                    >
+                      {language === 'zh' ? '上传背景图' : 'Upload Image'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {activeTab === 'assets' ? (
         <div className={styles.assetLibrary}>
           <div className={styles.assetCategoryBar}>
