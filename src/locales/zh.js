@@ -77,6 +77,9 @@ export default {
       pointLight: '点光源',
       box: '3D 方块',
       sphere: '3D 球体',
+      plane: '3D 平面',
+      cylinder: '3D 圆柱',
+      importedModel: '导入 3D 模型',
     }
   },
   propertyEditor: {
@@ -113,7 +116,11 @@ export default {
       variable: '变量', uiBinding: 'UI绑定',
       perspectiveCamera: '3D 摄像机', ambientLight: '环境光', directionalLight: '平行光',
       pointLight: '点光源', box: '3D 方块', sphere: '3D 球体',
-    }
+      plane: '3D 平面', cylinder: '3D 圆柱', importedModel: '导入模型',
+    },
+    modelFile: '模型文件',
+    replaceModel: '替换模型',
+    noModel: '未加载模型',
   },
   gameCanvas: {
     editMode: '编辑',

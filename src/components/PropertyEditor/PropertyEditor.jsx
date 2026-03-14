@@ -1,4 +1,5 @@
-import { Settings2, Tag, Move, Palette, FileText, Activity, Zap, Trash2, Pointer } from 'lucide-react';
+import { useRef } from 'react';
+import { Settings2, Tag, Move, Palette, FileText, Activity, Zap, Trash2, Pointer, FileBox } from 'lucide-react';
 import useEditorStore from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
 import styles from './PropertyEditor.module.css';
@@ -92,7 +93,7 @@ export default function PropertyEditor() {
           </div>
           
           <div className={styles.row}>
-            {(!is3D || el.type === 'box' || el.category === 'scene' || el.category === 'sprite') && el.type !== 'sphere' && el.type !== 'perspectiveCamera' && el.type !== 'ambientLight' && el.type !== 'pointLight' && el.type !== 'directionalLight' && (
+            {(!is3D || el.type === 'box' || el.type === 'plane' || el.category === 'scene' || el.category === 'sprite') && el.type !== 'sphere' && el.type !== 'cylinder' && el.type !== 'importedModel' && el.type !== 'perspectiveCamera' && el.type !== 'ambientLight' && el.type !== 'pointLight' && el.type !== 'directionalLight' && (
               <>
                 <span className={styles.label}>W</span>
                 <input className={`input ${styles.inputSmall}`} type="number" step={is3D?"0.1":"1"} value={el.transform?.width ?? (is3D ? 1 : 60)} onChange={e => updateNested('transform', 'width', +e.target.value)} />
@@ -110,6 +111,26 @@ export default function PropertyEditor() {
               <>
                 <span className={styles.label}>R</span>
                 <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.radius ?? 1} onChange={e => updateNested('transform', 'radius', +e.target.value)} />
+              </>
+            )}
+            {is3D && el.type === 'cylinder' && (
+              <>
+                <span className={styles.label}>RT</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.radiusTop ?? 0.5} onChange={e => updateNested('transform', 'radiusTop', +e.target.value)} />
+                <span className={styles.label}>RB</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.radiusBottom ?? 0.5} onChange={e => updateNested('transform', 'radiusBottom', +e.target.value)} />
+                <span className={styles.label}>H</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.height ?? 1} onChange={e => updateNested('transform', 'height', +e.target.value)} />
+              </>
+            )}
+            {is3D && el.type === 'importedModel' && (
+              <>
+                <span className={styles.label}>SX</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.scaleX ?? 1} onChange={e => updateNested('transform', 'scaleX', +e.target.value)} />
+                <span className={styles.label}>SY</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.scaleY ?? 1} onChange={e => updateNested('transform', 'scaleY', +e.target.value)} />
+                <span className={styles.label}>SZ</span>
+                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.scaleZ ?? 1} onChange={e => updateNested('transform', 'scaleZ', +e.target.value)} />
               </>
             )}
           </div>
@@ -144,6 +165,31 @@ export default function PropertyEditor() {
                <input className={`input ${styles.inputSmall}`} type="number" step="0.1" value={el.transform?.targetZ ?? 0} onChange={e => updateNested('transform', 'targetZ', +e.target.value)} />
              </div>
           )}
+        </div>
+      )}
+
+      {/* Imported Model Info */}
+      {is3D && el.type === 'importedModel' && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}><FileBox size={14} className={styles.sectionIcon} /> {t('propertyEditor.modelFile')}</div>
+          <div className={styles.row}>
+            <span className={styles.label} style={{ flex: 1, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {el.style?.modelFileName || t('propertyEditor.noModel')}
+            </span>
+          </div>
+          <button className="btn btn-secondary btn-sm" style={{ width: '100%', marginTop: 6 }} onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.glb,.gltf,.obj,.fbx';
+            input.onchange = (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const url = URL.createObjectURL(file);
+              updateNested('style', 'modelUrl', url);
+              updateNested('style', 'modelFileName', file.name);
+            };
+            input.click();
+          }}>{t('propertyEditor.replaceModel')}</button>
         </div>
       )}
 

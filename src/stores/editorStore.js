@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 // Element factory
-const MESH_TYPES = ['box', 'sphere'];
+const MESH_TYPES = ['box', 'sphere', 'plane', 'cylinder', 'importedModel'];
 export function createNewElement(category, type, overrides = {}) {
   const id = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
   const actualCategory = MESH_TYPES.includes(type) ? 'mesh' : category;
@@ -37,6 +37,9 @@ function getElementDefaults(category, type) {
     ambientLight: { name: '环境光', transform: { x: 0, y: 0, z: 0 }, style: { color: '#ffffff', intensity: 0.5 } },
     directionalLight: { name: '平行光', transform: { x: 5, y: 10, z: 5 }, style: { color: '#ffffff', intensity: 1, castShadow: true } },
     pointLight: { name: '点光源', transform: { x: 0, y: 5, z: 0 }, style: { color: '#ffffff', intensity: 1, distance: 0 } },
+    plane: { name: '3D平面', transform: { x: 0, y: 0, z: 0, width: 10, height: 10, rotationX: -1.5708, rotationY: 0, rotationZ: 0 }, style: { color: '#808080', material: 'standard' } },
+    cylinder: { name: '3D圆柱', transform: { x: 0, y: 0, z: 0, radiusTop: 0.5, radiusBottom: 0.5, height: 2, rotationX: 0, rotationY: 0, rotationZ: 0 }, style: { color: '#00afcc', material: 'standard' } },
+    importedModel: { name: '导入模型', transform: { x: 0, y: 0, z: 0, scaleX: 1, scaleY: 1, scaleZ: 1, rotationX: 0, rotationY: 0, rotationZ: 0 }, style: { modelUrl: '', modelFileName: '', material: 'standard' } },
     button: { name: '按钮', textContent: { ...base.textContent, text: '按钮', fontSize: 16 }, transform: { ...base.transform, width: 120, height: 40, depth: 60 }, style: { ...base.style, borderRadius: 8 } },
     keyboardEvent: { name: '键盘事件' },
     collisionRule: { name: '碰撞规则' },

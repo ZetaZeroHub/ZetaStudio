@@ -77,6 +77,9 @@ export default {
       pointLight: 'Point Light',
       box: '3D Box',
       sphere: '3D Sphere',
+      plane: '3D Plane',
+      cylinder: '3D Cylinder',
+      importedModel: 'Import 3D Model',
     }
   },
   propertyEditor: {
@@ -113,7 +116,11 @@ export default {
       variable: 'Variable', uiBinding: 'UI Bind',
       perspectiveCamera: '3D Camera', ambientLight: 'Ambient Light', directionalLight: 'Dir. Light',
       pointLight: 'Point Light', box: '3D Box', sphere: '3D Sphere',
-    }
+      plane: '3D Plane', cylinder: '3D Cylinder', importedModel: 'Imported Model',
+    },
+    modelFile: 'Model File',
+    replaceModel: 'Replace Model',
+    noModel: 'No model loaded',
   },
   gameCanvas: {
     editMode: 'Edit',

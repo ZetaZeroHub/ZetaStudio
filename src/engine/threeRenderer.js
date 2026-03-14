@@ -3,6 +3,8 @@
  * Reads elements[] data → Creates/Updates Three.js objects → real-time render
  */
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 let threeObjectMap = new Map();
 
@@ -133,6 +135,9 @@ function createElement(el, variables) {
   switch (el.type) {
     case 'box': return createBox(el);
     case 'sphere': return createSphere(el);
+    case 'plane': return createPlane(el);
+    case 'cylinder': return createCylinder(el);
+    case 'importedModel': return createImportedModel(el);
     case 'ambientLight': return createAmbientLight(el);
     case 'directionalLight': return createDirectionalLight(el);
     case 'pointLight': return createPointLight(el);
@@ -161,6 +166,77 @@ function createSphere(el) {
   const mesh = new THREE.Mesh(geometry, material);
   applyTransform(mesh, t);
   return mesh;
+}
+
+function createPlane(el) {
+  const t = el.transform || {};
+  const s = el.style || {};
+  const geometry = new THREE.PlaneGeometry(t.width || 10, t.height || 10);
+  const color = parseColor(s.color || '#808080');
+  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }) : new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(geometry, material);
+  applyTransform(mesh, t);
+  return mesh;
+}
+
+function createCylinder(el) {
+  const t = el.transform || {};
+  const s = el.style || {};
+  const geometry = new THREE.CylinderGeometry(t.radiusTop || 0.5, t.radiusBottom || 0.5, t.height || 1, 32);
+  const color = parseColor(s.color || '#00ff00');
+  const material = s.material === 'basic' ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshStandardMaterial({ color });
+  const mesh = new THREE.Mesh(geometry, material);
+  applyTransform(mesh, t);
+  return mesh;
+}
+
+function createImportedModel(el) {
+  const s = el.style || {};
+  const t = el.transform || {};
+  const group = new THREE.Group();
+  applyTransform(group, t);
+
+  // Placeholder box while loading
+  const placeholder = new THREE.Mesh(
+    new THREE.BoxGeometry(1, 1, 1),
+    new THREE.MeshStandardMaterial({ color: 0x888888, wireframe: true })
+  );
+  group.add(placeholder);
+
+  if (s.modelUrl) {
+    const url = s.modelUrl;
+    const fileName = (s.modelFileName || '').toLowerCase();
+
+    const onLoad = (obj) => {
+      group.remove(placeholder);
+      placeholder.geometry.dispose();
+      placeholder.material.dispose();
+      const model = obj.scene || obj;
+      // Normalize scale
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      if (maxDim > 0) {
+        const scale = 2 / maxDim;
+        model.scale.multiplyScalar(scale);
+      }
+      group.add(model);
+    };
+
+    const onError = (err) => {
+      console.error('Model load error:', err);
+      placeholder.material.color.set(0xff0000);
+    };
+
+    if (fileName.endsWith('.obj')) {
+      new OBJLoader().load(url, onLoad, undefined, onError);
+    } else {
+      // Default: GLTF/GLB
+      new GLTFLoader().load(url, onLoad, undefined, onError);
+    }
+  }
+
+  return group;
 }
 
 function createAmbientLight(el) {

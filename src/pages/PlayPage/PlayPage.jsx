@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import GameCanvas from '../../components/GameCanvas/GameCanvas';
 import useProjectStore from '../../stores/projectStore';
+import useEditorStore from '../../stores/editorStore';
+import { getTemplate } from '../../templates';
 import styles from './PlayPage.module.css';
 
 export default function PlayPage() {
@@ -11,6 +13,7 @@ export default function PlayPage() {
   const { loadAllProjects, getProject } = useProjectStore();
   const [project, setProject] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     loadAllProjects();
@@ -18,7 +21,19 @@ export default function PlayPage() {
 
   useEffect(() => {
     const p = getProject(projectId);
-    if (p) setProject(p);
+    if (p) {
+      setProject(p);
+      // Initialize editorStore so GameCanvas can read elements/scripts/dimension
+      const template = getTemplate(p.templateType);
+      useEditorStore.getState().initEditor(p, template);
+      // Force preview mode
+      useEditorStore.getState().setMode('preview');
+      setReady(true);
+    }
+
+    return () => {
+      useEditorStore.getState().clearEditor();
+    };
   }, [projectId, useProjectStore.getState().projects.length]);
 
   const handleCopy = () => {
@@ -28,7 +43,7 @@ export default function PlayPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!project) {
+  if (!project || !ready) {
     return (
       <div className={styles.playPage}>
         <Navbar />
@@ -55,7 +70,7 @@ export default function PlayPage() {
 
       <div className={styles.gameWrapper}>
         <div className={styles.gameFrame}>
-          <GameCanvas code={project.code} mode="preview" />
+          <GameCanvas mode="preview" />
         </div>
       </div>
 
@@ -75,3 +90,4 @@ export default function PlayPage() {
     </div>
   );
 }
+

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight, Crosshair } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import ParticleField from '../../components/ParticleField/ParticleField';
 import useProjectStore from '../../stores/projectStore';
@@ -50,6 +50,7 @@ export default function HomePage() {
       case 'galgame': return <MessageSquare size={size} strokeWidth={1.5} />;
       case 'cube3d': return <Box size={size} strokeWidth={1.5} />;
       case 'solar3d': return <Rocket size={size} strokeWidth={1.5} />;
+      case 'fps3d': return <Crosshair size={size} strokeWidth={1.5} />;
       default: return <Gamepad2 size={size} strokeWidth={1.5} />;
     }
   };

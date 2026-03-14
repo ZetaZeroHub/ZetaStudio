@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
   LayoutTemplate, Component, Zap, Database, 
   PaintBucket, Repeat, Sparkles, Shapes, Image as ImageIcon,
   Type, Clapperboard, MousePointerClick, Box, Keyboard,
   Swords, Timer, Pointer, Hash, Link, Copy, Trash2, Eye, EyeOff, Plus,
-  Camera, Sun, Circle
+  Camera, Sun, Circle, FileBox, Cylinder
 } from 'lucide-react';
 import useEditorStore, { createNewElement } from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
@@ -53,6 +53,9 @@ const ADD_OPTIONS_3D = {
   sprite: [
     { type: 'box', labelKey: 'box', icon: <Box size={14} /> },
     { type: 'sphere', labelKey: 'sphere', icon: <Circle size={14} /> },
+    { type: 'plane', labelKey: 'plane', icon: <Component size={14} /> },
+    { type: 'cylinder', labelKey: 'cylinder', icon: <Cylinder size={14} /> },
+    { type: 'importedModel', labelKey: 'importedModel', icon: <FileBox size={14} /> },
   ],
   event: ADD_OPTIONS_2D.event,
   data: ADD_OPTIONS_2D.data,
@@ -64,6 +67,7 @@ const TYPE_ICONS = {
   animatedSprite: <Clapperboard size={14} />, button: <MousePointerClick size={14} />, container: <Box size={14} />,
   perspectiveCamera: <Camera size={14} />, ambientLight: <Sun size={14} />, directionalLight: <Sun size={14} />,
   pointLight: <Sun size={14} />, box: <Box size={14} />, sphere: <Circle size={14} />,
+  plane: <Component size={14} />, cylinder: <Cylinder size={14} />, importedModel: <FileBox size={14} />,
   keyboardEvent: <Keyboard size={14} />, collisionRule: <Swords size={14} />, timerEvent: <Timer size={14} />,
   clickEvent: <Pointer size={14} />, variable: <Hash size={14} />, uiBinding: <Link size={14} />,
 };
@@ -86,10 +90,29 @@ export default function ElementPanel() {
   });
 
   const handleAdd = (type) => {
+    if (type === 'importedModel') {
+      fileInputRef.current?.click();
+      setShowAdd(false);
+      return;
+    }
     const el = createNewElement(activeTab, type);
     addElement(el);
     selectElement(el.id);
     setShowAdd(false);
+  };
+
+  const fileInputRef = useRef(null);
+
+  const handleModelFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const el = createNewElement('sprite', 'importedModel');
+    el.style = { ...el.style, modelUrl: url, modelFileName: file.name };
+    el.name = file.name.replace(/\.[^.]+$/, '');
+    addElement(el);
+    selectElement(el.id);
+    e.target.value = '';
   };
 
   const handleDelete = (e, id) => {
@@ -125,16 +148,18 @@ export default function ElementPanel() {
           <button className={styles.addBtn} onClick={() => setShowAdd(!showAdd)}>
             <Plus size={16} />
           </button>
-          {showAdd && (
-            <div className={styles.dropdown}>
-              {(ADD_OPTIONS[activeTab] || []).map((opt) => (
-                <button key={opt.type} className={styles.dropdownItem} onClick={() => handleAdd(opt.type)}>
-                  <span className={styles.optIcon}>{opt.icon}</span>
-                  <span>{t(`elementPanel.addTypes.${opt.labelKey}`)}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        </div>
+      </div>
+
+      {/* Add Element Drawer */}
+      <div className={`${styles.drawer} ${showAdd ? styles.drawerOpen : ''}`}>
+        <div className={styles.drawerInner}>
+          {(ADD_OPTIONS[activeTab] || []).map((opt) => (
+            <button key={opt.type} className={styles.dropdownItem} onClick={() => handleAdd(opt.type)}>
+              <span className={styles.optIcon}>{opt.icon}</span>
+              <span>{t(`elementPanel.addTypes.${opt.labelKey}`)}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -170,6 +195,13 @@ export default function ElementPanel() {
           ))
         )}
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".glb,.gltf,.obj,.fbx"
+        style={{ display: 'none' }}
+        onChange={handleModelFile}
+      />
     </div>
   );
 }
