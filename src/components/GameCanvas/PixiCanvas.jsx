@@ -7,7 +7,7 @@ import useEditorStore from '../../stores/editorStore';
 import useI18nStore from '../../stores/i18nStore';
 import styles from './GameCanvas.module.css';
 
-export default function GameCanvas({ mode }) {
+export default function GameCanvas({ mode, canvasBg }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const initIdRef = useRef(0);
@@ -47,7 +47,7 @@ export default function GameCanvas({ mode }) {
       await app.init({
         width: 800,
         height: 600,
-        backgroundColor: 0x111827,
+        backgroundColor: canvasBg || 0x111827,
         antialias: true,
         resizeTo: containerRef.current,
       });
@@ -60,11 +60,13 @@ export default function GameCanvas({ mode }) {
       containerRef.current.appendChild(app.canvas);
       appRef.current = app;
 
-      // Apply scene background
+      // Apply scene background (canvasBg prop takes precedence as fallback)
       const sceneBackground = useEditorStore.getState().getActiveSceneBackground();
       if (sceneBackground) {
         if (sceneBackground.type === 'color' && sceneBackground.color) {
-          app.renderer.background.color = sceneBackground.color;
+          // If canvasBg is provided and scene bg is the default dark color, use canvasBg instead
+          const isDefaultDark = sceneBackground.color === '#111827' || sceneBackground.color === 0x111827;
+          app.renderer.background.color = (canvasBg && isDefaultDark) ? canvasBg : sceneBackground.color;
         }
         if (sceneBackground.type === 'image' && sceneBackground.imageUrl) {
           try {
@@ -151,7 +153,7 @@ export default function GameCanvas({ mode }) {
     } finally {
       setLoading(false);
     }
-  }, [mode, destroyApp]); // Removed elements from dependencies!
+  }, [mode, destroyApp, canvasBg]); // Removed elements from dependencies!
 
   // Separate effect to sync elements gracefully without destroying the app
   useEffect(() => {

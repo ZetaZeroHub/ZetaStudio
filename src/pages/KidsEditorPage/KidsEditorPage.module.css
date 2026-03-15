@@ -6,7 +6,25 @@
   background: #ffffff;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
+
+  /* Override dark theme variables → bright kids theme */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8faf8;
+  --bg-elevated: #f0f4f0;
+  --bg-hover: #e8ede8;
+  --bg-input: #ffffff;
+  --text-primary: #2d3436;
+  --text-secondary: #636e72;
+  --text-muted: #b2bec3;
+  --border-subtle: #e0e5e0;
+  --border-default: #d0d8d0;
+  --border-accent: #58CC02;
+  --accent-primary: #58CC02;
+  --accent-primary-light: #6fd40e;
+  --accent-success: #58CC02;
+  --canvas-bg: #e8f5e9;
 }
+
 
 .loading {
   flex: 1;
@@ -156,6 +174,25 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+}
+
+/* Override hardcoded dark backgrounds in GameCanvas child components.
+   canvasWrapper has `background: #000` which must be overridden.
+   CSS Modules mangle class names, so we target by DOM structure depth. */
+.canvasWrap > div,
+.canvasWrap > div > div {
+  background: #e8f5e9 !important;
+  border-radius: 0 !important;
+}
+
+/* Keep the actual canvas rendering area untouched */
+.canvasWrap canvas {
+  background: transparent !important;
+}
+
+.gamePanel [class*="loading"] {
+  background: rgba(248, 250, 248, 0.9) !important;
+  color: #636e72 !important;
 }
 
 /* Mobile */

@@ -18,6 +18,16 @@ export default function KidsEditorPage() {
 
   useEffect(() => { loadAllProjects(); }, []);
 
+  // Override body dark background for kids mode
+  useEffect(() => {
+    document.body.style.backgroundColor = '#ffffff';
+    document.body.setAttribute('data-kids-mode', 'true');
+    return () => {
+      document.body.style.backgroundColor = '';
+      document.body.removeAttribute('data-kids-mode');
+    };
+  }, []);
+
   useEffect(() => {
     const project = getProject(projectId);
     if (project) {
@@ -37,14 +47,14 @@ export default function KidsEditorPage() {
 
   if (!currentProject) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-kids-mode>
         <div className={styles.loading}>加载中...</div>
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-kids-mode>
       {/* Top Bar */}
       <header className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => navigate('/')}>
@@ -84,8 +94,8 @@ export default function KidsEditorPage() {
               <Play size={14} /> 开始游戏
             </button>
           </div>
-          <div className={styles.canvasWrap}>
-            <GameCanvas mode={mode} />
+          <div className={styles.canvasWrap} style={{ '--canvas-bg': '#e8f5e9' }}>
+            <GameCanvas mode={mode} canvasBg={0xe8f5e9} />
           </div>
         </div>
       </div>
