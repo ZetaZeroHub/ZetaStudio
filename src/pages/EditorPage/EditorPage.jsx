@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Play, Save, CheckCircle2, Rocket, Code2, ChevronUp, ChevronDown, Gamepad2, LayoutPanelLeft, Layers, Sparkles, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Pencil, Play, Save, CheckCircle2, Rocket, Code2, ChevronUp, ChevronDown, Gamepad2, LayoutPanelLeft, Layers, Sparkles, PanelLeft, PanelBottom, PanelRight, Maximize2, Minimize2 } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import GameCanvas from '../../components/GameCanvas/GameCanvas';
 import ElementPanel from '../../components/ElementPanel/ElementPanel';
@@ -36,6 +36,11 @@ export default function EditorPage() {
   const [mobileTab, setMobileTab] = useState('canvas');
   // Tablet: left panel drawer open
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
+  // PC panel visibility toggles (VSCode-style)
+  const [leftPanelVisible, setLeftPanelVisible] = useState(true);
+  const [bottomPanelVisible, setBottomPanelVisible] = useState(true);
+  const [rightPanelVisible, setRightPanelVisible] = useState(true);
+  const [codeFullscreen, setCodeFullscreen] = useState(false);
 
   useEffect(() => {
     loadAllProjects();
@@ -104,10 +109,30 @@ export default function EditorPage() {
         </div>
 
         <div className={styles.actionGroup}>
-          {/* Tablet: left panel toggle */}
-          <button className={`btn btn-ghost btn-sm ${styles.tabletDrawerToggle}`} onClick={() => setLeftDrawerOpen(!leftDrawerOpen)}>
-            {leftDrawerOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-          </button>
+          {/* VSCode-style panel toggle buttons */}
+          <div className={styles.panelToggles}>
+            <button
+              className={`${styles.panelToggleBtn} ${leftPanelVisible ? styles.panelToggleBtnActive : ''}`}
+              onClick={() => setLeftPanelVisible(v => !v)}
+              title={t('editor.toggleLeftPanel') || '左侧面板'}
+            >
+              <PanelLeft size={16} />
+            </button>
+            <button
+              className={`${styles.panelToggleBtn} ${bottomPanelVisible ? styles.panelToggleBtnActive : ''}`}
+              onClick={() => setBottomPanelVisible(v => !v)}
+              title={t('editor.toggleBottomPanel') || '底部面板'}
+            >
+              <PanelBottom size={16} />
+            </button>
+            <button
+              className={`${styles.panelToggleBtn} ${rightPanelVisible ? styles.panelToggleBtnActive : ''}`}
+              onClick={() => setRightPanelVisible(v => !v)}
+              title={t('editor.toggleRightPanel') || '右侧面板'}
+            >
+              <PanelRight size={16} />
+            </button>
+          </div>
           <button className="btn btn-secondary btn-sm" onClick={handleSave}>
             {saving ? <CheckCircle2 size={16} className={styles.iconSuccess} /> : <Save size={16} />}
             <span className={styles.actionLabel}>{saving ? t('editor.saved') : t('editor.save')}</span>
@@ -124,7 +149,7 @@ export default function EditorPage() {
         {/* Left Panel - Element Tree + Properties */}
         {/* Tablet: overlay drawer controlled by leftDrawerOpen */}
         {leftDrawerOpen && <div className={styles.drawerBackdrop} onClick={() => setLeftDrawerOpen(false)} />}
-        <div className={`${styles.leftPanel} ${leftDrawerOpen ? styles.leftPanelOpen : ''}`}>
+        <div className={`${styles.leftPanel} ${leftDrawerOpen ? styles.leftPanelOpen : ''} ${!leftPanelVisible ? styles.leftPanelHidden : ''}`}>
           <div className={styles.elementPanelArea}>
             <ElementPanel />
           </div>
@@ -139,19 +164,26 @@ export default function EditorPage() {
             <GameCanvas mode={mode} />
           </div>
 
-          <div className={`${styles.codeArea} ${codeCollapsed && mobileTab !== 'code' ? styles.codeAreaCollapsed : ''} ${mobileTab === 'code' ? styles.codeAreaFull : ''}`}>
-            <div className={`${styles.codeAreaHeader} ${mobileTab === 'code' ? styles.mobileHidden : ''}`}>
-              <div className={styles.headerTitle}>
-                <Code2 size={16} /> {t('editor.scriptsLabel')}
+          {bottomPanelVisible && (
+            <div className={`${styles.codeArea} ${codeCollapsed && mobileTab !== 'code' ? styles.codeAreaCollapsed : ''} ${mobileTab === 'code' ? styles.codeAreaFull : ''} ${codeFullscreen ? styles.codeAreaFullscreen : ''}`}>
+              <div className={`${styles.codeAreaHeader} ${mobileTab === 'code' ? styles.mobileHidden : ''}`}>
+                <div className={styles.headerTitle}>
+                  <Code2 size={16} /> {t('editor.scriptsLabel')}
+                </div>
+                <div className={styles.headerActions}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => { setCodeFullscreen(f => !f); setCodeCollapsed(false); }} title={codeFullscreen ? '退出全屏' : '全屏编辑'}>
+                    {codeFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setCodeCollapsed(!codeCollapsed)}>
+                    {codeCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                </div>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setCodeCollapsed(!codeCollapsed)}>
-                {codeCollapsed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
+              <div className={styles.codeAreaBody}>
+                <ScriptEditor />
+              </div>
             </div>
-            <div className={styles.codeAreaBody}>
-              <ScriptEditor />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Mobile: Elements panel */}
@@ -170,7 +202,7 @@ export default function EditorPage() {
         </div>
 
         {/* Right Panel - AI Assistant (desktop/tablet) */}
-        <div className={styles.rightPanel}>
+        <div className={`${styles.rightPanel} ${!rightPanelVisible ? styles.rightPanelHidden : ''}`}>
           <AiPanel />
         </div>
       </div>
