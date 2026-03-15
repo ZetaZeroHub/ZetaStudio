@@ -49,7 +49,6 @@ export default function GameCanvas({ mode, canvasBg }) {
         height: 600,
         backgroundColor: canvasBg || 0x111827,
         antialias: true,
-        resizeTo: containerRef.current,
       });
 
       if (currentId !== initIdRef.current) {
