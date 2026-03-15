@@ -719,6 +719,7 @@ import { letterPuzzle, wordSpell, detective } from './kids/language';
 import { dotConnect, musicBeat, drawLine } from './kids/creative';
 import { foodSort, weatherDress, trashSort } from './kids/science';
 import { maze, balloonPop, tetris, breakout, motorbike, platformJump, archeryBattle } from './kids/reaction';
+import { tankBattle, angryBirds } from './kids/strategy';
 
 export const kidsTemplateList = [
   // Original 8
@@ -736,6 +737,8 @@ export const kidsTemplateList = [
   foodSort, weatherDress, trashSort,
   // Reaction/Classic (+7)
   maze, balloonPop, tetris, breakout, motorbike, platformJump, archeryBattle,
+  // Strategy (+2)
+  tankBattle, angryBirds,
 ];
 
 export default kidsTemplateList;
