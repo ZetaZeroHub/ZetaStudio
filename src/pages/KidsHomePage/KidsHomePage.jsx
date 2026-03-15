@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Settings, ArrowRight, Copy, Play } from 'lucide-react';
+import { Plus, Trash2, Settings, ArrowRight, Copy, Play, Flame } from 'lucide-react';
 import useProjectStore from '../../stores/projectStore';
 import useAppStore from '../../stores/appStore';
 import { getKidsTemplates, getTemplate } from '../../templates';
 import styles from './KidsHomePage.module.css';
+
+/* Popularity ranking — lower rank = more popular, shown first */
+const POPULARITY_ORDER = [
+  'tetris', 'breakout', 'platformJump', 'archeryBattle', 'motorbike',   // Top 5 ⭐
+  'detective', 'whackMole', 'memoryCard', 'fruitCatch', 'balloonPop',   // Top 10
+  'maze', 'musicBeat', 'mathBubble', 'colorBook', 'drawLine',
+  'shapeMatch', 'counting', 'spotDiff', 'shadowMatch', 'colorSort',
+  'numberSort', 'letterPuzzle', 'wordSpell', 'dotConnect', 'animalQuiz',
+  'foodSort', 'weatherDress', 'trashSort', 'shapeCount', 'wordPicture',
+];
+const TOP_COUNT = 5; // top N get highlighted
 
 const TEMPLATE_EMOJIS = {
   shapeMatch: '🧩', memoryCard: '🃏', counting: '🔢', wordPicture: '🅰️',
@@ -59,15 +70,28 @@ export default function KidsHomePage({ onSwitchToPro }) {
 
   const kidsTemplates = getKidsTemplates();
 
-  /* Build community games from real templates */
-  const communityGames = kidsTemplates.map((tpl, i) => ({
-    templateType: tpl.templateType,
-    name: tpl.name,
-    emoji: TEMPLATE_EMOJIS[tpl.templateType] || '🎮',
-    color: TEMPLATE_COLORS[tpl.templateType] || '#58CC02',
-    author: FAKE_AUTHORS[i % FAKE_AUTHORS.length],
-    category: tpl.category,
-  }));
+  /* Build community games from real templates, sorted by popularity */
+  const communityGames = kidsTemplates
+    .map((tpl, i) => ({
+      templateType: tpl.templateType,
+      name: tpl.name,
+      emoji: TEMPLATE_EMOJIS[tpl.templateType] || '🎮',
+      color: TEMPLATE_COLORS[tpl.templateType] || '#58CC02',
+      author: FAKE_AUTHORS[i % FAKE_AUTHORS.length],
+      category: tpl.category,
+    }))
+    .sort((a, b) => {
+      const ra = POPULARITY_ORDER.indexOf(a.templateType);
+      const rb = POPULARITY_ORDER.indexOf(b.templateType);
+      return (ra === -1 ? 999 : ra) - (rb === -1 ? 999 : rb);
+    });
+
+  /* Sort templates in modal by same ranking */
+  const sortedTemplates = [...kidsTemplates].sort((a, b) => {
+    const ra = POPULARITY_ORDER.indexOf(a.templateType);
+    const rb = POPULARITY_ORDER.indexOf(b.templateType);
+    return (ra === -1 ? 999 : ra) - (rb === -1 ? 999 : rb);
+  });
 
   const handleCreate = () => {
     if (!selectedTemplate) return;
@@ -129,27 +153,31 @@ export default function KidsHomePage({ onSwitchToPro }) {
         </button>
       </header>
 
-      {/* Community Games — real template-based */}
+      {/* Community Games — grid layout, sorted by popularity */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>🌍 朋友们的游戏</h2>
-        <div className={styles.communityScroll}>
-          {communityGames.map((g, i) => (
-            <motion.div
-              key={g.templateType}
-              className={styles.communityCard}
-              style={{ background: g.color }}
-              whileHover={{ scale: 1.05, y: -4 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handleCommunityClick(g)}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06 }}
-            >
-              <div className={styles.communityEmoji}>{g.emoji}</div>
-              <div className={styles.communityName}>{g.name}</div>
-              <div className={styles.communityAuthor}>by {g.author}</div>
-            </motion.div>
-          ))}
+        <div className={styles.communityGrid}>
+          {communityGames.map((g, i) => {
+            const isHot = POPULARITY_ORDER.indexOf(g.templateType) < TOP_COUNT;
+            return (
+              <motion.div
+                key={g.templateType}
+                className={`${styles.communityCard} ${isHot ? styles.communityCardHot : ''}`}
+                style={{ background: g.color }}
+                whileHover={{ scale: 1.05, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleCommunityClick(g)}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+              >
+                {isHot && <div className={styles.hotBadge}>🔥</div>}
+                <div className={styles.communityEmoji}>{g.emoji}</div>
+                <div className={styles.communityName}>{g.name}</div>
+                <div className={styles.communityAuthor}>by {g.author}</div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
@@ -254,44 +282,52 @@ export default function KidsHomePage({ onSwitchToPro }) {
           >
             <h2 className={styles.modalTitle}>🎮 选择游戏类型</h2>
 
-            <div className={styles.tplGrid}>
-              {kidsTemplates.map(tpl => (
-                <motion.div
-                  key={tpl.templateType}
-                  className={`${styles.tplCard} ${selectedTemplate === tpl.templateType ? styles.tplCardActive : ''}`}
-                  onClick={() => { setSelectedTemplate(tpl.templateType); setProjectName(tpl.name); }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <div className={styles.tplEmoji}>
-                    {TEMPLATE_EMOJIS[tpl.templateType] || '🎮'}
-                  </div>
-                  <div className={styles.tplName}>{tpl.name}</div>
-                  <div className={styles.tplCategory}>
-                    {CATEGORY_LABELS[tpl.category] || tpl.category}
-                  </div>
-                </motion.div>
-              ))}
+            <div className={styles.tplScrollArea}>
+              <div className={styles.tplGrid}>
+                {sortedTemplates.map((tpl, i) => {
+                  const isHot = POPULARITY_ORDER.indexOf(tpl.templateType) < TOP_COUNT;
+                  return (
+                    <motion.div
+                      key={tpl.templateType}
+                      className={`${styles.tplCard} ${selectedTemplate === tpl.templateType ? styles.tplCardActive : ''} ${isHot ? styles.tplCardHot : ''}`}
+                      onClick={() => { setSelectedTemplate(tpl.templateType); setProjectName(tpl.name); }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {isHot && <div className={styles.hotBadge}>🔥</div>}
+                      <div className={styles.tplEmoji}>
+                        {TEMPLATE_EMOJIS[tpl.templateType] || '🎮'}
+                      </div>
+                      <div className={styles.tplName}>{tpl.name}</div>
+                      <div className={styles.tplCategory}>
+                        {CATEGORY_LABELS[tpl.category] || tpl.category}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
 
-            <input
-              type="text"
-              className={styles.nameInput}
-              placeholder="给游戏起个名字吧 ✏️"
-              value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCreate()}
-            />
+            <div className={styles.modalBottom}>
+              <input
+                type="text"
+                className={styles.nameInput}
+                placeholder="给游戏起个名字吧 ✏️"
+                value={projectName}
+                onChange={e => setProjectName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCreate()}
+              />
 
-            <div className={styles.modalFooter}>
-              <button className={styles.cancelBtn} onClick={() => setShowTemplates(false)}>取消</button>
-              <button
-                className={styles.startBtn}
-                onClick={handleCreate}
-                disabled={!selectedTemplate}
-              >
-                开始创作 <ArrowRight size={16} />
-              </button>
+              <div className={styles.modalFooter}>
+                <button className={styles.cancelBtn} onClick={() => setShowTemplates(false)}>取消</button>
+                <button
+                  className={styles.startBtn}
+                  onClick={handleCreate}
+                  disabled={!selectedTemplate}
+                >
+                  开始创作 <ArrowRight size={16} />
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
