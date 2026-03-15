@@ -712,9 +712,31 @@ spawnFruit();
 ` }],
 };
 
+// Import new category templates
+import { colorSort, spotDiff, shadowMatch } from './kids/cognitive';
+import { mathBubble, numberSort, shapeCount } from './kids/math';
+import { letterPuzzle, wordSpell, detective } from './kids/language';
+import { dotConnect, musicBeat, drawLine } from './kids/creative';
+import { foodSort, weatherDress, trashSort } from './kids/science';
+import { maze, balloonPop, tetris, breakout, motorbike, platformJump, archeryBattle } from './kids/reaction';
+
 export const kidsTemplateList = [
+  // Original 8
   shapeMatch, memoryCard, counting, wordPicture,
   colorBook, animalQuiz, whackMole, fruitCatch,
+  // Cognitive (+3)
+  colorSort, spotDiff, shadowMatch,
+  // Math (+3)
+  mathBubble, numberSort, shapeCount,
+  // Language (+3)
+  letterPuzzle, wordSpell, detective,
+  // Creative (+3)
+  dotConnect, musicBeat, drawLine,
+  // Science (+3)
+  foodSort, weatherDress, trashSort,
+  // Reaction/Classic (+7)
+  maze, balloonPop, tetris, breakout, motorbike, platformJump, archeryBattle,
 ];
 
 export default kidsTemplateList;
+

@@ -10,16 +10,35 @@ import styles from './KidsHomePage.module.css';
 const TEMPLATE_EMOJIS = {
   shapeMatch: '🧩', memoryCard: '🃏', counting: '🔢', wordPicture: '🅰️',
   colorBook: '🎨', animalQuiz: '🐾', whackMole: '🐹', fruitCatch: '🧺',
+  colorSort: '🎯', spotDiff: '🔍', shadowMatch: '👤',
+  mathBubble: '🫧', numberSort: '🔢', shapeCount: '📐',
+  letterPuzzle: '🔤', wordSpell: '📝', detective: '🕵️',
+  dotConnect: '✏️', musicBeat: '🥁', drawLine: '🖌️',
+  foodSort: '🥗', weatherDress: '🌤️', trashSort: '♻️',
+  maze: '🏰', balloonPop: '🎈', tetris: '🧱', breakout: '🧱',
+  motorbike: '🏍️', platformJump: '🦘', archeryBattle: '🏹',
 };
 
 /* Colors for community game cards by template type */
 const TEMPLATE_COLORS = {
   shapeMatch: '#FF6B6B', memoryCard: '#4ECDC4', counting: '#45B7D1', wordPicture: '#FFEAA7',
   colorBook: '#DDA0DD', animalQuiz: '#96CEB4', whackMole: '#FFB347', fruitCatch: '#A29BFE',
+  colorSort: '#FF7043', spotDiff: '#5C6BC0', shadowMatch: '#EC407A',
+  mathBubble: '#26C6DA', numberSort: '#AB47BC', shapeCount: '#FFA726',
+  letterPuzzle: '#66BB6A', wordSpell: '#FFB300', detective: '#455A64',
+  dotConnect: '#FFD54F', musicBeat: '#7E57C2', drawLine: '#78909C',
+  foodSort: '#8BC34A', weatherDress: '#42A5F5', trashSort: '#26A69A',
+  maze: '#8D6E63', balloonPop: '#EF5350', tetris: '#1A237E', breakout: '#424242',
+  motorbike: '#E53935', platformJump: '#1565C0', archeryBattle: '#2E7D32',
 };
 
 /* "Author" names for community feel */
-const FAKE_AUTHORS = ['小明', '花花', '大壮', '甜甜', '乐乐', '小鱼', '圆圆', '星星'];
+const FAKE_AUTHORS = [
+  '小明', '花花', '大壮', '甜甜', '乐乐', '小鱼', '圆圆', '星星',
+  '猫猫', '皮皮', '果果', '小雨', '阳阳', '豆豆', '糖糖', '小宝',
+  '贝贝', '冰冰', '飞飞', '露露', '点点', '妮妮', '瓜瓜', '蛋蛋',
+  '奇奇', '多多', '可可', '小草', '月月', '晨晨',
+];
 
 const CATEGORY_LABELS = {
   cognitive: '🧠 认知类', math: '🔢 数学启蒙', language: '🅰️ 语言识字',
