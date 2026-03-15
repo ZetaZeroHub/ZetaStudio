@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight, Crosshair, Github, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Layers, Cpu, ArrowRight, Crosshair, Github, ExternalLink, Sparkles } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import ParticleField from '../../components/ParticleField/ParticleField';
+import ModeSelectorOverlay from '../../components/ModeSelectorOverlay/ModeSelectorOverlay';
+import KidsHomePage from '../../pages/KidsHomePage/KidsHomePage';
 import useProjectStore from '../../stores/projectStore';
+import useAppStore from '../../stores/appStore';
 import useI18nStore from '../../stores/i18nStore';
 import { getAllTemplates, getTemplate } from '../../templates';
 import styles from './HomePage.module.css';
@@ -13,6 +16,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { projects, loadAllProjects, createProject, deleteProject } = useProjectStore();
   const { t, language } = useI18nStore();
+  const { appMode, setAppMode } = useAppStore();
   const [showModal, setShowModal] = useState(false);
   const [selectedDimension, setSelectedDimension] = useState('2D');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -69,9 +73,24 @@ export default function HomePage() {
     { icon: <Cpu size={20} strokeWidth={1.5} />, titleKey: 'featureAiTitle', descKey: 'featureAiDesc' },
   ];
 
+  /* ── Mode Selector Overlay ── */
+  if (appMode === null) {
+    return <ModeSelectorOverlay onSelect={setAppMode} />;
+  }
+
+  /* ── Simple/Kids Mode ── */
+  if (appMode === 'simple') {
+    return <KidsHomePage onSwitchToPro={() => setAppMode('pro')} />;
+  }
+
+  /* ── Pro Mode (existing) ── */
   return (
     <div className={styles.page}>
-      <Navbar />
+      <Navbar>
+        <button className={styles.modeSwitchBtn} onClick={() => setAppMode('simple')} title="切换到简易模式">
+          <Sparkles size={14} /> 简易模式
+        </button>
+      </Navbar>
 
       {/* Hero */}
       <section className={styles.hero}>
@@ -112,7 +131,6 @@ export default function HomePage() {
         ))}
       </section>
 
-      {/* Divider */}
       <div className={styles.divider} />
 
       {/* Projects */}

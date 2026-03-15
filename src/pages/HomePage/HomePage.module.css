@@ -458,3 +458,23 @@
   .footerLinks { gap: 12px; }
 }
 
+/* Mode Switch Button */
+.modeSwitchBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #58CC02;
+  background: rgba(88, 204, 2, 0.1);
+  border: 1px solid rgba(88, 204, 2, 0.3);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modeSwitchBtn:hover {
+  background: rgba(88, 204, 2, 0.2);
+  border-color: rgba(88, 204, 2, 0.5);
+}
