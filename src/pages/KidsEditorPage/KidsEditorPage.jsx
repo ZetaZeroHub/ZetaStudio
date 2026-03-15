@@ -33,6 +33,8 @@ export default function KidsEditorPage() {
     if (project) {
       const template = getTemplate(project.templateType);
       initEditor(project, template);
+      // Kids mode: default to play instead of edit
+      setMode('preview');
     }
     return () => { useEditorStore.getState().clearEditor(); };
   }, [projectId]);

@@ -507,13 +507,158 @@
   border-color: #FF8F00;
 }
 
-/* Mobile */
-@media (max-width: 600px) {
-  .communityCard { width: 95px; height: 90px; }
-  .communityEmoji { font-size: 24px; }
-  .communityGrid { max-height: 300px; }
-  .tplGrid { grid-template-columns: repeat(2, 1fr); }
-  .createBtn { padding: 14px 32px; font-size: 1rem; }
+/* ============================================
+   Responsive — Tablet (≤ 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  .section {
+    padding: 16px 16px 12px;
+  }
+  .sectionTitle {
+    font-size: 1.05rem;
+  }
+  /* Community grid: 4 cols on tablet */
+  .communityGrid {
+    gap: 10px;
+    max-height: 360px;
+  }
+  .communityCard {
+    width: 105px;
+    height: 100px;
+  }
+  .communityEmoji { font-size: 28px; }
+  .communityName { font-size: 0.68rem; }
+
+  /* CTA */
+  .createBtn {
+    padding: 14px 36px;
+    font-size: 1rem;
+  }
+
+  /* Modal full-width on tablet */
+  .modal {
+    max-width: 95%;
+    padding: 24px 20px 20px;
+  }
+  .tplGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Fork modal */
   .forkModal { max-width: 90%; }
-  .modal { padding: 20px 16px 16px; }
+
+  /* Drafts grid */
+  .draftsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  /* Touch targets — minimum 44px height on interactive elements */
+  .proBtn {
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    min-height: 44px;
+  }
+  .cancelBtn, .startBtn, .forkBtn {
+    min-height: 44px;
+    padding: 12px 24px;
+  }
+}
+
+/* ============================================
+   Responsive — Mobile (≤ 480px)
+   ============================================ */
+@media (max-width: 480px) {
+  .page {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+  .topBar {
+    padding: 10px 12px;
+  }
+  .logoText { font-size: 1rem; }
+  .logoIcon { font-size: 24px; }
+
+  .section {
+    padding: 12px 12px 8px;
+  }
+  .sectionTitle {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+  }
+
+  /* Community grid: 3 cols on mobile */
+  .communityGrid {
+    gap: 8px;
+    max-height: 340px;
+  }
+  .communityCard {
+    width: calc(33.33% - 6px);
+    min-width: 0;
+    height: 90px;
+  }
+  .communityEmoji { font-size: 24px; }
+  .communityName { font-size: 0.62rem; }
+  .communityAuthor { font-size: 0.5rem; }
+
+  /* CTA */
+  .ctaSection { padding: 12px; }
+  .createBtn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 1rem;
+    border-radius: 14px;
+  }
+
+  /* Full-width modal overlay */
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 16px 12px 12px;
+  }
+  .modalTitle { font-size: 1.15rem; margin-bottom: 16px; }
+  .tplGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .tplCard { padding: 12px 6px 10px; }
+  .tplEmoji { font-size: 28px; margin-bottom: 4px; }
+  .tplName { font-size: 0.7rem; }
+  .tplCategory { font-size: 0.6rem; }
+
+  .nameInput { font-size: 0.9rem; padding: 10px 12px; }
+  .modalFooter { gap: 8px; }
+  .cancelBtn { padding: 10px 16px; font-size: 0.82rem; }
+  .startBtn { padding: 10px 20px; font-size: 0.82rem; }
+
+  /* Fork modal */
+  .forkModal { max-width: 95%; border-radius: 16px; }
+  .forkHeader { padding: 20px 16px 16px; }
+  .forkEmoji { font-size: 36px; }
+  .forkTitle { font-size: 1.1rem; }
+  .forkBody { padding: 16px; }
+  .forkDesc { font-size: 0.82rem; }
+
+  /* Drafts */
+  .draftsGrid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
+  }
+  .draftCard { padding: 14px 8px 10px; }
+  .draftEmoji { font-size: 24px; margin-bottom: 4px; }
+  .draftName { font-size: 0.7rem; }
+  .emptyDrafts { font-size: 0.82rem; padding: 20px; }
+
+  .hotBadge { font-size: 14px; top: -2px; right: -2px; }
+}
+
+/* ============================================
+   Responsive — Small phone (≤ 360px)
+   ============================================ */
+@media (max-width: 360px) {
+  .communityCard {
+    width: calc(50% - 4px);
+    height: 85px;
+  }
+  .tplGrid { grid-template-columns: repeat(2, 1fr); }
 }
