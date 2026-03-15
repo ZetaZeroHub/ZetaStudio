@@ -719,217 +719,457 @@ app.ticker.add(() => {
 ` }],
 };
 
-// 30. 射箭大作战
+// 30. 射箭大作战 — 俯视角竞技场
 export const archeryBattle = {
   name: '射箭大作战',
-  description: '射击靶心，升级装备!',
+  description: '消灭所有NPC敌人，闯过每一关!',
   templateType: 'archeryBattle',
   dimension: '2D',
   category: 'reaction',
   icon: '🏹',
   elements: [
     { id: 'bg', name: '背景', category: 'scene', type: 'background', visible: true, transform: { x: 0, y: 0, width: 800, height: 600 }, style: { fillColor: '#1B5E20', alpha: 1 } },
-    { id: 'title', name: '标题', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 15, anchorX: 0.5 }, textContent: { text: '🏹 射箭大作战', fontSize: 24, color: '#FFD54F', bold: true, align: 'center' } },
-    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 570, anchorX: 0.5 }, textContent: { text: '得分: 0 | 🏹 等级 1 | 箭: 10', fontSize: 16, color: '#C8E6C9', bold: true } },
+    { id: 'title', name: '标题', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 8, anchorX: 0.5 }, textContent: { text: '🏹 射箭大作战', fontSize: 22, color: '#FFD54F', bold: true, align: 'center' } },
+    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 575, anchorX: 0.5 }, textContent: { text: '❤️ 5/5 | 第 1 关 | 敌人: 3', fontSize: 15, color: '#C8E6C9', bold: true } },
   ],
-  scripts: [{ id: 's1', name: 'main.js', content: `// 射箭大作战 (俯视角)
+  scripts: [{ id: 's1', name: 'main.js', content: `// 射箭大作战 — 完整竞技场
 const scoreText = elements['score'];
 const gfx = new PIXI.Graphics();
 app.stage.addChild(gfx);
 
-let score = 0, arrows = 10, level = 1, xp = 0;
-const xpPerLevel = [10, 25, 50, 80, 120];
-let playerX = 400, playerY = 500, playerAngle = -Math.PI/2;
-let arrowsFlying = [];
-let targets = [];
-let powerups = [];
-let upgradeMsg = '';
-let upgradeMsgTimer = 0;
+// ─── 游戏状态 ───
+let level = 1, gameState = 'ready'; // ready | playing | won | lost
+const W = 800, H = 600;
+const TILE = 40;
+const COLS = W / TILE; // 20
+const ROWS = H / TILE; // 15
 
-// Weapon upgrades
-const weapons = [
-  { name: '木弓', speed: 6, damage: 1, color: 0x8D6E63 },
-  { name: '铁弓', speed: 8, damage: 1, color: 0x607D8B },
-  { name: '银弓', speed: 9, damage: 2, color: 0xBDBDBD },
-  { name: '金弓', speed: 10, damage: 2, color: 0xFFD700 },
-  { name: '传说之弓', speed: 12, damage: 3, color: 0xE040FB },
+// ─── 关卡地图 (0=空地 1=墙 2=矮墙) ───
+const MAPS = [
+  // 第1关 — 简单四角掩体
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,2,2,0,0,0,0,0,0,0,0,0,2,2,0,0,0,1],
+    [1,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1],
+    [1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,1],
+    [1,0,0,2,2,0,0,0,0,0,0,0,0,0,2,2,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
+  // 第2关 — 十字迷宫
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,2,0,0,1,0,0,0,0,0,0,1,0,0,2,0,0,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,0,1,1,1,1,0,0,2,2,0,0,1,1,1,1,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,1,1,1,1,0,0,2,2,0,0,1,1,1,1,0,0,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,1],
+    [1,0,0,2,0,0,1,0,0,0,0,0,0,1,0,0,2,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
+  // 第3关 — 复杂要塞
+  [
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,0,0,0,0,0,0,2,2,0,0,2,2,0,0,0,0,0,0,1],
+    [1,1,1,0,0,0,0,2,0,0,0,0,2,0,0,0,0,1,1,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,0,0,2,0,0,1,1,0,0,0,0,1,1,0,0,2,0,0,1],
+    [1,0,0,2,0,0,1,0,0,0,0,0,0,1,0,0,2,0,0,1],
+    [1,0,0,2,0,0,1,1,0,0,0,0,1,1,0,0,2,0,0,1],
+    [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+    [1,1,1,0,0,0,0,2,0,0,0,0,2,0,0,0,0,1,1,1],
+    [1,0,0,0,0,0,0,2,2,0,0,2,2,0,0,0,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  ],
 ];
 
-function getWeapon() { return weapons[Math.min(level - 1, weapons.length - 1)]; }
+let map = [];
+let player = { x: 80, y: 300, hp: 5, maxHp: 5, angle: 0, speed: 2.5, shootCD: 0 };
+let npcs = [];
+let playerArrows = [];
+let npcArrows = [];
+let particles = [];
+let dmgFlash = 0;
 
-// Spawn targets
-function spawnTarget() {
-  const isElite = Math.random() < 0.15 * level;
-  targets.push({
-    x: 100 + Math.random() * 600,
-    y: 60 + Math.random() * 300,
-    r: isElite ? 22 : 16,
-    hp: isElite ? 3 : 1,
-    maxHp: isElite ? 3 : 1,
-    speed: 0.3 + Math.random() * 0.5 + level * 0.1,
-    angle: Math.random() * Math.PI * 2,
-    isElite,
-    pts: isElite ? 5 : 1,
-  });
+// ─── 碰撞检测: 点是否撞墙 ───
+function hitWall(px, py, r) {
+  const c1 = Math.floor((px - r) / TILE), c2 = Math.floor((px + r) / TILE);
+  const r1 = Math.floor((py - r) / TILE), r2 = Math.floor((py + r) / TILE);
+  for (let rr = r1; rr <= r2; rr++)
+    for (let cc = c1; cc <= c2; cc++)
+      if (rr >= 0 && rr < ROWS && cc >= 0 && cc < COLS && map[rr][cc] >= 1) return true;
+  return false;
 }
 
-for (let i = 0; i < 5 + level; i++) spawnTarget();
-
-// Spawn arrow powerup
-function spawnPowerup() {
-  powerups.push({ x: 100 + Math.random() * 600, y: 80 + Math.random() * 300, type: 'arrows' });
-}
-spawnPowerup();
-
-// Aim
-app.stage.eventMode = 'static';
-app.stage.on('pointermove', e => {
-  const dx = e.data.global.x - playerX;
-  const dy = e.data.global.y - playerY;
-  playerAngle = Math.atan2(dy, dx);
-});
-
-// Shoot
-function shoot() {
-  if (arrows <= 0) return;
-  arrows--;
-  const w = getWeapon();
-  arrowsFlying.push({
-    x: playerX, y: playerY,
-    dx: Math.cos(playerAngle) * w.speed,
-    dy: Math.sin(playerAngle) * w.speed,
-    damage: w.damage,
-    color: w.color,
-  });
+// 线段是否有墙阻挡 (简单射线)
+function lineBlocked(x1, y1, x2, y2) {
+  const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+  const steps = Math.ceil(dist / 15);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const px = x1 + (x2-x1)*t, py = y1 + (y2-y1)*t;
+    const c = Math.floor(px / TILE), r = Math.floor(py / TILE);
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS && map[r][c] === 1) return true;
+  }
+  return false;
 }
 
-app.stage.on('pointerdown', shoot);
-window.addEventListener('keydown', e => { if (e.code === 'Space') shoot(); });
+// ─── 初始化关卡 ───
+function initLevel() {
+  gameState = 'ready';
+  const mi = (level - 1) % MAPS.length;
+  map = MAPS[mi].map(r => [...r]);
+  player.x = 80; player.y = 300;
+  player.hp = player.maxHp;
+  player.shootCD = 0;
+  npcs = [];
+  playerArrows = [];
+  npcArrows = [];
+  particles = [];
 
-// Level up
-function checkLevelUp() {
-  const needed = xpPerLevel[Math.min(level - 1, xpPerLevel.length - 1)];
-  if (xp >= needed && level < weapons.length) {
-    level++; xp = 0;
-    const w = getWeapon();
-    upgradeMsg = '⬆️ 升级! ' + w.name + '!';
-    upgradeMsgTimer = 120;
-    arrows += 5;
-    // Spawn more targets for new level
-    for (let i = 0; i < 3; i++) spawnTarget();
-    spawnPowerup();
+  // 生成 NPC (数量随关卡增加)
+  const npcCount = 2 + level;
+  const spots = [];
+  for (let r = 1; r < ROWS-1; r++)
+    for (let c = 10; c < COLS-1; c++)
+      if (map[r][c] === 0) spots.push([c, r]);
+  for (let i = 0; i < npcCount && spots.length > 0; i++) {
+    const idx = Math.floor(Math.random() * spots.length);
+    const [c, r] = spots.splice(idx, 1)[0];
+    npcs.push({
+      x: c * TILE + TILE/2,
+      y: r * TILE + TILE/2,
+      hp: 2 + Math.floor(level / 2),
+      maxHp: 2 + Math.floor(level / 2),
+      angle: Math.random() * Math.PI * 2,
+      speed: 0.8 + level * 0.15,
+      shootCD: 60 + Math.random() * 60,
+      state: 'patrol', // patrol | chase | shoot
+      patrolAngle: Math.random() * Math.PI * 2,
+      color: [0xF44336, 0xFF9800, 0x9C27B0, 0x00BCD4, 0xFF5722][i % 5],
+    });
+  }
+
+  elements['title'].text = '🏹 第 ' + level + ' 关 — 消灭 ' + npcs.length + ' 个敌人!';
+  updateHud();
+}
+
+function updateHud() {
+  const hearts = '❤️'.repeat(Math.max(0, player.hp));
+  const empty = '🖤'.repeat(Math.max(0, player.maxHp - player.hp));
+  scoreText.text = hearts + empty + ' | 第 ' + level + ' 关 | 敌人: ' + npcs.length;
+}
+
+// 粒子效果
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    particles.push({ x, y, dx: Math.cos(a) * (1 + Math.random()*2), dy: Math.sin(a) * (1 + Math.random()*2), life: 20 + Math.random()*10, color });
   }
 }
 
+// ─── 控制 ───
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space' || e.code === 'KeyR') {
+    if (gameState === 'ready') gameState = 'playing';
+    if (gameState === 'won') { level++; initLevel(); }
+    if (gameState === 'lost') { level = 1; player.maxHp = 5; initLevel(); }
+  }
+  e.preventDefault();
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// 指针瞄准
+app.stage.eventMode = 'static';
+app.stage.on('pointermove', e => {
+  if (gameState !== 'playing') return;
+  const dx = e.data.global.x - player.x;
+  const dy = e.data.global.y - player.y;
+  player.angle = Math.atan2(dy, dx);
+});
+
+// 点击/按空格射击
+function playerShoot() {
+  if (gameState === 'ready') { gameState = 'playing'; return; }
+  if (gameState === 'won') { level++; initLevel(); return; }
+  if (gameState === 'lost') { level = 1; player.maxHp = 5; initLevel(); return; }
+  if (gameState !== 'playing' || player.shootCD > 0) return;
+  player.shootCD = 15;
+  const spd = 7;
+  playerArrows.push({
+    x: player.x + Math.cos(player.angle) * 14,
+    y: player.y + Math.sin(player.angle) * 14,
+    dx: Math.cos(player.angle) * spd,
+    dy: Math.sin(player.angle) * spd,
+    life: 80,
+  });
+}
+app.stage.on('pointerdown', playerShoot);
+window.addEventListener('keydown', e => { if (e.code === 'Space') playerShoot(); });
+
+// 移动触控按钮
+const touchState = { up:false, down:false, left:false, right:false };
+const dpad = [
+  { emoji:'⬆️', x:60, y:500, key:'up' },
+  { emoji:'⬇️', x:60, y:560, key:'down' },
+  { emoji:'⬅️', x:25, y:530, key:'left' },
+  { emoji:'➡️', x:95, y:530, key:'right' },
+];
+dpad.forEach(d => {
+  const btn = new PIXI.Text(d.emoji, { fontSize: 22 });
+  btn.anchor.set(0.5); btn.x = d.x; btn.y = d.y; btn.alpha = 0.6;
+  btn.eventMode = 'static'; btn.cursor = 'pointer';
+  btn.on('pointerdown', () => { touchState[d.key] = true; });
+  btn.on('pointerup', () => { touchState[d.key] = false; });
+  btn.on('pointerupoutside', () => { touchState[d.key] = false; });
+  app.stage.addChild(btn);
+});
+
+initLevel();
+
+// ─── 主循环 ───
 app.ticker.add(() => {
-  // Update arrows
-  for (let i = arrowsFlying.length - 1; i >= 0; i--) {
-    const a = arrowsFlying[i];
-    a.x += a.dx; a.y += a.dy;
-    if (a.x < -10 || a.x > 810 || a.y < -10 || a.y > 610) { arrowsFlying.splice(i, 1); continue; }
-    
-    // Hit targets
-    for (let j = targets.length - 1; j >= 0; j--) {
-      const t = targets[j];
-      const dx = a.x - t.x, dy = a.y - t.y;
-      if (Math.sqrt(dx*dx + dy*dy) < t.r + 4) {
-        t.hp -= a.damage;
-        arrowsFlying.splice(i, 1);
-        if (t.hp <= 0) {
-          score += t.pts; xp += t.pts;
-          targets.splice(j, 1);
-          checkLevelUp();
-          if (targets.length < 3) { for (let k = 0; k < 3 + level; k++) spawnTarget(); spawnPowerup(); }
+  if (gameState !== 'playing') { drawAll(); return; }
+
+  // ── 玩家移动 ──
+  let dx = 0, dy = 0;
+  if (keys['ArrowUp'] || keys['KeyW'] || touchState.up) dy = -1;
+  if (keys['ArrowDown'] || keys['KeyS'] || touchState.down) dy = 1;
+  if (keys['ArrowLeft'] || keys['KeyA'] || touchState.left) dx = -1;
+  if (keys['ArrowRight'] || keys['KeyD'] || touchState.right) dx = 1;
+  if (dx || dy) {
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const nx = player.x + (dx/len) * player.speed;
+    const ny = player.y + (dy/len) * player.speed;
+    if (!hitWall(nx, player.y, 10)) player.x = nx;
+    if (!hitWall(player.x, ny, 10)) player.y = ny;
+  }
+  if (player.shootCD > 0) player.shootCD--;
+  if (dmgFlash > 0) dmgFlash--;
+
+  // ── 玩家箭矢更新 ──
+  for (let i = playerArrows.length - 1; i >= 0; i--) {
+    const a = playerArrows[i];
+    a.x += a.dx; a.y += a.dy; a.life--;
+    // 撞墙
+    const c = Math.floor(a.x/TILE), r = Math.floor(a.y/TILE);
+    if (a.life <= 0 || c < 0 || c >= COLS || r < 0 || r >= ROWS || map[r][c] === 1) {
+      spawnParticles(a.x, a.y, 0xFFD54F, 3);
+      playerArrows.splice(i, 1); continue;
+    }
+    // 打中NPC
+    for (let j = npcs.length - 1; j >= 0; j--) {
+      const n = npcs[j];
+      if (Math.hypot(a.x - n.x, a.y - n.y) < 16) {
+        n.hp--;
+        spawnParticles(n.x, n.y, n.color, 6);
+        playerArrows.splice(i, 1);
+        if (n.hp <= 0) {
+          spawnParticles(n.x, n.y, 0xFFFFFF, 12);
+          npcs.splice(j, 1);
+          updateHud();
+          // 胜利检查
+          if (npcs.length === 0) {
+            gameState = 'won';
+            elements['title'].text = '🎉 第 ' + level + ' 关通过! 点击进入下一关';
+          }
         }
         break;
       }
     }
   }
-  
-  // Move targets
-  targets.forEach(t => {
-    t.angle += 0.02;
-    t.x += Math.cos(t.angle) * t.speed;
-    t.y += Math.sin(t.angle) * t.speed * 0.6;
-    if (t.x < 30) t.x = 30; if (t.x > 770) t.x = 770;
-    if (t.y < 50) t.y = 50; if (t.y > 380) t.y = 380;
-  });
-  
-  // Collect powerups
-  for (let i = powerups.length - 1; i >= 0; i--) {
-    const p = powerups[i];
-    const dx = playerX - p.x, dy = playerY - p.y;
-    if (Math.sqrt(dx*dx + dy*dy) < 30) {
-      arrows += 5; powerups.splice(i, 1);
+
+  // ── NPC AI ──
+  npcs.forEach(n => {
+    const distToPlayer = Math.hypot(n.x - player.x, n.y - player.y);
+    const canSee = !lineBlocked(n.x, n.y, player.x, player.y);
+
+    if (canSee && distToPlayer < 300) {
+      n.state = distToPlayer < 150 ? 'shoot' : 'chase';
+    } else {
+      n.state = 'patrol';
     }
-  }
-  
-  // Upgrade message timer
-  if (upgradeMsgTimer > 0) upgradeMsgTimer--;
-  
-  const w = getWeapon();
-  const needed = xpPerLevel[Math.min(level - 1, xpPerLevel.length - 1)];
-  scoreText.text = '得分: ' + score + ' | 🏹 ' + w.name + ' Lv' + level + ' | 箭: ' + arrows + ' | XP: ' + xp + '/' + needed;
-  
-  // Draw
-  gfx.clear();
-  // Grass bg
-  gfx.beginFill(0x2E7D32); gfx.drawRect(0, 0, 800, 600); gfx.endFill();
-  // Grass texture
-  for (let i = 0; i < 60; i++) {
-    gfx.beginFill(0x388E3C, 0.3);
-    gfx.drawCircle(Math.random()*800, Math.random()*600, 2);
-    gfx.endFill();
-  }
-  
-  // Targets
-  targets.forEach(t => {
-    const c = t.isElite ? 0xFF1744 : 0xFF5722;
-    gfx.beginFill(c);
-    gfx.drawCircle(t.x, t.y, t.r);
-    gfx.endFill();
-    gfx.beginFill(0xFFFFFF);
-    gfx.drawCircle(t.x, t.y, t.r * 0.6);
-    gfx.endFill();
-    gfx.beginFill(c);
-    gfx.drawCircle(t.x, t.y, t.r * 0.3);
-    gfx.endFill();
-    // HP bar for elites
-    if (t.isElite) {
-      gfx.beginFill(0x333, 0.5); gfx.drawRect(t.x - 15, t.y - t.r - 8, 30, 4); gfx.endFill();
-      gfx.beginFill(0x4CAF50); gfx.drawRect(t.x - 15, t.y - t.r - 8, 30 * (t.hp / t.maxHp), 4); gfx.endFill();
+
+    if (n.state === 'patrol') {
+      n.patrolAngle += (Math.random() - 0.5) * 0.1;
+      const nx = n.x + Math.cos(n.patrolAngle) * n.speed * 0.5;
+      const ny = n.y + Math.sin(n.patrolAngle) * n.speed * 0.5;
+      if (!hitWall(nx, ny, 10)) { n.x = nx; n.y = ny; }
+      else n.patrolAngle += Math.PI * 0.5;
+    } else if (n.state === 'chase') {
+      const angle = Math.atan2(player.y - n.y, player.x - n.x);
+      n.angle = angle;
+      const nx = n.x + Math.cos(angle) * n.speed;
+      const ny = n.y + Math.sin(angle) * n.speed;
+      if (!hitWall(nx, ny, 10)) { n.x = nx; n.y = ny; }
+    } else {
+      // shoot — face player and fire
+      n.angle = Math.atan2(player.y - n.y, player.x - n.x);
+    }
+
+    // NPC 射击
+    n.shootCD--;
+    if (n.shootCD <= 0 && canSee && distToPlayer < 350) {
+      n.shootCD = Math.max(40, 80 - level * 5);
+      const sa = Math.atan2(player.y - n.y, player.x - n.x) + (Math.random()-0.5)*0.3;
+      npcArrows.push({
+        x: n.x + Math.cos(sa) * 14,
+        y: n.y + Math.sin(sa) * 14,
+        dx: Math.cos(sa) * 4,
+        dy: Math.sin(sa) * 4,
+        life: 70,
+        color: n.color,
+      });
     }
   });
-  
-  // Powerups
-  powerups.forEach(p => {
-    gfx.beginFill(0xFFD700, 0.8); gfx.drawCircle(p.x, p.y, 12); gfx.endFill();
-    const pLabel = new PIXI.Text('🏹', { fontSize: 14 });
-    // Use simple circle instead
-  });
-  
-  // Arrows flying
-  arrowsFlying.forEach(a => {
-    gfx.lineStyle(2, a.color);
-    gfx.moveTo(a.x, a.y);
-    gfx.lineTo(a.x - a.dx * 2, a.y - a.dy * 2);
-  });
-  
-  // Player
-  gfx.beginFill(0x1565C0); gfx.drawCircle(playerX, playerY, 14); gfx.endFill();
-  gfx.beginFill(0xFFCC80); gfx.drawCircle(playerX, playerY - 2, 6); gfx.endFill();
-  // Bow direction
-  gfx.lineStyle(3, w.color);
-  gfx.moveTo(playerX, playerY);
-  gfx.lineTo(playerX + Math.cos(playerAngle) * 25, playerY + Math.sin(playerAngle) * 25);
-  
-  // Upgrade message
-  if (upgradeMsgTimer > 0) {
-    const alpha = Math.min(1, upgradeMsgTimer / 30);
-    gfx.beginFill(0x000, 0.6 * alpha);
-    gfx.drawRoundedRect(250, 250, 300, 50, 12);
-    gfx.endFill();
+
+  // ── NPC 箭矢 ──
+  for (let i = npcArrows.length - 1; i >= 0; i--) {
+    const a = npcArrows[i];
+    a.x += a.dx; a.y += a.dy; a.life--;
+    const c = Math.floor(a.x/TILE), r = Math.floor(a.y/TILE);
+    if (a.life <= 0 || c < 0 || c >= COLS || r < 0 || r >= ROWS || map[r][c] === 1) {
+      npcArrows.splice(i, 1); continue;
+    }
+    // 打中玩家
+    if (Math.hypot(a.x - player.x, a.y - player.y) < 14) {
+      player.hp--;
+      dmgFlash = 10;
+      spawnParticles(player.x, player.y, 0xFF1744, 5);
+      npcArrows.splice(i, 1);
+      updateHud();
+      if (player.hp <= 0) {
+        gameState = 'lost';
+        elements['title'].text = '💀 你被击败了! 点击重来';
+      }
+    }
   }
+
+  // 粒子
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.dx; p.y += p.dy; p.dx *= 0.95; p.dy *= 0.95; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+
+  drawAll();
 });
+
+// ─── 渲染 ───
+function drawAll() {
+  gfx.clear();
+
+  // 地图
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = c * TILE, y = r * TILE;
+      if (map[r][c] === 1) {
+        gfx.beginFill(0x4E342E); gfx.drawRect(x, y, TILE, TILE); gfx.endFill();
+        // 砖纹
+        gfx.lineStyle(1, 0x3E2723, 0.3);
+        gfx.moveTo(x, y + TILE/2); gfx.lineTo(x + TILE, y + TILE/2);
+        gfx.moveTo(x + TILE/2, y); gfx.lineTo(x + TILE/2, y + TILE/2);
+        gfx.lineStyle(0);
+      } else if (map[r][c] === 2) {
+        gfx.beginFill(0x8D6E63, 0.7); gfx.drawRect(x+2, y+2, TILE-4, TILE-4); gfx.endFill();
+      } else {
+        gfx.beginFill(0x2E7D32); gfx.drawRect(x, y, TILE, TILE); gfx.endFill();
+        // 草地纹理
+        if ((r + c) % 3 === 0) {
+          gfx.beginFill(0x388E3C, 0.4); gfx.drawCircle(x + TILE/2, y + TILE/2, 3); gfx.endFill();
+        }
+      }
+    }
+  }
+
+  // NPC 箭矢 (红色系)
+  npcArrows.forEach(a => {
+    gfx.lineStyle(2, 0xFF5252);
+    gfx.moveTo(a.x, a.y);
+    gfx.lineTo(a.x - a.dx*2, a.y - a.dy*2);
+    gfx.lineStyle(0);
+  });
+
+  // 玩家箭矢 (金色)
+  playerArrows.forEach(a => {
+    gfx.lineStyle(2, 0xFFD54F);
+    gfx.moveTo(a.x, a.y);
+    gfx.lineTo(a.x - a.dx*2, a.y - a.dy*2);
+    gfx.lineStyle(0);
+  });
+
+  // NPC
+  npcs.forEach(n => {
+    // 身体
+    gfx.beginFill(n.color); gfx.drawCircle(n.x, n.y, 12); gfx.endFill();
+    gfx.beginFill(0x333); gfx.drawCircle(n.x, n.y, 5); gfx.endFill();
+    // 弓方向
+    gfx.lineStyle(2, 0x333);
+    gfx.moveTo(n.x, n.y);
+    gfx.lineTo(n.x + Math.cos(n.angle)*18, n.y + Math.sin(n.angle)*18);
+    gfx.lineStyle(0);
+    // HP 条
+    const barW = 24;
+    gfx.beginFill(0x333, 0.6); gfx.drawRect(n.x-barW/2, n.y-20, barW, 4); gfx.endFill();
+    gfx.beginFill(0x4CAF50); gfx.drawRect(n.x-barW/2, n.y-20, barW*(n.hp/n.maxHp), 4); gfx.endFill();
+  });
+
+  // 玩家
+  const flashAlpha = dmgFlash > 0 && dmgFlash % 3 === 0 ? 0.4 : 1;
+  gfx.beginFill(0x1565C0, flashAlpha); gfx.drawCircle(player.x, player.y, 14); gfx.endFill();
+  gfx.beginFill(0xFFCC80, flashAlpha); gfx.drawCircle(player.x, player.y-2, 6); gfx.endFill();
+  // 弓方向
+  gfx.lineStyle(3, 0xFFD54F);
+  gfx.moveTo(player.x, player.y);
+  gfx.lineTo(player.x + Math.cos(player.angle)*22, player.y + Math.sin(player.angle)*22);
+  gfx.lineStyle(0);
+  // 玩家 HP 条
+  const phBarW = 30;
+  gfx.beginFill(0x333, 0.6); gfx.drawRect(player.x-phBarW/2, player.y-24, phBarW, 4); gfx.endFill();
+  gfx.beginFill(0x4CAF50); gfx.drawRect(player.x-phBarW/2, player.y-24, phBarW*(player.hp/player.maxHp), 4); gfx.endFill();
+
+  // 粒子
+  particles.forEach(p => {
+    gfx.beginFill(p.color, p.life / 30);
+    gfx.drawCircle(p.x, p.y, 2);
+    gfx.endFill();
+  });
+
+  // 开始/结束覆盖层
+  if (gameState === 'ready') {
+    gfx.beginFill(0x000, 0.5); gfx.drawRect(0, 0, W, H); gfx.endFill();
+    gfx.beginFill(0x000, 0.7); gfx.drawRoundedRect(200, 200, 400, 160, 16); gfx.endFill();
+  }
+  if (gameState === 'won') {
+    gfx.beginFill(0x1B5E20, 0.6); gfx.drawRect(0, 0, W, H); gfx.endFill();
+    gfx.beginFill(0x000, 0.7); gfx.drawRoundedRect(150, 220, 500, 120, 16); gfx.endFill();
+  }
+  if (gameState === 'lost') {
+    gfx.beginFill(0x7f0000, 0.6); gfx.drawRect(0, 0, W, H); gfx.endFill();
+    gfx.beginFill(0x000, 0.7); gfx.drawRoundedRect(200, 220, 400, 120, 16); gfx.endFill();
+  }
+}
 ` }],
 };
+
