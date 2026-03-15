@@ -22,6 +22,7 @@ export default function GameCanvas({ mode, canvasBg }) {
   const destroyApp = useCallback(() => {
     if (appRef.current) {
       try {
+        if (appRef.current.__ro) appRef.current.__ro.disconnect();
         destroyAll(appRef.current);
         appRef.current.destroy(true, { children: true });
       } catch (e) {

@@ -206,37 +206,44 @@ export const tetris = {
   elements: [
     { id: 'bg', name: '背景', category: 'scene', type: 'background', visible: true, transform: { x: 0, y: 0, width: 800, height: 600 }, style: { fillColor: '#1A237E', alpha: 1 } },
     { id: 'title', name: '标题', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 10, anchorX: 0.5 }, textContent: { text: '🧱 俄罗斯方块', fontSize: 22, color: '#E8EAF6', bold: true, align: 'center' } },
-    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 650, y: 100, anchorX: 0.5 }, textContent: { text: '得分: 0\n等级: 1\n行数: 0', fontSize: 16, color: '#C5CAE9', bold: true } },
+    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 650, y: 100, anchorX: 0.5 }, textContent: { text: '得分: 0  等级: 1  行数: 0', fontSize: 14, color: '#C5CAE9', bold: true } },
   ],
-  scripts: [{ id: 's1', name: 'main.js', content: `// 俄罗斯方块
+  scripts: [{ id: 's1', name: 'main.js', content: `// 俄罗斯方块 — 自动下落+积分+升级
 const scoreText = elements['score'];
 const COLS = 10, ROWS = 20, CELL = 26;
 const boardX = 200, boardY = 35;
-let score = 0, level = 1, lines = 0;
+let score = 0, level = 1, totalLines = 0;
 const board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
 const colors = [0, 0x00BCD4, 0xFFEB3B, 0x9C27B0, 0x4CAF50, 0xFF5722, 0x2196F3, 0xE91E63];
 
 const shapes = [
-  [[1,1,1,1]], // I
-  [[1,1],[1,1]], // O
-  [[0,1,0],[1,1,1]], // T
-  [[1,0],[1,0],[1,1]], // L
-  [[0,1],[0,1],[1,1]], // J
-  [[0,1,1],[1,1,0]], // S
-  [[1,1,0],[0,1,1]], // Z
+  [[1,1,1,1]],
+  [[1,1],[1,1]],
+  [[0,1,0],[1,1,1]],
+  [[1,0],[1,0],[1,1]],
+  [[0,1],[0,1],[1,1]],
+  [[0,1,1],[1,1,0]],
+  [[1,1,0],[0,1,1]],
 ];
 
 const boardGfx = new PIXI.Graphics();
 app.stage.addChild(boardGfx);
 
-let currentPiece = null, px = 0, py = 0, pieceType = 0;
-let gameOver = false, dropTimer = 0;
+let currentPiece = null, nextType = 0, px = 0, py = 0, pieceType = 0;
+let gameOver = false, paused = false, dropTimer = 0;
+let flashLines = [], flashTimer = 0;
+
+nextType = Math.floor(Math.random() * shapes.length) + 1;
 
 function newPiece() {
-  pieceType = Math.floor(Math.random() * shapes.length) + 1;
+  pieceType = nextType;
+  nextType = Math.floor(Math.random() * shapes.length) + 1;
   currentPiece = shapes[pieceType - 1].map(r => [...r]);
   px = Math.floor((COLS - currentPiece[0].length) / 2); py = 0;
-  if (!canPlace(px, py, currentPiece)) { gameOver = true; elements['title'].text = '💀 游戏结束! 得分: ' + score; }
+  if (!canPlace(px, py, currentPiece)) {
+    gameOver = true;
+    elements['title'].text = '💀 游戏结束! 得分: ' + score + ' (等级' + level + ')';
+  }
 }
 
 function canPlace(cx, cy, piece) {
@@ -249,75 +256,136 @@ function canPlace(cx, cy, piece) {
   return true;
 }
 
+function getGhostY() {
+  let gy = py;
+  while (canPlace(px, gy + 1, currentPiece)) gy++;
+  return gy;
+}
+
 function placePiece() {
   for (let r = 0; r < currentPiece.length; r++)
     for (let c = 0; c < currentPiece[r].length; c++)
       if (currentPiece[r][c]) board[py + r][px + c] = pieceType;
-  // Check lines
   let cleared = 0;
+  flashLines = [];
   for (let r = ROWS - 1; r >= 0; r--) {
     if (board[r].every(c => c !== 0)) {
-      board.splice(r, 1); board.unshift(Array(COLS).fill(0));
-      cleared++; r++;
+      flashLines.push(r);
+      cleared++;
     }
   }
   if (cleared > 0) {
-    lines += cleared;
-    score += [0, 100, 300, 500, 800][cleared] * level;
-    level = Math.floor(lines / 10) + 1;
+    flashTimer = 15;
+    totalLines += cleared;
+    const pts = [0, 100, 300, 500, 800][Math.min(cleared, 4)];
+    score += pts * level;
+    level = Math.floor(totalLines / 10) + 1;
+    if (level > 1 && totalLines % 10 === 0) {
+      elements['title'].text = '⬆️ 升级! 等级 ' + level;
+      setTimeout(() => { if (!gameOver) elements['title'].text = '🧱 俄罗斯方块'; }, 2000);
+    }
   }
-  scoreText.text = '得分: ' + score + '\\n等级: ' + level + '\\n行数: ' + lines;
+  updateHud();
+}
+
+function clearFlashLines() {
+  flashLines.sort((a,b) => b - a);
+  flashLines.forEach(r => {
+    board.splice(r, 1);
+    board.unshift(Array(COLS).fill(0));
+  });
+  flashLines = [];
+}
+
+function updateHud() {
+  scoreText.text = '得分: ' + score + '  等级: ' + level + '  行: ' + totalLines;
 }
 
 function rotate(piece) {
   const rows = piece.length, cols = piece[0].length;
-  const rotated = Array.from({ length: cols }, (_, c) => Array.from({ length: rows }, (_, r) => piece[rows - 1 - r][c]));
-  return rotated;
+  return Array.from({ length: cols }, (_, c) => Array.from({ length: rows }, (_, r) => piece[rows - 1 - r][c]));
 }
 
 function draw() {
   boardGfx.clear();
-  // Board border
-  boardGfx.lineStyle(2, 0x3F51B5); boardGfx.drawRect(boardX - 1, boardY - 1, COLS * CELL + 2, ROWS * CELL + 2);
-  // Board bg
+  boardGfx.lineStyle(2, 0x3F51B5);
+  boardGfx.drawRect(boardX - 1, boardY - 1, COLS * CELL + 2, ROWS * CELL + 2);
   boardGfx.beginFill(0x0D1B2A); boardGfx.drawRect(boardX, boardY, COLS * CELL, ROWS * CELL); boardGfx.endFill();
-  // Grid
+  // Grid lines
+  boardGfx.lineStyle(1, 0x1A2744, 0.3);
+  for (let r = 1; r < ROWS; r++) { boardGfx.moveTo(boardX, boardY + r*CELL); boardGfx.lineTo(boardX + COLS*CELL, boardY + r*CELL); }
+  for (let c = 1; c < COLS; c++) { boardGfx.moveTo(boardX + c*CELL, boardY); boardGfx.lineTo(boardX + c*CELL, boardY + ROWS*CELL); }
+  boardGfx.lineStyle(0);
+  // Placed blocks
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     if (board[r][c]) {
-      boardGfx.beginFill(colors[board[r][c]]); boardGfx.drawRect(boardX + c*CELL+1, boardY + r*CELL+1, CELL-2, CELL-2); boardGfx.endFill();
+      const flashing = flashLines.includes(r) && flashTimer > 0;
+      boardGfx.beginFill(flashing ? 0xFFFFFF : colors[board[r][c]]);
+      boardGfx.drawRect(boardX + c*CELL+1, boardY + r*CELL+1, CELL-2, CELL-2);
+      boardGfx.endFill();
     }
   }
-  // Current piece
   if (currentPiece && !gameOver) {
+    // Ghost
+    const gy = getGhostY();
     for (let r = 0; r < currentPiece.length; r++)
       for (let c = 0; c < currentPiece[r].length; c++)
         if (currentPiece[r][c]) {
-          boardGfx.beginFill(colors[pieceType]); boardGfx.drawRect(boardX + (px+c)*CELL+1, boardY + (py+r)*CELL+1, CELL-2, CELL-2); boardGfx.endFill();
+          boardGfx.beginFill(colors[pieceType], 0.2);
+          boardGfx.drawRect(boardX + (px+c)*CELL+1, boardY + (gy+r)*CELL+1, CELL-2, CELL-2);
+          boardGfx.endFill();
+        }
+    // Active piece
+    for (let r = 0; r < currentPiece.length; r++)
+      for (let c = 0; c < currentPiece[r].length; c++)
+        if (currentPiece[r][c]) {
+          boardGfx.beginFill(colors[pieceType]);
+          boardGfx.drawRect(boardX + (px+c)*CELL+1, boardY + (py+r)*CELL+1, CELL-2, CELL-2);
+          boardGfx.endFill();
         }
   }
+  // Next piece preview
+  boardGfx.beginFill(0x1A237E); boardGfx.drawRoundedRect(590, 350, 120, 100, 8); boardGfx.endFill();
+  boardGfx.lineStyle(1, 0x3F51B5); boardGfx.drawRoundedRect(590, 350, 120, 100, 8); boardGfx.lineStyle(0);
+  const np = shapes[nextType - 1];
+  const npOffX = 650 - (np[0].length * 14) / 2;
+  const npOffY = 400 - (np.length * 14) / 2;
+  for (let r = 0; r < np.length; r++)
+    for (let c = 0; c < np[r].length; c++)
+      if (np[r][c]) {
+        boardGfx.beginFill(colors[nextType]);
+        boardGfx.drawRect(npOffX + c*14, npOffY + r*14, 12, 12);
+        boardGfx.endFill();
+      }
 }
 
 // Controls
 const keys = {};
 window.addEventListener('keydown', e => {
-  if (gameOver) return;
+  if (gameOver) { if (e.code === 'Space') { restartGame(); } return; }
   if (e.code === 'ArrowLeft' && canPlace(px-1, py, currentPiece)) px--;
   if (e.code === 'ArrowRight' && canPlace(px+1, py, currentPiece)) px++;
-  if (e.code === 'ArrowDown') { if (canPlace(px, py+1, currentPiece)) py++; }
-  if (e.code === 'ArrowUp') {
-    const rotated = rotate(currentPiece);
-    if (canPlace(px, py, rotated)) currentPiece = rotated;
-  }
-  if (e.code === 'Space') { while (canPlace(px, py+1, currentPiece)) py++; }
+  if (e.code === 'ArrowDown') { if (canPlace(px, py+1, currentPiece)) { py++; score += 1; dropTimer = 0; } }
+  if (e.code === 'ArrowUp') { const r = rotate(currentPiece); if (canPlace(px, py, r)) currentPiece = r; }
+  if (e.code === 'Space') { while (canPlace(px, py+1, currentPiece)) { py++; score += 2; } dropTimer = 0; }
   e.preventDefault();
 });
 
+function restartGame() {
+  for (let r = 0; r < ROWS; r++) board[r].fill(0);
+  score = 0; level = 1; totalLines = 0; gameOver = false; dropTimer = 0;
+  flashLines = []; flashTimer = 0;
+  nextType = Math.floor(Math.random() * shapes.length) + 1;
+  elements['title'].text = '🧱 俄罗斯方块';
+  updateHud(); newPiece();
+}
+
 // Mobile buttons
 const ctrls = [
-  {label:'⬅️',x:620,y:250,fn:()=>{if(canPlace(px-1,py,currentPiece))px--;}},
-  {label:'➡️',x:720,y:250,fn:()=>{if(canPlace(px+1,py,currentPiece))px++;}},
-  {label:'🔄',x:670,y:200,fn:()=>{const r=rotate(currentPiece);if(canPlace(px,py,r))currentPiece=r;}},
-  {label:'⬇️',x:670,y:300,fn:()=>{while(canPlace(px,py+1,currentPiece))py++;}},
+  {label:'⬅️',x:620,y:230,fn:()=>{if(!gameOver&&canPlace(px-1,py,currentPiece))px--;}},
+  {label:'➡️',x:720,y:230,fn:()=>{if(!gameOver&&canPlace(px+1,py,currentPiece))px++;}},
+  {label:'🔄',x:670,y:180,fn:()=>{if(!gameOver){const r=rotate(currentPiece);if(canPlace(px,py,r))currentPiece=r;}}},
+  {label:'⬇️',x:670,y:280,fn:()=>{if(!gameOver)while(canPlace(px,py+1,currentPiece)){py++;score+=2;}}},
 ];
 ctrls.forEach(c => {
   const btn = new PIXI.Text(c.label, { fontSize: 28 });
@@ -327,12 +395,24 @@ ctrls.forEach(c => {
   app.stage.addChild(btn);
 });
 
+// Next label
+const nxtLbl = new PIXI.Text('下一个', { fontSize: 13, fill: '#7986CB', fontWeight: 'bold' });
+nxtLbl.anchor.set(0.5); nxtLbl.x = 650; nxtLbl.y = 340;
+app.stage.addChild(nxtLbl);
+
 newPiece();
 
-app.ticker.add((delta) => {
-  if (gameOver) return;
+app.ticker.add((ticker) => {
+  const delta = ticker.deltaTime;
+  if (gameOver) { draw(); return; }
+  // Flash animation
+  if (flashTimer > 0) {
+    flashTimer -= delta;
+    if (flashTimer <= 0) clearFlashLines();
+    draw(); return;
+  }
   dropTimer += delta;
-  const speed = Math.max(5, 30 - level * 3);
+  const speed = Math.max(3, 20 - level * 2);
   if (dropTimer >= speed) {
     dropTimer = 0;
     if (canPlace(px, py+1, currentPiece)) py++;
@@ -457,113 +537,201 @@ app.ticker.add(() => {
 ` }],
 };
 
-// 28. 横版摩托车
+// 28. 横版摩托车竞速
 export const motorbike = {
   name: '摩托车冲刺',
-  description: '驾驶摩托车跳跃障碍!',
+  description: '跳跃障碍, 超越对手冲刺!',
   templateType: 'motorbike',
   dimension: '2D',
   category: 'reaction',
   icon: '🏍️',
   elements: [
-    { id: 'bg', name: '背景', category: 'scene', type: 'background', visible: true, transform: { x: 0, y: 0, width: 800, height: 600 }, style: { fillColor: '#87CEEB', alpha: 1 } },
-    { id: 'title', name: '标题', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 15, anchorX: 0.5 }, textContent: { text: '🏍️ 摩托车冲刺 — 空格跳跃!', fontSize: 22, color: '#1A237E', bold: true, align: 'center' } },
-    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 570, anchorX: 0.5 }, textContent: { text: '距离: 0m | 最远: 0m', fontSize: 18, color: '#333', bold: true } },
+    { id: 'bg', name: '背景', category: 'scene', type: 'background', visible: true, transform: { x: 0, y: 0, width: 800, height: 600 }, style: { fillColor: '#ECEFF1', alpha: 1 } },
+    { id: 'title', name: '标题', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 10, anchorX: 0.5 }, textContent: { text: '🏍️ 摩托车竞速 — 点击跳跃!', fontSize: 22, color: '#1A237E', bold: true, align: 'center' } },
+    { id: 'score', name: '得分', category: 'sprite', type: 'text', visible: true, transform: { x: 400, y: 570, anchorX: 0.5 }, textContent: { text: '第1名 | 距离: 0m', fontSize: 16, color: '#333', bold: true } },
   ],
-  scripts: [{ id: 's1', name: 'main.js', content: `// 摩托车冲刺
+  scripts: [{ id: 's1', name: 'main.js', content: `// 摩托车竞速 — 带竞争对手
 const scoreText = elements['score'];
 const gfx = new PIXI.Graphics();
 app.stage.addChild(gfx);
-const groundY = 420;
-let distance = 0, bestDistance = 0, speed = 5, gameOver = false;
+const groundY = 400;
+let distance = 0;
+let playerSpeed = 5, baseSpeed = 5;
 let bikeY = groundY, bikeVY = 0, isJumping = false;
-const gravity = 0.6;
+const gravity = 0.55;
 const obstacles = [];
-let nextObstacle = 100;
+let nextObstacle = 200;
+let stunTimer = 0, boostTimer = 0;
 
-// Jump
+// 竞争对手
+const rivals = [
+  { name: '小红', color: 0xFF5252, x: 300, speed: 4.2, baseSpeed: 4.2, y: groundY - 40, vy: 0, jumping: false, stun: 0 },
+  { name: '小蓝', color: 0x2196F3, x: 250, speed: 4.5, baseSpeed: 4.5, y: groundY, vy: 0, jumping: false, stun: 0 },
+  { name: '小绿', color: 0x4CAF50, x: 200, speed: 4.0, baseSpeed: 4.0, y: groundY + 40, vy: 0, jumping: false, stun: 0 },
+];
+const laneYs = [groundY - 40, groundY, groundY + 40];
+
+// 跳跃
+function jump() { if (!isJumping) { bikeVY = -11; isJumping = true; } }
 window.addEventListener('keydown', e => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') {
-    if (!isJumping && !gameOver) { bikeVY = -12; isJumping = true; }
-    if (gameOver) { gameOver = false; distance = 0; speed = 5; obstacles.length = 0; nextObstacle = 100; bikeY = groundY; }
-    e.preventDefault();
-  }
+  if (e.code === 'Space' || e.code === 'ArrowUp') { jump(); e.preventDefault(); }
 });
 app.stage.eventMode = 'static';
-app.stage.on('pointerdown', () => {
-  if (!isJumping && !gameOver) { bikeVY = -12; isJumping = true; }
-  if (gameOver) { gameOver = false; distance = 0; speed = 5; obstacles.length = 0; nextObstacle = 100; bikeY = groundY; }
-});
+app.stage.on('pointerdown', jump);
 
 app.ticker.add(() => {
-  if (gameOver) return;
-  distance++; speed = 5 + Math.floor(distance / 200) * 0.5;
+  distance++;
+  // 速度恢复
+  if (stunTimer > 0) { stunTimer--; playerSpeed = Math.max(2, baseSpeed * 0.5); }
+  else if (boostTimer > 0) { boostTimer--; playerSpeed = Math.min(12, baseSpeed * 1.5); }
+  else { playerSpeed += (baseSpeed - playerSpeed) * 0.05; }
+  baseSpeed = 5 + Math.floor(distance / 300) * 0.3;
   
-  // Jump physics
+  // 跳跃物理
   if (isJumping) {
     bikeVY += gravity; bikeY += bikeVY;
     if (bikeY >= groundY) { bikeY = groundY; isJumping = false; bikeVY = 0; }
   }
   
-  // Obstacles
-  nextObstacle -= speed;
+  // 障碍物生成 — 间距大
+  nextObstacle -= playerSpeed;
   if (nextObstacle <= 0) {
-    const h = 25 + Math.random() * 35;
-    obstacles.push({ x: 820, h, type: Math.random() > 0.5 ? 'rock' : 'box' });
-    nextObstacle = 150 + Math.random() * 200;
+    const h = 20 + Math.random() * 25;
+    obstacles.push({ x: 830, h, type: Math.random() > 0.3 ? 'rock' : 'ramp' });
+    nextObstacle = 250 + Math.random() * 300;
   }
+  obstacles.forEach(o => { o.x -= playerSpeed; });
+  while (obstacles.length > 0 && obstacles[0].x < -60) obstacles.shift();
   
-  obstacles.forEach(o => { o.x -= speed; });
-  // Remove off-screen
-  while (obstacles.length > 0 && obstacles[0].x < -50) obstacles.shift();
-  
-  // Collision
+  // 玩家碰撞
   obstacles.forEach(o => {
-    if (o.x > 100 && o.x < 170 && bikeY + 20 > groundY - o.h) {
-      gameOver = true;
-      bestDistance = Math.max(bestDistance, Math.floor(distance / 10));
-      elements['title'].text = '💥 撞了! 点击重来';
+    if (o.x > 100 && o.x < 165) {
+      if (!isJumping || bikeY + 15 > groundY - o.h) {
+        if (o.type === 'ramp' && isJumping) {
+          boostTimer = 60; o.x = -100;
+        } else if (!o._hit) {
+          o._hit = true; stunTimer = 40;
+        }
+      } else if (!o._cleared) {
+        o._cleared = true; boostTimer = 20;
+      }
     }
   });
   
-  scoreText.text = '距离: ' + Math.floor(distance/10) + 'm | 最远: ' + bestDistance + 'm';
+  // AI 对手
+  rivals.forEach(r => {
+    if (r.stun > 0) { r.stun--; r.speed = r.baseSpeed * 0.4; }
+    else { r.speed += (r.baseSpeed + Math.random() * 0.3 - 0.15 - r.speed) * 0.03; }
+    r.baseSpeed = r.baseSpeed + (distance / 5000) * 0.01;
+    r.x += (r.speed - playerSpeed) * 0.8;
+    r.x = Math.max(-100, Math.min(900, r.x));
+    
+    // AI 跳跃
+    obstacles.forEach(o => {
+      const relX = o.x - r.x;
+      if (relX > 0 && relX < 80 && !r.jumping && Math.random() > 0.15) {
+        r.vy = -10; r.jumping = true;
+      }
+    });
+    if (r.jumping) {
+      r.vy += gravity; r.y += r.vy;
+      const homeY = laneYs[rivals.indexOf(r)];
+      if (r.y >= homeY) { r.y = homeY; r.jumping = false; r.vy = 0; }
+    }
+    
+    // AI 碰撞
+    obstacles.forEach(o => {
+      const ri = rivals.indexOf(r);
+      if (Math.abs(o.x - r.x) < 30 && (!r.jumping || r.y + 10 > laneYs[ri] - o.h)) {
+        if (!o['_rh' + ri]) { o['_rh' + ri] = true; r.stun = 50; }
+      }
+    });
+  });
   
-  // Draw
+  // 排名
+  const allR = [{name:'你', x: 150, isPlayer: true}, ...rivals];
+  allR.sort((a, b) => b.x - a.x);
+  const rank = allR.findIndex(r => r.isPlayer) + 1;
+  const medals = ['🥇','🥈','🥉','4️⃣'];
+  scoreText.text = medals[rank-1] + ' 第' + rank + '名 | ' + Math.floor(distance/10) + 'm' + (stunTimer > 0 ? ' 💥减速!' : '') + (boostTimer > 0 ? ' 🚀加速!' : '');
+  
+  // 绘制
   gfx.clear();
-  // Sky gradient (simple)
-  gfx.beginFill(0x87CEEB); gfx.drawRect(0, 0, 800, groundY + 30); gfx.endFill();
-  // Ground
-  gfx.beginFill(0x8D6E63); gfx.drawRect(0, groundY + 30, 800, 170); gfx.endFill();
-  gfx.beginFill(0x4CAF50); gfx.drawRect(0, groundY + 25, 800, 8); gfx.endFill();
-  // Road line
-  for (let i = 0; i < 10; i++) {
-    const lx = ((i * 100 - distance * speed * 0.3) % 800 + 800) % 800;
-    gfx.beginFill(0xBCAAA4); gfx.drawRect(lx, groundY + 28, 40, 3); gfx.endFill();
+  gfx.beginFill(0x87CEEB); gfx.drawRect(0, 0, 800, groundY + 70); gfx.endFill();
+  // 远山
+  [100, 300, 550, 700].forEach((mx, i) => {
+    gfx.beginFill(0xB0BEC5, 0.4);
+    gfx.moveTo(mx - 80, groundY - 20); gfx.lineTo(mx, groundY - 80 - i*15); gfx.lineTo(mx + 80, groundY - 20);
+    gfx.closePath(); gfx.endFill();
+  });
+  // 地面和路面
+  gfx.beginFill(0x8D6E63); gfx.drawRect(0, groundY + 70, 800, 130); gfx.endFill();
+  gfx.beginFill(0x607D8B); gfx.drawRect(0, groundY - 50, 800, 125); gfx.endFill();
+  // 车道线
+  for (let i = 0; i < 12; i++) {
+    const lx = ((i * 80 - distance * 2) % 960 + 960) % 960 - 80;
+    gfx.beginFill(0xFFFFFF, 0.4); gfx.drawRect(lx, groundY - 2, 35, 3); gfx.endFill();
+    gfx.beginFill(0xFFFFFF, 0.3); gfx.drawRect(lx, groundY + 38, 35, 3); gfx.endFill();
   }
-  // Bike
-  gfx.beginFill(0xE53935); gfx.drawRoundedRect(120, bikeY - 10, 50, 20, 5); gfx.endFill();
-  gfx.beginFill(0x333); gfx.drawCircle(125, bikeY + 15, 10); gfx.drawCircle(165, bikeY + 15, 10); gfx.endFill();
-  gfx.beginFill(0x333); gfx.drawRect(148, bikeY - 18, 4, 10); gfx.endFill(); // handlebar
-  // Rider
-  gfx.beginFill(0xFFCC80); gfx.drawCircle(140, bikeY - 25, 8); gfx.endFill(); // head
-  gfx.beginFill(0x1565C0); gfx.drawRect(132, bikeY - 18, 16, 12); gfx.endFill(); // body
+  gfx.beginFill(0xFFFFFF, 0.6); gfx.drawRect(0, groundY - 52, 800, 3); gfx.drawRect(0, groundY + 73, 800, 3); gfx.endFill();
   
-  // Obstacles
+  // 障碍物
   obstacles.forEach(o => {
-    if (o.type === 'rock') {
-      gfx.beginFill(0x795548);
-      gfx.moveTo(o.x, groundY + 25); gfx.lineTo(o.x + 20, groundY + 25); gfx.lineTo(o.x + 10, groundY + 25 - o.h); gfx.closePath();
-      gfx.endFill();
+    const oy = groundY + 15;
+    if (o.type === 'ramp') {
+      gfx.beginFill(0xFFC107);
+      gfx.moveTo(o.x, oy); gfx.lineTo(o.x + 25, oy); gfx.lineTo(o.x + 12, oy - o.h);
+      gfx.closePath(); gfx.endFill();
     } else {
-      gfx.beginFill(0xFF8F00); gfx.drawRect(o.x, groundY + 25 - o.h, 25, o.h); gfx.endFill();
+      gfx.beginFill(0x795548);
+      gfx.moveTo(o.x, oy); gfx.lineTo(o.x + 22, oy); gfx.lineTo(o.x + 11, oy - o.h);
+      gfx.closePath(); gfx.endFill();
     }
   });
   
-  // Clouds (decorative)
-  [150, 400, 650].forEach((cx, i) => {
-    const cy = 80 + i * 20;
-    gfx.beginFill(0xFFFFFF, 0.7); gfx.drawEllipse(cx, cy, 40, 15); gfx.drawEllipse(cx + 25, cy - 8, 30, 12); gfx.endFill();
+  // 对手
+  rivals.forEach(r => {
+    if (r.x < -80 || r.x > 850) return;
+    gfx.beginFill(r.color); gfx.drawRoundedRect(r.x - 22, r.y - 8, 44, 16, 4); gfx.endFill();
+    gfx.beginFill(0x333); gfx.drawCircle(r.x - 18, r.y + 10, 8); gfx.drawCircle(r.x + 18, r.y + 10, 8); gfx.endFill();
+    gfx.beginFill(r.color, 0.8); gfx.drawRect(r.x - 6, r.y - 16, 12, 10); gfx.endFill();
+    gfx.beginFill(0xFFCC80); gfx.drawCircle(r.x, r.y - 22, 6); gfx.endFill();
+    if (r.stun > 0 && r.stun % 4 < 2) {
+      gfx.beginFill(0xFFFFFF, 0.4); gfx.drawCircle(r.x, r.y - 5, 20); gfx.endFill();
+    }
   });
+  
+  // 玩家
+  const bAlpha = stunTimer > 0 && stunTimer % 4 < 2 ? 0.5 : 1;
+  gfx.beginFill(0xE53935, bAlpha); gfx.drawRoundedRect(128, bikeY - 10, 50, 20, 5); gfx.endFill();
+  gfx.beginFill(0x333, bAlpha); gfx.drawCircle(133, bikeY + 12, 10); gfx.drawCircle(173, bikeY + 12, 10); gfx.endFill();
+  gfx.beginFill(0x333, bAlpha); gfx.drawRect(156, bikeY - 18, 4, 10); gfx.endFill();
+  gfx.beginFill(0xFFCC80, bAlpha); gfx.drawCircle(148, bikeY - 25, 8); gfx.endFill();
+  gfx.beginFill(0x1565C0, bAlpha); gfx.drawRect(140, bikeY - 18, 16, 12); gfx.endFill();
+  if (boostTimer > 0) {
+    gfx.beginFill(0xFF9800, 0.8); gfx.drawEllipse(120, bikeY, 12, 6); gfx.endFill();
+    gfx.beginFill(0xFFEB3B, 0.6); gfx.drawEllipse(115, bikeY, 8, 4); gfx.endFill();
+  }
+  
+  // 云
+  [150, 400, 650].forEach((cx, i) => {
+    const cy = 60 + i * 20;
+    gfx.beginFill(0xFFFFFF, 0.6); gfx.drawEllipse(cx, cy, 40, 15); gfx.drawEllipse(cx + 25, cy - 8, 30, 12); gfx.endFill();
+  });
+  
+  // 排名板
+  gfx.beginFill(0x000, 0.3); gfx.drawRoundedRect(640, 40, 150, 90, 8); gfx.endFill();
+});
+
+const rankText = new PIXI.Text('排名', { fontSize: 13, fill: '#FFD54F', fontWeight: 'bold' });
+rankText.x = 650; rankText.y = 42; app.stage.addChild(rankText);
+const rankList = new PIXI.Text('加载中...', { fontSize: 11, fill: '#fff' });
+rankList.x = 650; rankList.y = 60; app.stage.addChild(rankList);
+
+app.ticker.add(() => {
+  const allR = [{name:'你', x: 150, isPlayer: true}, ...rivals];
+  allR.sort((a, b) => b.x - a.x);
+  rankList.text = allR.map((r, i) => (i+1) + '. ' + r.name + (r.isPlayer ? ' ⭐' : '')).join('\\n');
 });
 ` }],
 };
