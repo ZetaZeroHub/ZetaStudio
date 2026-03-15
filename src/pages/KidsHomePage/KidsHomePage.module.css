@@ -84,24 +84,8 @@
   display: none;
 }
 
-.communityCard {
-  flex-shrink: 0;
-  width: 120px;
-  height: 100px;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s;
-}
+/* communityCard styles defined below with fork modal styles */
 
-.communityCard:hover {
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
 
 .communityEmoji {
   font-size: 32px;
@@ -351,10 +335,119 @@
   cursor: not-allowed;
 }
 
+/* Community Author Badge */
+.communityAuthor {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin-top: -2px;
+}
+
+/* Fork Modal */
+.forkModal {
+  background: #fff;
+  border-radius: 24px;
+  max-width: 400px;
+  width: 90%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.forkHeader {
+  padding: 28px 24px 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.forkEmoji {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.forkTitle {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.forkAuthor {
+  font-size: 0.75rem;
+  margin: 4px 0 0;
+  opacity: 0.85;
+}
+
+.forkBody {
+  padding: 24px;
+}
+
+.forkDesc {
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.forkActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.forkBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: #58CC02;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #46a302;
+  transition: all 0.15s;
+}
+
+.forkBtn:hover {
+  background: #4db802;
+}
+
+.forkBtn:active {
+  box-shadow: none;
+  transform: translateY(3px);
+}
+
+/* Community card larger to fit author */
+.communityCard {
+  flex-shrink: 0;
+  width: 130px;
+  height: 110px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.2s;
+}
+
+.communityCard:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
 /* Mobile */
 @media (max-width: 600px) {
-  .communityCard { width: 100px; height: 85px; }
+  .communityCard { width: 110px; height: 95px; }
   .communityEmoji { font-size: 24px; }
   .tplGrid { grid-template-columns: repeat(2, 1fr); }
   .createBtn { padding: 14px 32px; font-size: 1rem; }
+  .forkModal { max-width: 90%; }
 }

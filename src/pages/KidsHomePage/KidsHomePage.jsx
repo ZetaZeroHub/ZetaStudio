@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Plus, Trash2, Settings, Sparkles, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, Trash2, Settings, ArrowRight, Copy, Play } from 'lucide-react';
 import useProjectStore from '../../stores/projectStore';
 import useAppStore from '../../stores/appStore';
 import { getKidsTemplates, getTemplate } from '../../templates';
@@ -12,20 +12,19 @@ const TEMPLATE_EMOJIS = {
   colorBook: '🎨', animalQuiz: '🐾', whackMole: '🐹', fruitCatch: '🧺',
 };
 
+/* Colors for community game cards by template type */
+const TEMPLATE_COLORS = {
+  shapeMatch: '#FF6B6B', memoryCard: '#4ECDC4', counting: '#45B7D1', wordPicture: '#FFEAA7',
+  colorBook: '#DDA0DD', animalQuiz: '#96CEB4', whackMole: '#FFB347', fruitCatch: '#A29BFE',
+};
+
+/* "Author" names for community feel */
+const FAKE_AUTHORS = ['小明', '花花', '大壮', '甜甜', '乐乐', '小鱼', '圆圆', '星星'];
+
 const CATEGORY_LABELS = {
   cognitive: '🧠 认知类', math: '🔢 数学启蒙', language: '🅰️ 语言识字',
   creative: '🎨 创意艺术', science: '🌍 常识科学', reaction: '⚡ 反应逻辑',
 };
-
-/* Placeholder community games */
-const COMMUNITY_GAMES = [
-  { id: 'c1', name: '小猫钓鱼', emoji: '🐱', color: '#FF6B6B' },
-  { id: 'c2', name: '数字冒险', emoji: '🔢', color: '#4ECDC4' },
-  { id: 'c3', name: '恐龙涂色', emoji: '🦕', color: '#45B7D1' },
-  { id: 'c4', name: '水果消消乐', emoji: '🍎', color: '#96CEB4' },
-  { id: 'c5', name: '字母跳跳', emoji: '🅰️', color: '#FFEAA7' },
-  { id: 'c6', name: '太空探索', emoji: '🚀', color: '#A29BFE' },
-];
 
 export default function KidsHomePage({ onSwitchToPro }) {
   const navigate = useNavigate();
@@ -33,10 +32,23 @@ export default function KidsHomePage({ onSwitchToPro }) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [projectName, setProjectName] = useState('');
+  /* Fork dialog state */
+  const [forkTarget, setForkTarget] = useState(null);
+  const [forkName, setForkName] = useState('');
 
   useEffect(() => { loadAllProjects(); }, []);
 
   const kidsTemplates = getKidsTemplates();
+
+  /* Build community games from real templates */
+  const communityGames = kidsTemplates.map((tpl, i) => ({
+    templateType: tpl.templateType,
+    name: tpl.name,
+    emoji: TEMPLATE_EMOJIS[tpl.templateType] || '🎮',
+    color: TEMPLATE_COLORS[tpl.templateType] || '#58CC02',
+    author: FAKE_AUTHORS[i % FAKE_AUTHORS.length],
+    category: tpl.category,
+  }));
 
   const handleCreate = () => {
     if (!selectedTemplate) return;
@@ -51,6 +63,28 @@ export default function KidsHomePage({ onSwitchToPro }) {
     setProjectName('');
     setSelectedTemplate(null);
     navigate(`/kids/editor/${project.id}`);
+  };
+
+  /* Fork a community game → copy as user's own draft */
+  const handleFork = () => {
+    if (!forkTarget) return;
+    const tpl = getTemplate(forkTarget.templateType);
+    if (!tpl) return;
+    const name = forkName.trim() || `${forkTarget.name} (我的版本)`;
+    const project = createProject(name, forkTarget.templateType, '2D');
+    useProjectStore.getState().updateProject(project.id, {
+      elements: tpl.elements,
+      scripts: tpl.scripts,
+    });
+    setForkTarget(null);
+    setForkName('');
+    navigate(`/kids/editor/${project.id}`);
+  };
+
+  /* Open fork dialog for a community game */
+  const handleCommunityClick = (game) => {
+    setForkTarget(game);
+    setForkName(`${game.name} (我的版本)`);
   };
 
   const handleDelete = (e, id) => {
@@ -76,20 +110,25 @@ export default function KidsHomePage({ onSwitchToPro }) {
         </button>
       </header>
 
-      {/* Community Games */}
+      {/* Community Games — real template-based */}
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>🌍 朋友们的游戏</h2>
         <div className={styles.communityScroll}>
-          {COMMUNITY_GAMES.map(g => (
+          {communityGames.map((g, i) => (
             <motion.div
-              key={g.id}
+              key={g.templateType}
               className={styles.communityCard}
               style={{ background: g.color }}
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => handleCommunityClick(g)}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.06 }}
             >
               <div className={styles.communityEmoji}>{g.emoji}</div>
               <div className={styles.communityName}>{g.name}</div>
+              <div className={styles.communityAuthor}>by {g.author}</div>
             </motion.div>
           ))}
         </div>
@@ -139,6 +178,50 @@ export default function KidsHomePage({ onSwitchToPro }) {
           </div>
         )}
       </section>
+
+      {/* Fork Dialog — when user clicks a community game */}
+      <AnimatePresence>
+        {forkTarget && (
+          <div className={styles.overlay} onClick={() => setForkTarget(null)}>
+            <motion.div
+              className={styles.forkModal}
+              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div className={styles.forkHeader} style={{ background: forkTarget.color }}>
+                <span className={styles.forkEmoji}>{forkTarget.emoji}</span>
+                <h3 className={styles.forkTitle}>{forkTarget.name}</h3>
+                <p className={styles.forkAuthor}>by {forkTarget.author}</p>
+              </div>
+              <div className={styles.forkBody}>
+                <p className={styles.forkDesc}>
+                  🎉 想玩这个游戏吗？复制一份到你的草稿，还可以自由修改！
+                </p>
+                <input
+                  type="text"
+                  className={styles.nameInput}
+                  placeholder="给你的版本起个名字 ✏️"
+                  value={forkName}
+                  onChange={e => setForkName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleFork()}
+                  autoFocus
+                />
+                <div className={styles.forkActions}>
+                  <button className={styles.cancelBtn} onClick={() => setForkTarget(null)}>
+                    取消
+                  </button>
+                  <button className={styles.forkBtn} onClick={handleFork}>
+                    <Copy size={16} /> 复制并编辑
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Template Selection Modal */}
       {showTemplates && (
