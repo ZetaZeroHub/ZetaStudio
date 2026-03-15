@@ -50,6 +50,8 @@ export default function GameCanvas({ mode, canvasBg }) {
         height: 600,
         backgroundColor: canvasBg || 0x111827,
         antialias: true,
+        resolution: window.devicePixelRatio || 1,
+        autoDensity: true,
       });
 
       if (currentId !== initIdRef.current) {

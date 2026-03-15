@@ -128,7 +128,9 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  background: #f5f5f5;
+  background: #2c2c2c;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Mode Toggle */
@@ -171,17 +173,26 @@
 }
 
 .canvasWrap {
-  flex: 1;
+  /* Phone frame on desktop: 9:16 ratio */
+  width: auto;
+  height: calc(100% - 60px);
+  aspect-ratio: 9 / 16;
+  max-height: calc(100vh - 120px);
   position: relative;
   overflow: hidden;
+  border-radius: 28px;
+  background: #000;
+  box-shadow:
+    0 0 0 3px #444,
+    0 0 0 6px #222,
+    0 20px 60px rgba(0,0,0,0.5);
+  margin: 10px auto;
 }
 
-/* Override hardcoded dark backgrounds in GameCanvas child components.
-   canvasWrapper has `background: #000` which must be overridden.
-   CSS Modules mangle class names, so we target by DOM structure depth. */
+/* Override hardcoded dark backgrounds in GameCanvas child components. */
 .canvasWrap > div,
 .canvasWrap > div > div {
-  background: #e8f5e9 !important;
+  background: #000 !important;
   border-radius: 0 !important;
 }
 
@@ -211,6 +222,17 @@
   }
   .gamePanel {
     flex: 1;
+    background: #000;
+  }
+  .canvasWrap {
+    /* On mobile: fill naturally, no phone frame */
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
   }
   .topBar {
     padding: 8px 12px;
