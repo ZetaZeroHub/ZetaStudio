@@ -83,6 +83,11 @@ export default function HomePage() {
     return <KidsHomePage onSwitchToPro={() => setAppMode('pro')} />;
   }
 
+  /* ── If appMode was 'maze', fall back to pro (maze is only via /maze route) ── */
+  if (appMode === 'maze') {
+    setAppMode('pro');
+  }
+
   /* ── Pro Mode (existing) ── */
   return (
     <div className={styles.page}>
@@ -231,7 +236,14 @@ export default function HomePage() {
               {filteredTemplates.length > 0 ? filteredTemplates.map(tpl => (
                 <div key={tpl.templateType}
                   className={`${styles.tplCard} ${selectedTemplate === tpl.templateType ? styles.tplActive : ''}`}
-                  onClick={() => setSelectedTemplate(tpl.templateType)}>
+                  onClick={() => {
+                    setSelectedTemplate(tpl.templateType);
+                    // Auto-fill project name from template
+                    const autoName = language === 'zh' ? tpl.name : tpl.templateType;
+                    if (!projectName.trim() || filteredTemplates.some(t => (language === 'zh' ? t.name : t.templateType) === projectName.trim())) {
+                      setProjectName(autoName);
+                    }
+                  }}>
                   <div className={styles.tplIcon}>{renderTemplateIcon(tpl.templateType, 24)}</div>
                   <div className={styles.tplName}>{language === 'zh' ? tpl.name : tpl.templateType}</div>
                   <div className={styles.tplDesc}>{language === 'zh' ? tpl.description : tpl.templateType + ' template'}</div>

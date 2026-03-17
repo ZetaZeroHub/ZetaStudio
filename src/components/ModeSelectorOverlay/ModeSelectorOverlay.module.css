@@ -46,16 +46,19 @@
 
 .options {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .optionSimple,
-.optionPro {
+.optionPro,
+.optionMaze {
   position: relative;
   flex: 1;
-  max-width: 220px;
-  padding: 28px 20px 24px;
+  min-width: 140px;
+  max-width: 200px;
+  padding: 24px 16px 20px;
   border: 2px solid transparent;
   border-radius: 20px;
   cursor: pointer;
@@ -114,6 +117,30 @@
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
 }
 
+.optionMaze {
+  background: linear-gradient(145deg, #1a936f, #114b5f);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(26, 147, 111, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.optionMaze:hover {
+  box-shadow: 0 12px 32px rgba(26, 147, 111, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.optionBadgeMaze {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background: linear-gradient(135deg, #58CC02, #46a302);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(88, 204, 2, 0.4);
+  letter-spacing: 0.05em;
+}
+
 .hint {
   margin-top: 28px;
   font-size: 0.75rem;
@@ -121,16 +148,19 @@
 }
 
 /* Mobile */
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .options {
     flex-direction: column;
     align-items: center;
   }
-  .optionSimple, .optionPro {
-    max-width: 280px;
+  .optionSimple, .optionPro, .optionMaze {
+    max-width: 300px;
     width: 100%;
   }
   .title {
     font-size: 1.5rem;
+  }
+  .card {
+    padding: 36px 24px 28px;
   }
 }

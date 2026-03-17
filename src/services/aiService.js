@@ -1,210 +1,457 @@
 /**
- * AI Service - Mock implementation for MVP
- * In production, replace with real API calls to 火山引擎
+ * AI Service - Real LLM integration
+ * Supports OpenAI-compatible APIs (SiliconFlow, DeepSeek, OpenAI, etc.) and Ollama.
  */
 
-// Simulated delay to mimic network latency
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+import useLlmStore from '../stores/llmStore';
+import { buildSystemPrompt, getToolDefinitions } from './promptTemplates';
 
 /**
- * Generate game code based on user's natural language description
- * @param {string} prompt - User's description
- * @param {string} templateType - Current template type
- * @returns {Promise<{code: string, message: string}>}
+ * Call LLM API with OpenAI-compatible protocol
+ * @param {Array} messages - Chat messages array
+ * @param {object} config - { apiBase, apiKey, model, protocol }
+ * @param {object} options - { tools, onChunk, signal }
+ * @returns {Promise<object>} API response
  */
-export async function generateGameCode(prompt, templateType) {
-  await delay(1500 + Math.random() * 1000);
+async function callOpenAI(messages, config, options = {}) {
+  const { apiBase, apiKey, model } = config;
+  const endpoint = `${apiBase.replace(/\/+$/, '')}/chat/completions`;
 
-  const lower = prompt.toLowerCase();
+  const body = {
+    model,
+    messages,
+    temperature: 0.7,
+    max_tokens: 4096,
+    stream: !!options.onChunk,
+  };
 
-  if (lower.includes('背景') || lower.includes('场景') || lower.includes('天空')) {
-    return {
-      message: '✅ 已为你生成背景场景代码！添加了渐变天空和地面装饰。',
-      code: `// AI 生成: 背景场景
-const sky = new PIXI.Graphics();
-sky.rect(0, 0, 800, 600);
-sky.fill({ color: 0x1a1a2e });
-app.stage.addChild(sky);
+  // Add tools if available and the model supports them
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools;
+    body.tool_choice = 'auto';
+  }
 
-// 星星粒子
-for (let i = 0; i < 50; i++) {
-  const star = new PIXI.Graphics();
-  star.circle(0, 0, Math.random() * 2 + 1);
-  star.fill({ color: 0xffffff, alpha: Math.random() * 0.8 + 0.2 });
-  star.x = Math.random() * 800;
-  star.y = Math.random() * 400;
-  app.stage.addChild(star);
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    let errorMsg = `API 调用失败 (${response.status})`;
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMsg = errorJson.error?.message || errorJson.message || errorMsg;
+    } catch { /* use default */ }
+    throw new Error(errorMsg);
+  }
+
+  // Non-streaming response
+  if (!options.onChunk) {
+    const data = await response.json();
+    return data;
+  }
+
+  // Streaming response (SSE)
+  return await handleSSEStream(response, options.onChunk);
 }
 
-// 地面
-const ground = new PIXI.Graphics();
-ground.rect(0, 500, 800, 100);
-ground.fill({ color: 0x2d5a27 });
-app.stage.addChild(ground);`,
-      elements: [
-        { id: 'bg_sky', name: '夜空背景', type: 'shape', x: 400, y: 300, width: 800, height: 600, depth: 0, properties: { shapeType: 'rect', color: '#1a1a2e' } },
-        { id: 'bg_ground', name: '地面', type: 'shape', x: 400, y: 550, width: 800, height: 100, depth: 1, properties: { shapeType: 'rect', color: '#2d5a27' } },
-      ],
+/**
+ * Handle SSE stream from OpenAI-compatible API
+ */
+async function handleSSEStream(response, onChunk) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullContent = '';
+  let toolCalls = [];
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+
+        try {
+          const chunk = JSON.parse(data);
+          const delta = chunk.choices?.[0]?.delta;
+          if (!delta) continue;
+
+          // Content streaming
+          if (delta.content) {
+            fullContent += delta.content;
+            onChunk({ type: 'content', content: delta.content, fullContent });
+          }
+
+          // Tool call streaming
+          if (delta.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCalls[idx]) {
+                toolCalls[idx] = {
+                  id: tc.id || `call_${idx}`,
+                  type: 'function',
+                  function: { name: '', arguments: '' },
+                };
+              }
+              if (tc.function?.name) {
+                toolCalls[idx].function.name += tc.function.name;
+              }
+              if (tc.function?.arguments) {
+                toolCalls[idx].function.arguments += tc.function.arguments;
+              }
+            }
+          }
+        } catch {
+          // Skip malformed JSON chunks
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return {
+    choices: [{
+      message: {
+        role: 'assistant',
+        content: fullContent || null,
+        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
+      },
+      finish_reason: toolCalls.length > 0 ? 'tool_calls' : 'stop',
+    }],
+  };
+}
+
+/**
+ * Call Ollama API
+ * @param {Array} messages - Chat messages array
+ * @param {object} config - { apiBase, model }
+ * @param {object} options - { onChunk, signal }
+ */
+async function callOllama(messages, config, options = {}) {
+  const { apiBase, model } = config;
+  const endpoint = `${apiBase.replace(/\/+$/, '')}/api/chat`;
+
+  const body = {
+    model,
+    messages: messages.map(m => ({
+      role: m.role,
+      content: m.content,
+    })),
+    stream: !!options.onChunk,
+  };
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama API 调用失败 (${response.status})`);
+  }
+
+  if (!options.onChunk) {
+    const data = await response.json();
+    return {
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: data.message?.content || '',
+        },
+        finish_reason: 'stop',
+      }],
     };
   }
 
-  if (lower.includes('玩家') || lower.includes('角色') || lower.includes('主角')) {
-    return {
-      message: '✅ 已生成玩家角色！带有基础移动控制（方向键控制）。',
-      code: `// AI 生成: 玩家角色
-const player = new PIXI.Graphics();
-player.roundRect(-20, -30, 40, 60, 8);
-player.fill({ color: 0x6366f1 });
-player.x = 400;
-player.y = 470;
-app.stage.addChild(player);
+  // Streaming (Ollama uses NDJSON, not SSE)
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let fullContent = '';
+  let buffer = '';
 
-// 眼睛
-const eyeL = new PIXI.Graphics();
-eyeL.circle(-8, -15, 4);
-eyeL.fill({ color: 0xffffff });
-player.addChild(eyeL);
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-const eyeR = new PIXI.Graphics();
-eyeR.circle(8, -15, 4);
-eyeR.fill({ color: 0xffffff });
-player.addChild(eyeR);
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-// 键盘控制
-const keys = {};
-window.addEventListener('keydown', (e) => keys[e.key] = true);
-window.addEventListener('keyup', (e) => keys[e.key] = false);
-
-app.ticker.add((ticker) => {
-  if (keys['ArrowLeft']) player.x -= 4 * ticker.deltaTime;
-  if (keys['ArrowRight']) player.x += 4 * ticker.deltaTime;
-  if (keys['ArrowUp']) player.y -= 4 * ticker.deltaTime;
-  if (keys['ArrowDown']) player.y += 4 * ticker.deltaTime;
-  // 边界限制
-  player.x = Math.max(20, Math.min(780, player.x));
-  player.y = Math.max(30, Math.min(570, player.y));
-});`,
-      elements: [
-        { id: 'player', name: '玩家角色', type: 'sprite', x: 400, y: 470, width: 40, height: 60, depth: 10, properties: { color: '#6366f1', controllable: true } },
-      ],
-    };
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const chunk = JSON.parse(line);
+          if (chunk.message?.content) {
+            fullContent += chunk.message.content;
+            options.onChunk({
+              type: 'content',
+              content: chunk.message.content,
+              fullContent,
+            });
+          }
+        } catch { /* skip */ }
+      }
+    }
+  } finally {
+    reader.releaseLock();
   }
 
-  if (lower.includes('敌人') || lower.includes('怪物') || lower.includes('障碍')) {
-    return {
-      message: '✅ 已生成敌人！敌人会从顶部随机位置掉落。',
-      code: `// AI 生成: 敌人生成系统
-const enemies = [];
-
-function spawnEnemy() {
-  const enemy = new PIXI.Graphics();
-  enemy.rect(-15, -15, 30, 30);
-  enemy.fill({ color: 0xef4444 });
-  enemy.x = Math.random() * 760 + 20;
-  enemy.y = -20;
-  enemy.speed = 1 + Math.random() * 2;
-  app.stage.addChild(enemy);
-  enemies.push(enemy);
+  return {
+    choices: [{
+      message: { role: 'assistant', content: fullContent },
+      finish_reason: 'stop',
+    }],
+  };
 }
 
-// 每秒生成一个敌人
-setInterval(spawnEnemy, 1000);
+/**
+ * Unified LLM call dispatcher
+ */
+async function callLLM(messages, options = {}) {
+  const config = useLlmStore.getState().getActiveConfig();
+  if (!config) {
+    throw new Error('未配置 LLM 供应商，请先在设置中配置 API');
+  }
 
-app.ticker.add((ticker) => {
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    enemies[i].y += enemies[i].speed * ticker.deltaTime;
-    if (enemies[i].y > 620) {
-      app.stage.removeChild(enemies[i]);
-      enemies.splice(i, 1);
+  if (config.protocol === 'ollama') {
+    return callOllama(messages, config, options);
+  }
+  return callOpenAI(messages, config, options);
+}
+
+/**
+ * Parse code blocks from AI response text
+ * @param {string} text
+ * @returns {{ cleanText: string, codeBlocks: Array<{lang: string, code: string}> }}
+ */
+function parseCodeBlocks(text) {
+  if (!text) return { cleanText: '', codeBlocks: [] };
+
+  const codeBlocks = [];
+  const cleanText = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+    codeBlocks.push({ lang: lang || 'javascript', code: code.trim() });
+    return `\n[代码块 ${codeBlocks.length}]\n`;
+  });
+
+  return { cleanText: cleanText.trim(), codeBlocks };
+}
+
+/**
+ * Process tool calls from the LLM response
+ * @param {Array} toolCalls - Tool calls from the response
+ * @returns {Array<{name: string, args: object, id: string}>} Parsed tool calls
+ */
+function parseToolCalls(toolCalls) {
+  if (!toolCalls || toolCalls.length === 0) return [];
+
+  return toolCalls.map(tc => {
+    let args = {};
+    try {
+      args = JSON.parse(tc.function.arguments);
+    } catch {
+      // Try to recover from partial JSON
+      args = { raw: tc.function.arguments };
+    }
+    return {
+      id: tc.id,
+      name: tc.function.name,
+      args,
+    };
+  });
+}
+
+/**
+ * Fallback: parse tool calls from text content when models output them as text
+ * Supports multiple formats used by different models:
+ * - <tool_call>{"name":"...","arguments":{...}}</tool_call>
+ * - ✿FUNCTION✿ format (Qwen-style)
+ * - Raw JSON with known function names
+ */
+function parseToolCallsFromText(text) {
+  if (!text) return [];
+  const results = [];
+
+  // Pattern 1: <tool_call>JSON</tool_call>
+  const toolCallTagRegex = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/gi;
+  let match;
+  while ((match = toolCallTagRegex.exec(text)) !== null) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      results.push({
+        id: `text_tc_${results.length}`,
+        name: parsed.name || parsed.function?.name || '',
+        args: parsed.arguments || parsed.function?.arguments || parsed.parameters || {},
+      });
+    } catch { /* skip */ }
+  }
+
+  // Pattern 2: ✿FUNCTION✿ name ✿ARGS✿ json ✿RESULT✿ (Qwen chat format)
+  const qwenRegex = /✿FUNCTION✿\s*(\w+)\s*\n✿ARGS✿\s*([\s\S]*?)(?:\n✿|$)/gi;
+  while ((match = qwenRegex.exec(text)) !== null) {
+    try {
+      const args = JSON.parse(match[2].trim());
+      results.push({
+        id: `text_tc_${results.length}`,
+        name: match[1],
+        args,
+      });
+    } catch { /* skip */ }
+  }
+
+  // Pattern 3: Look for JSON objects with known tool names in text
+  const knownTools = ['update_code', 'add_element', 'update_element', 'remove_element'];
+  const jsonBlockRegex = /\{[\s\S]*?"(?:name|function)"[\s\S]*?\}/g;
+  if (results.length === 0) {
+    while ((match = jsonBlockRegex.exec(text)) !== null) {
+      try {
+        const parsed = JSON.parse(match[0]);
+        const name = parsed.name || parsed.function;
+        if (name && knownTools.includes(name)) {
+          results.push({
+            id: `text_tc_${results.length}`,
+            name,
+            args: parsed.arguments || parsed.parameters || {},
+          });
+        }
+      } catch { /* skip incomplete JSON */ }
     }
   }
-});`,
-      elements: [
-        { id: 'enemy_spawner', name: '敌人生成器', type: 'container', x: 400, y: 0, width: 800, height: 30, depth: 5, properties: { spawnRate: 1000, color: '#ef4444' } },
-      ],
-    };
+
+  return results;
+}
+
+/**
+ * Main entry: Generate game code from user prompt
+ * Replaces the old mock implementation.
+ *
+ * @param {string} prompt - User's message
+ * @param {object} context - Project context
+ * @param {string} context.templateType
+ * @param {string} context.dimension
+ * @param {Array} context.elements
+ * @param {Array} context.scripts
+ * @param {Array} context.conversationHistory - Previous messages
+ * @param {function} context.onChunk - Streaming callback
+ * @param {AbortSignal} context.signal - Abort signal
+ * @returns {Promise<{message: string, toolCalls: Array, code: string|null}>}
+ */
+export async function generateGameCode(prompt, context = {}) {
+  const {
+    templateType = '',
+    dimension = '2D',
+    elements = [],
+    scripts = [],
+    conversationHistory = [],
+    onChunk = null,
+    signal = null,
+  } = context;
+
+  const llmState = useLlmStore.getState();
+  const aiMode = llmState.aiMode;
+
+  // Build system prompt with engine context
+  const systemPrompt = buildSystemPrompt({
+    dimension,
+    templateType,
+    elements,
+    scripts,
+    aiMode,
+  });
+
+  // Construct messages array
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: prompt },
+  ];
+
+  // Determine if we should use tools (only in act mode with OpenAI-compatible)
+  const config = llmState.getActiveConfig();
+  const useTools = aiMode === 'act' && config?.protocol !== 'ollama';
+
+  // Call LLM
+  const response = await callLLM(messages, {
+    tools: useTools ? getToolDefinitions() : undefined,
+    onChunk,
+    signal,
+  });
+
+  const assistantMessage = response.choices?.[0]?.message;
+  if (!assistantMessage) {
+    throw new Error('AI 返回了空响应');
   }
 
-  if (lower.includes('得分') || lower.includes('分数') || lower.includes('计分')) {
-    return {
-      message: '✅ 已添加计分系统！击败敌人 +10 分。',
-      code: `// AI 生成: 计分系统
-let score = 0;
-const scoreText = new PIXI.Text({
-  text: '得分: 0',
-  style: {
-    fontFamily: 'Arial',
-    fontSize: 24,
-    fill: 0xffffff,
-    dropShadow: { color: 0x000000, blur: 4, distance: 2 },
-  }
-});
-scoreText.x = 20;
-scoreText.y = 20;
-app.stage.addChild(scoreText);
+  const content = assistantMessage.content || '';
+  let toolCalls = parseToolCalls(assistantMessage.tool_calls);
 
-function addScore(points) {
-  score += points;
-  scoreText.text = '得分: ' + score;
-}`,
-      elements: [
-        { id: 'score_ui', name: '计分板', type: 'text', x: 20, y: 20, width: 150, height: 30, depth: 100, properties: { text: '得分: 0', fontSize: 24, color: '#ffffff' } },
-      ],
-    };
+  // Fallback: parse tool calls from text content if the model outputs them as text
+  // Some models (e.g. Qwen2.5-7B) may output tool calls in text format
+  if (toolCalls.length === 0 && content) {
+    const textToolCalls = parseToolCallsFromText(content);
+    if (textToolCalls.length > 0) {
+      toolCalls = textToolCalls;
+    }
   }
 
-  // Default response
+  // Parse any inline code blocks from the text response
+  const { cleanText, codeBlocks } = parseCodeBlocks(content);
+
+  // Try to extract the main code (first JS block)
+  const mainCode = codeBlocks.find(b => b.lang === 'javascript' || b.lang === 'js')?.code || null;
+
   return {
-    message: `🤖 AI 理解了你的需求: "${prompt}"\n\n已生成基础游戏框架代码。你可以继续描述需要添加的功能，例如：\n• "添加一个可控制的玩家角色"\n• "创建夜空背景和地面"\n• "添加从天上掉落的敌人"\n• "加入计分系统"`,
-    code: `// AI 生成: 基于描述 "${prompt}"
-// 初始化游戏画布
-const bg = new PIXI.Graphics();
-bg.rect(0, 0, 800, 600);
-bg.fill({ color: 0x111827 });
-app.stage.addChild(bg);
-
-const title = new PIXI.Text({
-  text: '${prompt}',
-  style: {
-    fontFamily: 'Arial',
-    fontSize: 20,
-    fill: 0x94a3b8,
-    wordWrap: true,
-    wordWrapWidth: 600,
-    align: 'center',
-  }
-});
-title.anchor.set(0.5);
-title.x = 400;
-title.y = 300;
-app.stage.addChild(title);`,
-    elements: [],
+    message: cleanText || content,
+    toolCalls,
+    code: mainCode,
+    codeBlocks,
+    rawContent: content,
   };
 }
 
 /**
- * Generate a game sprite/image from text description (Mock)
- * @param {string} prompt - Description of the image to generate
- * @returns {Promise<{imageUrl: string, message: string}>}
+ * Test LLM connection
+ * @returns {Promise<{success: boolean, message: string, model: string}>}
  */
-export async function generateSprite(prompt) {
-  await delay(2000 + Math.random() * 1000);
+export async function testConnection() {
+  try {
+    const response = await callLLM([
+      { role: 'system', content: 'Reply with exactly: "连接成功"' },
+      { role: 'user', content: 'test' },
+    ]);
 
-  // Return a generated svg data URL as mock
-  const colors = ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-
-  const svg = `<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-    <rect x="8" y="8" width="48" height="48" rx="8" fill="${color}" opacity="0.9"/>
-    <circle cx="24" cy="28" r="4" fill="white"/>
-    <circle cx="40" cy="28" r="4" fill="white"/>
-    <path d="M 20 40 Q 32 50 44 40" stroke="white" stroke-width="2" fill="none"/>
-  </svg>`;
-
-  const dataUrl = `data:image/svg+xml;base64,${btoa(svg)}`;
-
-  return {
-    imageUrl: dataUrl,
-    message: `✅ 已为你生成素材: "${prompt}"。你可以将它拖入画布使用。`,
-  };
+    const content = response.choices?.[0]?.message?.content || '';
+    const model = useLlmStore.getState().activeModel;
+    return {
+      success: true,
+      message: content.slice(0, 100),
+      model,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: e.message,
+      model: '',
+    };
+  }
 }

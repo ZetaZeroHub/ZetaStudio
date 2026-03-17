@@ -47,6 +47,22 @@
   color: var(--text-primary);
 }
 
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.settingsBtn:hover {
+  color: var(--text-primary);
+}
+
 .navRight {
   display: flex;
   align-items: center;

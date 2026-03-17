@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Settings } from 'lucide-react';
+import { Sparkles, Settings, Castle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import styles from './ModeSelectorOverlay.module.css';
 
 export default function ModeSelectorOverlay({ onSelect }) {
+  const navigate = useNavigate();
   return (
     <div className={styles.overlay}>
       <motion.div
@@ -41,6 +43,20 @@ export default function ModeSelectorOverlay({ onSelect }) {
             </div>
             <div className={styles.optionLabel}>专业模式</div>
             <div className={styles.optionDesc}>完整编辑器<br />代码 · 2D/3D · AI 助手</div>
+          </motion.button>
+
+          <motion.button
+            className={styles.optionMaze}
+            onClick={() => { onSelect('simple'); navigate('/maze'); }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <div className={styles.optionIcon}>
+              <Castle size={32} />
+            </div>
+            <div className={styles.optionLabel}>游戏梦想家</div>
+            <div className={styles.optionDesc}>AI 迷宫冒险<br />创造 · 挑战 · 分享</div>
+            <div className={styles.optionBadgeMaze}>NEW</div>
           </motion.button>
         </div>
 

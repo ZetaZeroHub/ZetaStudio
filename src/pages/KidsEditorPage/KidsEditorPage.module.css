@@ -264,6 +264,23 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  /* Preview mode: hide AI panel, fullscreen game */
+  .aiPanelHiddenMobile {
+    display: none !important;
+  }
+
+  .previewMode .content {
+    flex-direction: column;
+  }
+
+  .previewMode .gamePanel {
+    height: 100%;
+  }
+
+  .previewMode .topBar {
+    padding: 4px 8px;
+  }
 }
 
 /* ============================================
@@ -304,5 +321,18 @@
   .modeBtn {
     padding: 6px 10px;
     font-size: 0.72rem;
+  }
+
+  /* Preview mode: hide AI panel, fullscreen game */
+  .aiPanelHiddenMobile {
+    display: none !important;
+  }
+
+  .previewMode .content {
+    flex-direction: column;
+  }
+
+  .previewMode .topBar {
+    padding: 4px 6px;
   }
 }

@@ -454,4 +454,18 @@
     font-family: var(--font-sans);
     font-weight: 500;
   }
+
+  /* Preview mode: fullscreen game, hide tab bar & code */
+  .previewMode .bottomTabBar {
+    display: none;
+  }
+
+  .previewMode .codeArea {
+    display: none;
+  }
+
+  .previewMode .canvasArea {
+    min-height: 0;
+    flex: 1;
+  }
 }

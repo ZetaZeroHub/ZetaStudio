@@ -1,0 +1,389 @@
+/* MazeGamePage — 横版冒险游戏 (mobile-first) */
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1a1a2e;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Game header bar */
+.gameBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.gameBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+}
+
+.backBtn:active { background: rgba(255,255,255,0.15); }
+
+.levelName {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+
+.gameBarRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+}
+
+.statValue {
+  color: #fff;
+  font-weight: 800;
+}
+
+.hpHearts {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Canvas container */
+.canvasContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Mobile controls — platform game layout */
+.mobileControls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 20;
+  pointer-events: none;
+}
+
+.controlsLeft {
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.controlsRight {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+/* Direction buttons (left side) */
+.dirBtn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dirBtn:active {
+  background: rgba(88, 204, 2, 0.4);
+  border-color: #58CC02;
+}
+
+/* Action buttons (right side) */
+.actionBtn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.jumpBtn {
+  background: rgba(88, 204, 2, 0.25);
+  border-color: rgba(88, 204, 2, 0.5);
+  color: #58CC02;
+  margin-bottom: 20px;
+}
+
+.jumpBtn:active {
+  background: rgba(88, 204, 2, 0.5);
+}
+
+.attackBtn {
+  background: rgba(255, 183, 77, 0.25);
+  border-color: rgba(255, 183, 77, 0.5);
+  color: #FFB74D;
+  font-size: 1.2rem;
+}
+
+.attackBtn:active {
+  background: rgba(255, 183, 77, 0.5);
+}
+
+/* Element selector (center bottom) */
+.elementSelector {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-end;
+  margin-bottom: 10px;
+  pointer-events: auto;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+  border-radius: 18px;
+  padding: 4px 6px;
+}
+
+.elemBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.elemBtnActive {
+  border-color: var(--elem-color, #FFD740);
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 12px var(--elem-color, #FFD740),
+              inset 0 0 6px rgba(255,255,255,0.1);
+  transform: scale(1.15);
+}
+
+.elemBtn:active {
+  transform: scale(0.95);
+}
+
+.ammoCount {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  background: #FF6B35;
+  color: #fff;
+  border-radius: 8px;
+  padding: 1px 4px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.elemBtn {
+  position: relative;
+}
+
+/* Victory overlay */
+.victoryOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.victoryCard {
+  text-align: center;
+  padding: 28px 24px;
+  background: #fff;
+  border-radius: 24px;
+  max-width: 300px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.victoryTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #58CC02;
+  margin-bottom: 8px;
+}
+
+.victoryStats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 12px 0;
+}
+
+.victoryStat {
+  text-align: center;
+}
+
+.victoryStatValue {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #3c3c3c;
+}
+
+.victoryStatLabel {
+  font-size: 0.65rem;
+  color: #999;
+  font-weight: 600;
+}
+
+.victoryStars {
+  font-size: 28px;
+  margin: 10px 0 16px;
+  letter-spacing: 4px;
+}
+
+.victoryActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btnVictoryPrimary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px;
+  border-radius: 14px;
+  border: none;
+  background: #58CC02;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #46a302;
+}
+
+.btnVictoryPrimary:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+.btnVictorySecondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 14px;
+  border: 2px solid #e5e5e5;
+  background: #fff;
+  color: #777;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Game Over overlay */
+.gameOverCard {
+  text-align: center;
+  padding: 28px 24px;
+  background: #fff;
+  border-radius: 24px;
+  max-width: 300px;
+  width: 90%;
+}
+
+.shopCard {
+  padding: 20px 18px;
+  background: rgba(30, 30, 40, 0.96);
+  border: 3px solid #FFD54F;
+  border-radius: 16px;
+  max-width: 320px;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(255, 213, 79, 0.3), 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+.gameOverTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #FF4B4B;
+  margin-bottom: 12px;
+}
+
+/* Loading */
+.loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+}
+
+/* Hide mobile controls on desktop with mouse */
+@media (min-width: 768px) and (hover: hover) {
+  .mobileControls { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .page { max-width: 100%; }
+}

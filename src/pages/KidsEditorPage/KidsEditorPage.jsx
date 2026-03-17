@@ -56,7 +56,7 @@ export default function KidsEditorPage() {
   }
 
   return (
-    <div className={styles.page} data-kids-mode>
+    <div className={`${styles.page} ${mode === 'preview' ? styles.previewMode : ''}`} data-kids-mode>
       {/* Top Bar */}
       <header className={styles.topBar}>
         <button className={styles.backBtn} onClick={() => navigate('/')}>
@@ -74,8 +74,8 @@ export default function KidsEditorPage() {
 
       {/* Main Content */}
       <div className={styles.content}>
-        {/* Left: AI Panel */}
-        <div className={styles.aiPanel}>
+        {/* Left: AI Panel — hidden on mobile in preview mode */}
+        <div className={`${styles.aiPanel} ${mode === 'preview' ? styles.aiPanelHiddenMobile : ''}`}>
           <AiPanel />
         </div>
 

@@ -42,6 +42,13 @@ export default function EditorPage() {
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
   const [codeFullscreen, setCodeFullscreen] = useState(false);
 
+  // Auto-switch to canvas tab on mobile when entering preview mode
+  useEffect(() => {
+    if (mode === 'preview') {
+      setMobileTab('canvas');
+    }
+  }, [mode]);
+
   useEffect(() => {
     loadAllProjects();
   }, []);
@@ -83,7 +90,7 @@ export default function EditorPage() {
   }
 
   return (
-    <div className={styles.editorPage}>
+    <div className={`${styles.editorPage} ${mode === 'preview' ? styles.previewMode : ''}`}>
       {/* Top Toolbar */}
       <Navbar>
         <span className={styles.projectTitle}>
@@ -209,7 +216,9 @@ export default function EditorPage() {
 
       {/* Mobile Bottom Tab Bar */}
       <div className={styles.bottomTabBar}>
-        {MOBILE_TABS.map(({ key, icon: Icon }) => (
+        {MOBILE_TABS
+          .filter(({ key }) => mode === 'preview' ? key === 'canvas' : true)
+          .map(({ key, icon: Icon }) => (
           <button
             key={key}
             className={`${styles.bottomTab} ${mobileTab === key ? styles.bottomTabActive : ''}`}
