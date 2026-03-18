@@ -377,7 +377,14 @@ export function updateInteractables(interactables, gs, delta, platforms, onDrop,
       }
 
       // ══════ 开关 ══════
-      case 'switch': {
+      case 'switch':
+      case 'switch_blue':
+      case 'switch_red':
+      case 'switch_green':
+      case 'switch_yellow':
+      case 'lever':
+      case 'lever_left':
+      case 'lever_right': {
         if (obj.activated) break;
         const dist = Math.sqrt(
           (gs.px - (obj.x + 16)) ** 2 +
@@ -401,9 +408,256 @@ export function updateInteractables(interactables, gs, delta, platforms, onDrop,
         }
         break;
       }
+
+      // ══════ 尖刺 ══════
+      case 'spikes':
+      case 'block_spikes': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        const charLeft = gs.px - PLAYER_W / 2;
+        const charRight = gs.px + PLAYER_W / 2;
+        const charTop = gs.py - PLAYER_H;
+        const charBot = gs.py;
+
+        // Overlap check
+        if (charRight > obj.x + 4 && charLeft < obj.x + bW - 4 &&
+            charBot > obj.y + 4 && charTop < obj.y + bH - 4) {
+          damagePlayer(gs, 1, obj.x + bW / 2, 30);
+        }
+        break;
+      }
+
+      // ══════ 锯齿 ══════
+      case 'saw': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        // Rotate animation
+        obj.timer = (obj.timer || 0) + delta * 0.1;
+
+        const cx = obj.x + bW / 2;
+        const cy = obj.y + bH / 2;
+        const pcx = gs.px;
+        const pcy = gs.py - PLAYER_H / 2;
+        const dist = Math.sqrt((pcx - cx) ** 2 + (pcy - cy) ** 2);
+        if (dist < bW / 2 + PLAYER_W / 2 - 6) {
+          damagePlayer(gs, 2, cx, 60);
+        }
+        break;
+      }
+
+      // ══════ 岩浆 ══════
+      case 'lava':
+      case 'lava_top':
+      case 'lava_top_low': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        // Animate lava surface
+        obj.timer = (obj.timer || 0) + delta * 0.05;
+
+        const charLeft = gs.px - PLAYER_W / 2;
+        const charRight = gs.px + PLAYER_W / 2;
+        const charBot = gs.py;
+        const charTop = gs.py - PLAYER_H;
+
+        if (charRight > obj.x + 2 && charLeft < obj.x + bW - 2 &&
+            charBot > obj.y + 6 && charTop < obj.y + bH) {
+          // Continuous damage — 1 HP per ~60 frames
+          if (!gs.invincible || gs.invincible <= 0) {
+            gs.hp = (gs.hp ?? 3) - 0.02 * delta;
+            gs.invincible = 8; // shorter cooldown for lava (rapid ticking)
+            gs.hurtFlash = 15;
+          }
+          // Slow down in lava
+          gs.vx *= 0.7;
+          gs.vy *= 0.5;
+          // Slight upward buoyancy to prevent instant sink
+          if (gs.vy > 2) gs.vy = 2;
+        }
+        break;
+      }
+
+      // ══════ 水 ══════
+      case 'water':
+      case 'water_top':
+      case 'water_top_low': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        // Wave animation
+        obj.timer = (obj.timer || 0) + delta * 0.03;
+
+        const charLeft = gs.px - PLAYER_W / 2;
+        const charRight = gs.px + PLAYER_W / 2;
+        const charBot = gs.py;
+        const charTop = gs.py - PLAYER_H;
+
+        if (charRight > obj.x + 2 && charLeft < obj.x + bW - 2 &&
+            charBot > obj.y + 4 && charTop < obj.y + bH) {
+          gs.inWater = true;
+          // Water physics: reduced gravity, can swim up
+          gs.vy *= 0.92; // drag
+          gs.vx *= 0.94; // lateral drag
+          // Slow sinking (buoyancy)
+          if (gs.vy > 1.5) gs.vy = 1.5;
+          // Swim up when jump is pressed
+          if (gs.inputJump) {
+            gs.vy = Math.max(gs.vy - 1.2, -3);
+          }
+          // Bubble particles flag
+          gs.waterBubbles = true;
+        }
+        break;
+      }
+
+      // ══════ 传送带 ══════
+      case 'conveyor': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        // Belt animation
+        obj.timer = (obj.timer || 0) + delta * 0.08;
+        const direction = obj.direction || 1; // 1 = right, -1 = left
+
+        // Player standing on conveyor
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+            gs.py = obj.y;
+            gs.vy = 0;
+            gs.onGround = true;
+            // Apply conveyor movement
+            gs.px += 1.8 * direction * delta;
+          }
+        }
+        break;
+      }
+
+      // ══════ 弹簧 ══════
+      case 'spring':
+      case 'spring_out': {
+        const bW = obj.w || 32;
+
+        // Player landing on spring
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 14) {
+            // SUPER BOUNCE!
+            gs.vy = PHYSICS.JUMP_FORCE * 1.6;
+            gs.onGround = false;
+            gs.jumpReleased = true; // prevent hold-jump stacking
+            obj.timer = 15; // spring animation
+            obj.springBounce = true;
+          }
+        }
+        // Animate spring reset
+        if (obj.timer > 0) obj.timer -= delta;
+        if (obj.timer <= 0) obj.springBounce = false;
+        break;
+      }
+
+      // ══════ 炸弹 ══════
+      case 'bomb': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        const cx = obj.x + bW / 2;
+        const cy = obj.y + bH / 2;
+        const pcx = gs.px;
+        const pcy = gs.py - PLAYER_H / 2;
+        const dist = Math.sqrt((pcx - cx) ** 2 + (pcy - cy) ** 2);
+
+        // Proximity trigger
+        if (!obj.activated && dist < 60) {
+          obj.activated = true;
+          obj.fuseTimer = 90; // ~1.5 seconds at 60fps
+        }
+
+        // Countdown
+        if (obj.activated && obj.fuseTimer > 0) {
+          obj.fuseTimer -= delta;
+          obj.timer = (obj.timer || 0) + delta * 0.2; // shake animation
+          
+          // EXPLODE!
+          if (obj.fuseTimer <= 0) {
+            // Explosion radius damage
+            const blastRadius = 80;
+            if (dist < blastRadius) {
+              damagePlayer(gs, 2, cx, 80);
+            }
+            obj.alive = false;
+            obj.breakAnim = 20; // explosion particle timer
+          }
+        }
+        break;
+      }
+
+      // ══════ 锁 (需要对应钥匙打开) ══════
+      case 'lock_blue':
+      case 'lock_red':
+      case 'lock_green':
+      case 'lock_yellow': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        const color = obj.type.replace('lock_', '');
+
+        // Acts as wall until unlocked
+        if (!obj.activated) {
+          // Side collision (wall behavior)
+          if (gs.py > obj.y + 4 && gs.py - PLAYER_H < obj.y + bH - 4) {
+            if (gs.px + PLAYER_W / 2 > obj.x && gs.px - PLAYER_W / 2 < obj.x + bW) {
+              if (gs.vx > 0 && gs.px < obj.x + bW / 2) {
+                gs.px = obj.x - PLAYER_W / 2;
+                gs.vx = 0;
+              } else if (gs.vx < 0 && gs.px > obj.x + bW / 2) {
+                gs.px = obj.x + bW + PLAYER_W / 2;
+                gs.vx = 0;
+              }
+            }
+          }
+          // Top collision (platform)
+          if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+            if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+              gs.py = obj.y;
+              gs.vy = 0;
+              gs.onGround = true;
+            }
+          }
+          // Check if player has the key
+          const keyId = `hud_key_${color}`;
+          if (gs.inventory && gs.inventory.includes(keyId)) {
+            const touchDist = Math.sqrt((gs.px - (obj.x + bW / 2)) ** 2 + ((gs.py - PLAYER_H / 2) - (obj.y + bH / 2)) ** 2);
+            if (touchDist < 40) {
+              obj.activated = true;
+              obj.alive = false;
+              // Remove key from inventory
+              gs.inventory = gs.inventory.filter(k => k !== keyId);
+            }
+          }
+        }
+        break;
+      }
     }
   }
+
+  // Reset water state each frame (will be set by water tiles if overlapping)
+  // This must happen AFTER processing all interactables
+  // The caller should set gs.inWater = false BEFORE calling this function
 
   // Remove dead breakable blocks
   return interactables.filter(o => o.alive || o.breakAnim > 0);
 }
+
+/**
+ * Damage player helper
+ * @param {object} gs - game state
+ * @param {number} dmg - damage amount
+ * @param {number} sourceX - x position of damage source (for knockback direction)
+ * @param {number} knockback - knockback force
+ */
+export function damagePlayer(gs, dmg, sourceX, knockback = 30) {
+  if (gs.invincible && gs.invincible > 0) return;
+  gs.hp = (gs.hp ?? 3) - dmg;
+  gs.invincible = 45; // ~0.75s invincibility
+  gs.hurtFlash = 20;  // flash effect frames
+  
+  // Knockback
+  const dir = gs.px > sourceX ? 1 : -1;
+  gs.vx = dir * (knockback * 0.15);
+  gs.vy = Math.min(gs.vy, -6); // bounce up
+}
+

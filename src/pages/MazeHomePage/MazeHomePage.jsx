@@ -1,13 +1,14 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
-import { ArrowRight, Compass, Sparkles } from 'lucide-react';
 import styles from './MazeHomePage.module.css';
 
 /* ── Asset paths ── */
 const C = '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double';
 const T = '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Tiles/Double';
 const R = '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles';
+const CUR = '/assets/kenney/kenney_cursor-pixel-pack/Tiles';
+const UI = '/assets/kenney/kenney_ui-pack-pixel-adventure/Tiles/Large tiles/Thick outline';
 
 const ASSETS = {
   // Hero frames
@@ -25,11 +26,19 @@ const ASSETS = {
   cloud1:  `${R}/tile_0231.png`,
   cloud2:  `${R}/tile_0232.png`,
   tree:    `${R}/tile_0198.png`,
-  gem:     `${R}/tile_0067.png`,
-  star:    `${R}/tile_0064.png`,
-  key:     `${R}/tile_0060.png`,
-  flag:    `${R}/tile_0130.png`,
-  heart:   `${R}/tile_0044.png`,
+  // Collectibles — cursor-pixel-pack icons
+  gem:     `${CUR}/tile_0064.png`,   // diamond shape
+  star:    `${CUR}/tile_0058.png`,   // hand/click icon
+  key:     `${CUR}/tile_0068.png`,   // lock icon
+  heart:   `${CUR}/tile_0057.png`,   // crosshair/target
+  flag:    `${CUR}/tile_0150.png`,   // pencil/edit icon
+  // Button icons — cursor-pixel-pack
+  iconPlay:    `${CUR}/tile_0042.png`,  // pointing cursor
+  iconCreate:  `${CUR}/tile_0043.png`,  // pointer alt
+  iconArrow:   `${CUR}/tile_0072.png`,  // right arrow
+  // UI panels
+  panelBg:     `${UI}/tile_0000.png`,   // beige panel
+  panelFrame:  `${UI}/tile_0006.png`,   // fancy frame
 };
 
 /* ── Preload images ── */
@@ -350,7 +359,9 @@ export default function MazeHomePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className={styles.heroTitle}>游戏梦想家</h1>
+          <div className={styles.titlePanel} style={{ backgroundImage: `url(${ASSETS.panelFrame})` }}>
+            <h1 className={styles.heroTitle}>游戏梦想家</h1>
+          </div>
           <p className={styles.heroSub}>AI 驱动创作 · 用想象力生成你的游戏世界</p>
         </motion.div>
 
@@ -363,40 +374,59 @@ export default function MazeHomePage() {
             transition={{ delay: 0.3 }}
             whileTap={{ scale: 0.96 }}
           >
-            <Compass size={22} />
+            <img src={ASSETS.iconPlay} alt="" className={styles.btnIcon} />
             <span>开始冒险</span>
-            <ArrowRight size={18} />
+            <img src={ASSETS.iconArrow} alt="" className={styles.btnIconSmall} />
           </motion.button>
 
           <motion.button
             className={styles.btnSecondary}
-            onClick={() => navigate('/maze/difficulty')}
+            onClick={() => navigate('/maze/creator')}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             whileTap={{ scale: 0.96 }}
           >
-            <Sparkles size={18} />
-            <span>AI 创造游戏</span>
+            <img src={ASSETS.iconCreate} alt="" className={styles.btnIcon} />
+            <span>创作游戏</span>
           </motion.button>
         </div>
 
-        <section className={styles.features}>
-          <div className={styles.featureItem}>
-            <img src={ASSETS.flag} alt="" className={styles.featureIcon} />
-            <span>多元关卡</span>
-          </div>
-          <div className={styles.featureDivider} />
-          <div className={styles.featureItem}>
-            <img src={ASSETS.star} alt="" className={styles.featureIcon} />
-            <span>AI 生成</span>
-          </div>
-          <div className={styles.featureDivider} />
-          <div className={styles.featureItem}>
-            <img src={ASSETS.key} alt="" className={styles.featureIcon} />
-            <span>无限探索</span>
-          </div>
-        </section>
+        {/* User works section */}
+        {(() => {
+          const STORAGE_KEY = 'game_drafts_v1';
+          let drafts = [];
+          try { drafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch {}
+          const recent = drafts.filter(d => d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3);
+          if (recent.length === 0) return null;
+          return (
+            <motion.div
+              className={styles.worksSection}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <h3 className={styles.worksSectionTitle}>我的作品</h3>
+              <div className={styles.worksGrid}>
+                {recent.map((d) => (
+                  <div
+                    key={d.id}
+                    className={styles.workCard}
+                    onClick={() => navigate(`/maze/editor/${d.templateType || 'platformer'}/${d.baseLevelId || d.id}`)}
+                  >
+                    <div className={styles.workCardType}>
+                      {d.templateType === 'topdown' ? '🌍 2.5D' : '🎮 横版'}
+                    </div>
+                    <div className={styles.workCardName}>{d.name || '未命名'}</div>
+                    <div className={styles.workCardTime}>
+                      {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString('zh-CN') : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          );
+        })()}
       </div>
     </div>
   );

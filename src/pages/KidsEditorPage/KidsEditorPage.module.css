@@ -58,7 +58,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 
 .backBtn:hover {
@@ -92,7 +92,7 @@
   border-radius: 10px;
   cursor: pointer;
   box-shadow: 0 2px 0 #46a302;
-  transition: all 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .saveBtn:hover {
@@ -159,7 +159,7 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s, transform 0.2s;
 }
 
 .modeBtn:hover {

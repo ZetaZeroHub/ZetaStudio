@@ -236,17 +236,16 @@ export function updateTopDownPhysics(gs, keys, viewW, viewH) {
     }
   }
 
-  // ── NPC 交互 ──
-  gs.dialogText = null;
-  gs.dialogSpeaker = null;
-  if (keys.e || keys.interact) {
-    const npc = gs.level.entities.find(e =>
-      e.type === 'npc' && Math.abs(e.gx - pgx) <= 1 && Math.abs(e.gy - pgy) <= 1
-    );
-    if (npc) {
-      gs.dialogText = npc.dialog;
-      gs.dialogSpeaker = npc.name;
-    }
+  // ── NPC 交互 — 靠近自动显示对话，常驻到离开范围 ──
+  const nearNpc = gs.level.entities.find(e =>
+    e.type === 'npc' && Math.abs(e.gx - pgx) <= 2 && Math.abs(e.gy - pgy) <= 2
+  );
+  if (nearNpc) {
+    gs.dialogText = nearNpc.dialog;
+    gs.dialogSpeaker = nearNpc.name;
+  } else {
+    gs.dialogText = null;
+    gs.dialogSpeaker = null;
   }
 
   // ── 迷雾探索 ──

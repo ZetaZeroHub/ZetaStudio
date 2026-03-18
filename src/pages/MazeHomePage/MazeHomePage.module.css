@@ -51,7 +51,34 @@
   color: #1B5E20;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 0 rgba(255,255,255,0.7);
-  margin-bottom: 6px;
+  margin: 0;
+}
+
+.titlePanel {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  padding: 12px 28px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.btnIcon {
+  width: 22px;
+  height: 22px;
+  image-rendering: pixelated;
+  filter: brightness(0) invert(1); /* make white icons visible on colored bg */
+}
+
+.btnIconSmall {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+  filter: brightness(0) invert(1);
+}
+
+.btnSecondary .btnIcon {
+  filter: none; /* dark icons on light bg */
 }
 
 .heroSub {
@@ -86,7 +113,7 @@
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 5px 0 #46a302, 0 8px 20px rgba(88, 204, 2, 0.3);
-  transition: all 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s;
   transform: translateY(0);
 }
 
@@ -111,7 +138,7 @@
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: transform 0.12s, box-shadow 0.12s;
   transform: translateY(0);
   box-shadow: 0 4px 0 rgba(255,255,255,0.35);
 }
@@ -159,8 +186,102 @@
   border-radius: 1px;
 }
 
+/* ── Works section ── */
+.worksSection {
+  width: 100%;
+  max-width: 400px;
+  margin-top: 8px;
+}
+.worksSectionTitle {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  margin-bottom: 10px;
+  text-align: center;
+}
+.worksGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.workCard {
+  background: rgba(255,255,255,0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  border: 2px solid rgba(255,255,255,0.5);
+}
+.workCard:active { transform: scale(0.95); }
+.workCardType {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #58CC02;
+  margin-bottom: 4px;
+}
+.workCardName {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #2E3A2F;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.workCardTime {
+  font-size: 0.58rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+/* ── Landscape mobile — 横版手机适配 ── */
+@media (orientation: landscape) and (max-height: 500px) {
+  .page { min-height: 100vh; min-height: 100dvh; }
+
+  .contentOverlay {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    gap: 24px;
+  }
+
+  .titleBlock {
+    padding: 14px 20px;
+    border-radius: 16px;
+    flex-shrink: 0;
+  }
+  .heroTitle { font-size: 1.3rem; }
+  .heroSub { font-size: 0.75rem; }
+  .titlePanel { padding: 8px 16px; margin-bottom: 4px; }
+
+  .actions {
+    flex-direction: column;
+    gap: 8px;
+    max-width: 200px;
+    width: auto;
+  }
+  .btnPrimary {
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 #46a302;
+  }
+  .btnSecondary {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 0 rgba(255,255,255,0.35);
+  }
+
+  .features { display: none; }
+  .worksSection { display: none; }
+}
+
 /* ── Tablet+ ── */
-@media (min-width: 768px) {
+@media (min-width: 768px) and (orientation: portrait) {
   .heroTitle { font-size: 2.6rem; }
   .heroSub { font-size: 1.1rem; }
   .actions {
@@ -172,5 +293,5 @@
 
 /* ── Desktop ── */
 @media (min-width: 1024px) {
-  .page { max-width: 480px; margin: 0 auto; box-shadow: 0 0 40px rgba(0,0,0,0.08); }
+  .page { max-width: 100%; }
 }

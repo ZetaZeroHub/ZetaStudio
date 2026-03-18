@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, ArrowRight, ChevronLeft, ChevronRight, Heart, Coins } from 'lucide-react';
@@ -24,7 +24,7 @@ const MERCHANT_ITEMS = [
 
 /* ===== Main Component ===== */
 export default function MazeGamePage() {
-  const { levelId } = useParams();
+  const { levelId, draftId } = useParams();
   const navigate = useNavigate();
   const canvasRef = useRef(null);
   const appRef = useRef(null);
@@ -41,8 +41,57 @@ export default function MazeGamePage() {
   const [currentElement, setCurrentElement] = useState('none');  // tracks UI display
   const [currentWeapon, setCurrentWeapon] = useState('bubble');
   const [showShop, setShowShop] = useState(false);
-  const [shopStars, setShopStars] = useState(0);
-  const level = getLevelById(levelId);
+  const [shopCoins, setShopCoins] = useState(0);
+  const staticLevel = getLevelById(levelId);
+
+  // Load level data: either from a specific draft (play-draft route) or official level (play route)
+  // IMPORTANT: Drafts are ONLY loaded via explicit /maze/play-draft/:draftId route
+  //            Official /maze/play/:levelId route ALWAYS uses the original level data
+  const level = useMemo(() => {
+    // Case 1: Playing a specific draft by ID
+    if (draftId) {
+      try {
+        const raw = localStorage.getItem('game_drafts_v1');
+        if (raw) {
+          const drafts = JSON.parse(raw);
+          const draft = drafts.find(d => d.id === draftId);
+          if (draft && draft.levelData) {
+            // Deep clone to ensure complete isolation
+            const draftData = JSON.parse(JSON.stringify(draft.levelData));
+            // Get base level for fallback properties
+            const base = draftData.baseLevelId ? getLevelById(draftData.baseLevelId) : null;
+            const baseClone = base ? JSON.parse(JSON.stringify(base)) : {};
+            console.log('[MazeGamePage] Playing DRAFT:', draftId, 'name:', draft.name,
+              'items:', draftData.items?.length, 'platforms:', draftData.platforms?.length);
+            return {
+              ...baseClone,
+              ...draftData,
+              id: draftId, // Use draft ID, not base level ID
+              name: draft.name || draftData.name || baseClone.name || '自定义关卡',
+              platforms: draftData.platforms || baseClone.platforms || [],
+              items: draftData.items || baseClone.items || [],
+              enemies: draftData.enemies || baseClone.enemies || [],
+              interactables: draftData.interactables || baseClone.interactables || [],
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('[MazeGamePage] Failed to read draft data for', draftId, e);
+      }
+      // Draft not found, show error
+      console.error('[MazeGamePage] Draft not found:', draftId);
+      return null;
+    }
+
+    // Case 2: Playing an official level — always use original data, never load drafts
+    if (staticLevel) {
+      console.log('[MazeGamePage] Playing OFFICIAL level:', levelId, staticLevel.name);
+      // Deep clone to prevent any mutation of the original level data
+      return JSON.parse(JSON.stringify(staticLevel));
+    }
+
+    return null;
+  }, [staticLevel, levelId, draftId]);
 
   // Determine available elements based on difficulty
   const unlockedElements = level ? getUnlockedElements(level.difficulty) : ['none'];
@@ -137,11 +186,13 @@ export default function MazeGamePage() {
       const groundContainer = new PIXI.Container(); worldLayer.addChild(groundContainer);
       const platformContainer = new PIXI.Container(); worldLayer.addChild(platformContainer);
 
+      // Shared tile textures (used by drawWorld, items, and interactables)
+      const tiles = kenneyAssets?.tiles || {};
+
       function drawWorld() {
         groundContainer.removeChildren();
         platformContainer.removeChildren();
-        const tiles = kenneyAssets?.tiles;
-        if (!tiles) return;
+        if (!kenneyAssets?.tiles) return;
 
         // Choose terrain material by theme
         const material = level.theme === 'desert' ? 'sand'
@@ -150,6 +201,41 @@ export default function MazeGamePage() {
           : 'grass'; // forest default
 
         level.platforms.forEach(p => {
+          // ── Editor-placed tile with specific tileId → layered tiling (top + center) ──
+          if (p.tileId) {
+            // Extract material from tileId (e.g. 'grass_block_top' → 'grass', 'sand_cloud' → 'sand')
+            const mat = p.tileId.replace(/_block.*|_cloud.*/, '') || material;
+            const cols = Math.max(1, Math.ceil((p.w || TILE_SIZE) / TILE_SIZE));
+            const isGround = p.y >= 500;
+            const rows = isGround ? Math.max(2, Math.ceil((H - p.y + 200) / TILE_SIZE)) : 1;
+            const container = isGround ? groundContainer : platformContainer;
+            for (let col = 0; col < cols; col++) {
+              for (let row = 0; row < rows; row++) {
+                let tileName;
+                if (row === 0) {
+                  if (cols === 1) tileName = `terrain_${mat}_block`;
+                  else if (col === 0) tileName = `terrain_${mat}_block_top_left`;
+                  else if (col === cols - 1) tileName = `terrain_${mat}_block_top_right`;
+                  else tileName = `terrain_${mat}_block_top`;
+                } else {
+                  if (cols === 1) tileName = `terrain_${mat}_block_center`;
+                  else if (col === 0) tileName = `terrain_${mat}_block_left`;
+                  else if (col === cols - 1) tileName = `terrain_${mat}_block_right`;
+                  else tileName = `terrain_${mat}_block_center`;
+                }
+                const tex = tiles[tileName] || tiles[`terrain_${mat}_block`] || tiles[`terrain_grass_block_center`];
+                if (tex) {
+                  const spr = new PIXI.Sprite(tex);
+                  spr.x = p.x + col * TILE_SIZE;
+                  spr.y = p.y + row * TILE_SIZE;
+                  spr.width = TILE_SIZE;
+                  spr.height = TILE_SIZE;
+                  container.addChild(spr);
+                }
+              }
+            }
+            return; // Skip theme-based tiling for editor tiles
+          }
           const isGround = p.y >= 500;
           if (isGround) {
             // Tile-based ground rendering
@@ -239,8 +325,28 @@ export default function MazeGamePage() {
         });
       }
 
-      // Items
+      // Items — support tileId for editor-placed items
+      const ITEM_TEX_MAP = {
+        coin: 'coin_gold', heart: 'heart', star: 'star',
+        gem_blue: 'gem_blue', gem_red: 'gem_red', gem_green: 'gem_green', gem_yellow: 'gem_yellow',
+        key_blue: 'key_blue', key_red: 'key_red', key_green: 'key_green', key_yellow: 'key_yellow',
+        mushroom_red: 'mushroom_red', mushroom_brown: 'mushroom_brown',
+        fireball: 'fireball', flag_green: 'flag_green_a',
+      };
       const itemSprites = level.items.map(item => {
+        const texName = item.tileId || ITEM_TEX_MAP[item.type] || item.type;
+        const tex = tiles[texName];
+        if (tex) {
+          const spr = new PIXI.Sprite(tex);
+          spr.x = item.x; spr.y = item.y;
+          spr.width = 28; spr.height = 28;
+          spr._type = item.type;
+          spr._collected = false;
+          spr._isSprite = true;
+          worldLayer.addChild(spr);
+          return spr;
+        }
+        // Fallback to vector drawing
         const g = new PIXI.Graphics();
         g.x = item.x; g.y = item.y;
         g._type = item.type;
@@ -314,19 +420,32 @@ export default function MazeGamePage() {
         fgLayer.addChild(bossHpBar);
       }
 
-      // ── Merchant NPC (pixel-redux sprite) ──
+      // ── Merchant NPC (kenney animal-pack sprite) ──
       let merchantContainer = null;
       let merchantLabel = null;
       let merchantPrompt = null;
       if (level.merchant) {
         merchantContainer = new PIXI.Container();
-        // Use pixel-redux tile_0110 (yellow NPC character)
-        const npcTexPath = '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0110.png';
-        const npcTex = PIXI.Texture.from(npcTexPath);
-        const npcSprite = new PIXI.Sprite(npcTex);
-        npcSprite.anchor.set(0.5, 1.0);
-        npcSprite.scale.set(2.5);
-        merchantContainer.addChild(npcSprite);
+        // Use animal-pack sprite based on level theme
+        const merchantSprites = {
+          forest:  '/assets/kenney/kenney_animal-pack/PNG/Round/panda.png',
+          ocean:   '/assets/kenney/kenney_animal-pack/PNG/Round/penguin.png',
+          candy:   '/assets/kenney/kenney_animal-pack/PNG/Round/rabbit.png',
+          desert:  '/assets/kenney/kenney_animal-pack/PNG/Round/elephant.png',
+        };
+        const npcTexPath = merchantSprites[level.theme] || merchantSprites.forest;
+        // Async load the animal sprite to avoid Cache miss
+        PIXI.Assets.load(npcTexPath).then(npcTex => {
+          const npcSprite = new PIXI.Sprite(npcTex);
+          npcSprite.anchor.set(0.5, 1.0);
+          npcSprite.scale.set(0.45);
+          merchantContainer.addChildAt(npcSprite, 0);
+        }).catch(() => {
+          // Fallback: draw a simple circle placeholder
+          const fallback = new PIXI.Graphics();
+          fallback.beginFill(0xFFAA00); fallback.drawCircle(0, -20, 20); fallback.endFill();
+          merchantContainer.addChildAt(fallback, 0);
+        });
         merchantContainer.x = level.merchant.x;
         merchantContainer.y = level.merchant.y;
         // Make touchable for mobile
@@ -338,7 +457,7 @@ export default function MazeGamePage() {
           if (gs && gs.nearMerchant) {
             setShowShop(true);
             showShopRef.current = true;
-            setShopStars(gs.stars);
+            setShopCoins(gs.coins);
             playSound('click', 0.5);
           }
         });
@@ -390,14 +509,57 @@ export default function MazeGamePage() {
       const projectiles = [];
 
       // ── Interactables (问号砖/可破砖/推箱子/传送门/开关) ──
-      const interactableData = initInteractables(level.interactables || []);
+      const interactableData = initInteractables(level);
+      // Map interactable type → spritesheet texture name
+      const INTER_TEX_MAP = {
+        questionBlock: 'block_exclamation',
+        breakBlock: 'brick_brown',
+        pushBox: 'block_brown',
+        portal: 'door_closed_top',
+        switch: 'switch_blue',
+        spring: 'spring',
+        spikes: 'spikes',
+        bomb: 'bomb',
+        torch: 'torch_on_a',
+        ladder: 'ladder',
+        rope: 'rop_attached',
+        block_exclamation: 'block_exclamation',
+        block_exclamation_active: 'block_exclamation_active',
+        block_coin: 'block_coin',
+        block_strong: 'block_strong_exclamation',
+        switch_blue: 'switch_blue',
+        switch_red: 'switch_red',
+        switch_green: 'switch_green',
+        switch_yellow: 'switch_yellow',
+        bomb_active: 'bomb_active',
+        torch_on: 'torch_on_a',
+        torch_off: 'torch_off',
+      };
       const interactableGfx = interactableData.map(obj => {
+        const container = new PIXI.Container();
+        container.x = obj.x;
+        container.y = obj.y;
+        const w = obj.w || 32, h = obj.h || 32;
+        // Try to find a tile texture for this interactable
+        const texName = obj.tileId || INTER_TEX_MAP[obj.type];
+        const tex = texName ? tiles[texName] : null;
+        if (tex) {
+          const sprite = new PIXI.Sprite(tex);
+          sprite.width = w;
+          sprite.height = h;
+          container.addChild(sprite);
+          container._spriteChild = sprite;
+        }
+        // Always add a Graphics overlay for animations (shimmer, bounce, etc.)
         const gfx = new PIXI.Graphics();
-        gfx.x = obj.x;
-        gfx.y = obj.y;
-        drawInteractable(gfx, obj, 0);
-        worldLayer.addChild(gfx);
-        return { gfx, data: obj };
+        container.addChild(gfx);
+        container._gfxChild = gfx;
+        // If no texture, draw vector fallback
+        if (!tex) {
+          drawInteractable(gfx, obj, 0);
+        }
+        worldLayer.addChild(container);
+        return { gfx: container, data: obj };
       });
 
       // Game State
@@ -405,25 +567,26 @@ export default function MazeGamePage() {
         px: level.playerStart.x, py: level.playerStart.y,
         vx: 0, vy: 0,
         facing: 'right', onGround: false,
-        hp: 3, coins: 0, score: 0, stars: 0,
-        invincible: 0, hurtTimer: 0, attackTimer: 0,
+        hp: 3, maxHp: 3, coins: 0, score: 0, stars: 0,
+        invincible: 0, hurtTimer: 0, hurtFlash: 0, attackTimer: 0,
+        inWater: false, waterBubbles: false,
+        inventory: [], // collected keys etc.
         frame: 0, cameraX: 0, cameraY: 0,
         keys: {},
         mLeft: false, mRight: false, mJump: false, mAttack: false,
         won: false, dead: false,
         currentElement: 'none',
         currentWeapon: 'bubble',
-        unlockedWeapons: [],  // 初始只有泡泡
-        ammo: {},             // 弹药计数 { fire: N, water: N }
+        unlockedWeapons: [],
+        ammo: {},
         hasKey: false,
         bossDefeated: false,
         nearMerchant: false,
-        // Input helpers (set by readInput)
         inputLeft: false, inputRight: false, inputJump: false, inputAttack: false,
-        // 360° aiming
         aimAngle: 0,
         mouseWorldX: 0, mouseWorldY: 0,
-        isAiming: false, // true when touch/mouse is on canvas
+        isAiming: false,
+        _prevUiWeapon: 'bubble',
       };
       gsRef.current = gs;
 
@@ -474,15 +637,17 @@ export default function MazeGamePage() {
 
         // Timers
         if (gs.hurtTimer > 0) gs.hurtTimer -= delta;
+        if (gs.hurtFlash > 0) gs.hurtFlash -= delta;
         if (gs.invincible > 0) gs.invincible -= delta;
         if (gs.attackTimer > 0) gs.attackTimer -= delta;
 
-        // Compute aim angle from mouse/touch world position
-        if (gs.isAiming) {
+        // Compute aim angle from mouse world position (desktop only)
+        // Mobile touch joystick already sets gs.aimAngle directly in onStickPointerMove
+        if (gs.isAiming && !gs.mAttack) {
           const dx = gs.mouseWorldX - gs.px;
           const dy = gs.mouseWorldY - (gs.py - 10);
           gs.aimAngle = Math.atan2(dy, dx);
-        } else {
+        } else if (!gs.isAiming) {
           // Default: shoot in facing direction
           gs.aimAngle = gs.facing === 'right' ? 0 : Math.PI;
         }
@@ -512,9 +677,20 @@ export default function MazeGamePage() {
         // Collect items
         collectItems(itemSprites, level.items, gs, setCoins, setScore, setHp);
 
+        // Sync weapon state: combat.js may change gs.currentWeapon
+        // (e.g. unlockWeapon auto-switches, or ammo depletion reverts to bubble)
+        if (gs.currentWeapon !== gs._prevUiWeapon) {
+          gs._prevUiWeapon = gs.currentWeapon;
+          setCurrentWeapon(gs.currentWeapon);
+          setCurrentElement(WEAPON_MODES[gs.currentWeapon]?.id || 'none');
+        }
+
         // ── Interactables update ──
-        updateInteractables(interactableData, gs, level.platforms, delta, {
-          onDrop: (contents, x, y) => {
+        // Reset per-frame flags before interactable processing
+        gs.inWater = false;
+        gs.waterBubbles = false;
+        updateInteractables(interactableData, gs, delta, level.platforms,
+          (contents, x, y) => {
             // When a block drops an item, create it on the fly
             const newItem = { type: contents, x, y };
             const idx = level.items.push(newItem) - 1;
@@ -525,19 +701,56 @@ export default function MazeGamePage() {
             worldLayer.addChild(igfx);
             itemSprites.push(igfx);
           },
-          onTeleport: (targetX, targetY) => {
+          (targetX, targetY) => {
             gs.px = targetX;
             gs.py = targetY;
             gs.vx = 0;
             gs.vy = 0;
             playSound('star', 0.5);
           }
-        });
-        interactableGfx.forEach(({ gfx, data }) => {
-          gfx.x = data.x;
-          gfx.y = data.y;
-          drawInteractable(gfx, data, gs.frame);
-          gfx.visible = data.alive !== false || (data.breakAnim > 0);
+        );
+
+        // HP death check (from special terrain damage)
+        if (gs.hp <= 0 && !gs.dead) {
+          gs.dead = true; setGameOver(true); return;
+        }
+
+        interactableGfx.forEach(({ gfx: container, data }) => {
+          container.x = data.x;
+          container.y = data.y;
+          container.visible = data.alive !== false || (data.breakAnim > 0);
+          // If we have a sprite texture, handle state changes (bounce, activated swap)
+          if (container._spriteChild) {
+            const sprite = container._spriteChild;
+            const overlay = container._gfxChild;
+            overlay.clear();
+            // Bounce animation for questionBlock
+            if (data.type === 'questionBlock' && data.timer > 0) {
+              const bounceY = -Math.sin(data.timer / 10 * Math.PI) * 4;
+              container.y = data.y + bounceY;
+            }
+            // Grey out activated questionBlock
+            if (data.type === 'questionBlock' && data.activated) {
+              sprite.tint = 0x888888;
+            }
+            // Break animation
+            if (data.alive === false && data.breakAnim > 0) {
+              sprite.visible = false;
+              const t = 20 - data.breakAnim;
+              for (let i = 0; i < 4; i++) {
+                const bx = (i % 2 === 0 ? -1 : 1) * (4 + t * 2);
+                const by = -t * 1.5 + (i < 2 ? -4 : 4);
+                overlay.beginFill(0x8B4513, Math.max(0, 1 - t / 20));
+                overlay.drawRect(16 + bx - 4, 16 + by - 4, 8, 8);
+                overlay.endFill();
+              }
+            } else {
+              sprite.visible = true;
+            }
+          } else {
+            // No tile texture — use vector fallback
+            drawInteractable(container._gfxChild, data, gs.frame);
+          }
         });
 
         // Enemy AI
@@ -608,8 +821,8 @@ export default function MazeGamePage() {
           playerAnimator.setState(playerState);
           playerAnimator.setFacing(gs.facing === 'left' ? 'left' : 'right');
           playerAnimator.setPosition(gs.px, gs.py);
-          // Hurt blink
-          if (gs.hurtTimer > 0) {
+          // Hurt blink (invincibility + hurtFlash)
+          if (gs.invincible > 0) {
             playerAnimator.setAlpha(Math.sin(gs.frame * 0.5) > 0 ? 0.3 : 1);
           } else {
             playerAnimator.setAlpha(1);
@@ -651,7 +864,7 @@ export default function MazeGamePage() {
         // Items
         itemSprites.forEach((item, i) => {
           if (item._collected) return;
-          drawItem(item, level.items[i].type, gs.frame + i * 10);
+          if (!item._isSprite) drawItem(item, level.items[i].type, gs.frame + i * 10);
         });
 
         // Enemies — update sprite animations
@@ -763,7 +976,7 @@ export default function MazeGamePage() {
             gs.keys['KeyE'] = false;
             setShowShop(true);
             showShopRef.current = true;
-            setShopStars(gs.stars);
+            setShopCoins(gs.coins);
             playSound('click', 0.5);
           }
         }
@@ -898,7 +1111,134 @@ export default function MazeGamePage() {
     gs.aimAngle = 0; gs.isAiming = false;
   }, [level]);
 
-  // Mobile controls
+  // Mobile controls — D-pad state
+  const [dpadDir, setDpadDir] = useState('none'); // 'none'|'left'|'right'|'up'
+  const dpadRef = useRef(null);
+  const dpadStartRef = useRef({ x: 0, y: 0 });
+
+  // D-pad touch handler — detect swipe direction from start point
+  const onDpadPointerDown = useCallback((e) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    dpadStartRef.current = { x: e.clientX, y: e.clientY, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 };
+    // Determine direction from touch position relative to center
+    const dx = e.clientX - (rect.left + rect.width / 2);
+    const dy = e.clientY - (rect.top + rect.height / 2);
+    const dir = getDpadDirection(dx, dy);
+    applyDpadDir(dir);
+  }, []);
+
+  const onDpadPointerMove = useCallback((e) => {
+    e.preventDefault();
+    const start = dpadStartRef.current;
+    const dx = e.clientX - start.cx;
+    const dy = e.clientY - start.cy;
+    const dir = getDpadDirection(dx, dy);
+    applyDpadDir(dir);
+  }, []);
+
+  const onDpadPointerUp = useCallback(() => {
+    const gs = gsRef.current;
+    if (gs) { gs.mLeft = false; gs.mRight = false; gs.mJump = false; }
+    setDpadDir('none');
+  }, []);
+
+  function getDpadDirection(dx, dy) {
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    if (absDx < 10 && absDy < 10) return 'none';
+    // Diagonal: up-left / up-right (45° zones)
+    if (dy < 0 && absDx > 8 && absDy > 8) {
+      return dx < 0 ? 'upleft' : 'upright';
+    }
+    if (absDy > absDx && dy < 0) return 'up';
+    if (absDx > absDy && dx < 0) return 'left';
+    if (absDx > absDy && dx > 0) return 'right';
+    return 'none';
+  }
+
+  function applyDpadDir(dir) {
+    const gs = gsRef.current;
+    if (!gs) return;
+    gs.mLeft  = (dir === 'left' || dir === 'upleft');
+    gs.mRight = (dir === 'right' || dir === 'upright');
+    gs.mJump  = (dir === 'up' || dir === 'upleft' || dir === 'upright');
+    setDpadDir(dir);
+  }
+
+  // D-pad image map
+  const DPAD_IMGS = {
+    none: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad.png',
+    left: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_left.png',
+    right: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_right.png',
+    up: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
+    upleft: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
+    upright: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
+  };
+
+  // Right joystick — 360° aim & shoot
+  const [stickDir, setStickDir] = useState('none'); // tracks visual direction
+  const stickCenterRef = useRef({ x: 0, y: 0 });
+
+  const onStickPointerDown = useCallback((e) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    stickCenterRef.current = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    const gs = gsRef.current;
+    if (gs) {
+      gs.mAttack = true;
+      gs.isAiming = true;
+    }
+    updateStickAngle(e.clientX, e.clientY);
+  }, []);
+
+  const onStickPointerMove = useCallback((e) => {
+    e.preventDefault();
+    updateStickAngle(e.clientX, e.clientY);
+  }, []);
+
+  const onStickPointerUp = useCallback(() => {
+    const gs = gsRef.current;
+    if (gs) {
+      gs.mAttack = false;
+      gs.isAiming = false;
+    }
+    setStickDir('none');
+  }, []);
+
+  function updateStickAngle(clientX, clientY) {
+    const gs = gsRef.current;
+    if (!gs) return;
+    const center = stickCenterRef.current;
+    const dx = clientX - center.x;
+    const dy = clientY - center.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 5) return;
+    const angle = Math.atan2(dy, dx);
+    gs.aimAngle = angle;
+
+    // Map angle to 8 directions for stick image
+    const deg = ((angle * 180 / Math.PI) + 360) % 360;
+    if (deg >= 337.5 || deg < 22.5)       setStickDir('right');
+    else if (deg >= 22.5 && deg < 67.5)   setStickDir('right'); // down-right → right
+    else if (deg >= 67.5 && deg < 112.5)  setStickDir('down');
+    else if (deg >= 112.5 && deg < 157.5) setStickDir('left');  // down-left → left
+    else if (deg >= 157.5 && deg < 202.5) setStickDir('left');
+    else if (deg >= 202.5 && deg < 247.5) setStickDir('left');  // up-left → left
+    else if (deg >= 247.5 && deg < 292.5) setStickDir('up');
+    else                                  setStickDir('right'); // up-right → right
+  }
+
+  const STICK_IMGS = {
+    none:  '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_stick_r.png',
+    up:    '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_stick_r_up.png',
+    down:  '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_stick_r_down.png',
+    left:  '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_stick_r_left.png',
+    right: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_stick_r_right.png',
+  };
+
+  // Simple handlePointer for remaining uses
   const handlePointer = (key, val) => {
     const gs = gsRef.current;
     if (gs) gs[key] = val;
@@ -962,22 +1302,20 @@ export default function MazeGamePage() {
       {/* Mobile controls */}
       {!loading && !victory && !gameOver && (
         <div className={styles.mobileControls}>
-          <div className={styles.controlsLeft}>
-            <button className={styles.dirBtn}
-              onPointerDown={() => handlePointer('mLeft', true)}
-              onPointerUp={() => handlePointer('mLeft', false)}
-              onPointerLeave={() => handlePointer('mLeft', false)}>
-              <ChevronLeft size={28} />
-            </button>
-            <button className={styles.dirBtn}
-              onPointerDown={() => handlePointer('mRight', true)}
-              onPointerUp={() => handlePointer('mRight', false)}
-              onPointerLeave={() => handlePointer('mRight', false)}>
-              <ChevronRight size={28} />
-            </button>
+          {/* Left: Unified D-pad touch zone */}
+          <div
+            className={styles.dpadZone}
+            ref={dpadRef}
+            onPointerDown={onDpadPointerDown}
+            onPointerMove={onDpadPointerMove}
+            onPointerUp={onDpadPointerUp}
+            onPointerLeave={onDpadPointerUp}
+            onPointerCancel={onDpadPointerUp}
+          >
+            <img src={DPAD_IMGS[dpadDir]} alt="dpad" className={styles.dpadImg} />
           </div>
 
-          {/* Weapon selector — only show unlocked weapons */}
+          {/* Center: Weapon selector */}
           <div className={styles.elementSelector}>
             {WEAPON_ORDER.map(wKey => {
               const wDef = WEAPON_MODES[wKey];
@@ -990,27 +1328,25 @@ export default function MazeGamePage() {
                   className={`${styles.elemBtn} ${currentWeapon === wKey ? styles.elemBtnActive : ''}`}
                   style={{ '--elem-color': `#${el.color.toString(16).padStart(6, '0')}` }}
                   onClick={() => switchWeapon(wKey)}>
-                  {wDef.icon}
+                  <img src="/assets/kenney/kenney_input-prompts_1.4.1/Generic/Double/generic_button_square.png" alt="" className={styles.elemBtnBg} />
+                  <span className={styles.elemBtnIcon}>{wDef.icon}</span>
                   {ammoCount !== null && <span className={styles.ammoCount}>{ammoCount}</span>}
                 </button>
               );
             })}
           </div>
 
-          <div className={styles.controlsRight}>
-            <button className={`${styles.actionBtn} ${styles.attackBtn}`}
-              style={{ borderColor: `#${elemDef.color.toString(16).padStart(6, '0')}` }}
-              onPointerDown={() => handlePointer('mAttack', true)}
-              onPointerUp={() => handlePointer('mAttack', false)}
-              onPointerLeave={() => handlePointer('mAttack', false)}>
-              {elemDef.icon}
-            </button>
-            <button className={`${styles.actionBtn} ${styles.jumpBtn}`}
-              onPointerDown={() => handlePointer('mJump', true)}
-              onPointerUp={() => handlePointer('mJump', false)}
-              onPointerLeave={() => handlePointer('mJump', false)}>
-              JUMP
-            </button>
+          {/* Right: 360° Joystick for aiming & shooting */}
+          <div
+            className={styles.stickZone}
+            onPointerDown={onStickPointerDown}
+            onPointerMove={onStickPointerMove}
+            onPointerUp={onStickPointerUp}
+            onPointerLeave={onStickPointerUp}
+            onPointerCancel={onStickPointerUp}
+          >
+            <img src={STICK_IMGS[stickDir]} alt="aim" className={styles.stickImg} />
+            <span className={styles.stickLabel}>{elemDef.icon}</span>
           </div>
         </div>
       )}
@@ -1029,23 +1365,23 @@ export default function MazeGamePage() {
                 🏪 {level?.merchant?.name || '旅行商人'}
               </h2>
               <p style={{ color: '#aaa', fontSize: 12, textAlign: 'center', margin: '4px 0 8px' }}>
-                ⭐ 星星: {shopStars}
+                🪙 金币: {shopCoins}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {MERCHANT_ITEMS.map(item => (
                   <button key={item.id}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 12px', background: shopStars >= item.cost ? '#2E7D32' : '#424242',
-                      border: '2px solid', borderColor: shopStars >= item.cost ? '#4CAF50' : '#616161',
-                      borderRadius: 8, color: '#fff', cursor: shopStars >= item.cost ? 'pointer' : 'not-allowed',
+                      padding: '8px 12px', background: shopCoins >= item.cost * 10 ? '#2E7D32' : '#424242',
+                      border: '2px solid', borderColor: shopCoins >= item.cost * 10 ? '#4CAF50' : '#616161',
+                      borderRadius: 8, color: '#fff', cursor: shopCoins >= item.cost * 10 ? 'pointer' : 'not-allowed',
                       fontSize: 13, transition: 'all 0.15s',
                     }}
                     onClick={() => {
                       const gs = gsRef.current;
-                      if (!gs || gs.stars < item.cost) { playSound('noBuy', 0.5); return; }
-                      gs.stars -= item.cost;
-                      setShopStars(gs.stars);
+                      if (!gs || gs.coins < item.cost * 10) { playSound('noBuy', 0.5); return; }
+                      gs.coins -= item.cost * 10;
+                      setShopCoins(gs.coins);
                       playSound('buy', 0.6);
                       switch (item.id) {
                         case 'life':   gs.hp = Math.min(5, gs.hp + 1); setHp(gs.hp); break;
@@ -1060,7 +1396,7 @@ export default function MazeGamePage() {
                       <div style={{ fontWeight: 'bold' }}>{item.name}</div>
                       <div style={{ fontSize: 10, color: '#ccc' }}>{item.desc}</div>
                     </div>
-                    <span style={{ color: '#FFD740', fontWeight: 'bold' }}>⭐{item.cost}</span>
+                    <span style={{ color: '#FFD740', fontWeight: 'bold' }}>🪙{item.cost * 10}</span>
                   </button>
                 ))}
               </div>

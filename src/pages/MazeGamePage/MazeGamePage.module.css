@@ -97,8 +97,8 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 0 12px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding: 0 48px;
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
   z-index: 20;
   pointer-events: none;
 }
@@ -116,67 +116,67 @@
   pointer-events: auto;
 }
 
-/* Direction buttons (left side) */
-.dirBtn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(4px);
+.dpadZone {
+  width: 96px;
+  height: 96px;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255,255,255,0.8);
-  cursor: pointer;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0.5;
+  transition: opacity 0.15s;
 }
 
-.dirBtn:active {
-  background: rgba(88, 204, 2, 0.4);
-  border-color: #58CC02;
+.dpadZone:active {
+  opacity: 1;
 }
 
-/* Action buttons (right side) */
-.actionBtn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: 2px solid;
+.dpadImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* Joystick 360° touch zone (right side) */
+.stickZone {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 800;
-  cursor: pointer;
-  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0.5;
+  transition: opacity 0.15s;
 }
 
-.jumpBtn {
-  background: rgba(88, 204, 2, 0.25);
-  border-color: rgba(88, 204, 2, 0.5);
-  color: #58CC02;
-  margin-bottom: 20px;
+.stickZone:active {
+  opacity: 1;
 }
 
-.jumpBtn:active {
-  background: rgba(88, 204, 2, 0.5);
+.stickImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-.attackBtn {
-  background: rgba(255, 183, 77, 0.25);
-  border-color: rgba(255, 183, 77, 0.5);
-  color: #FFB74D;
-  font-size: 1.2rem;
+.stickLabel {
+  position: absolute;
+  font-size: 1.4rem;
+  z-index: 1;
+  pointer-events: none;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 
-.attackBtn:active {
-  background: rgba(255, 183, 77, 0.5);
-}
-
-/* Element selector (center bottom) */
+/* Element selector (center bottom) — Kenney button_square */
 .elementSelector {
   display: flex;
   gap: 6px;
@@ -191,27 +191,42 @@
 }
 
 .elemBtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  background: none;
   font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.elemBtnBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.elemBtnIcon {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+  font-size: 1rem;
 }
 
 .elemBtnActive {
-  border-color: var(--elem-color, #FFD740);
-  background: rgba(255,255,255,0.2);
-  box-shadow: 0 0 12px var(--elem-color, #FFD740),
-              inset 0 0 6px rgba(255,255,255,0.1);
   transform: scale(1.15);
+  box-shadow: 0 0 12px var(--elem-color, #FFD740);
 }
 
 .elemBtn:active {
@@ -234,9 +249,7 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
-.elemBtn {
-  position: relative;
-}
+/* removed duplicate .elemBtn — merged above */
 
 /* Victory overlay */
 .victoryOverlay {

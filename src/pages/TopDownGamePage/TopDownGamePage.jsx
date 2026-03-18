@@ -130,39 +130,39 @@ export default function TopDownGamePage() {
         <canvas ref={canvasRef} className={styles.gameCanvas} />
       </div>
 
-      {/* Mobile joystick */}
+      {/* Mobile joystick — Kenney dpad */}
       <div className={styles.joystick}>
         <button
           className={`${styles.joyBtn} ${styles.joyUp}`}
           onPointerDown={() => handleJoystick('up', true)}
           onPointerUp={() => handleJoystick('up', false)}
           onPointerLeave={() => handleJoystick('up', false)}
-        >▲</button>
+        ><img src="/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png" alt="↑" className={styles.joyBtnImg} /></button>
         <div className={styles.joyRow}>
           <button
             className={`${styles.joyBtn} ${styles.joyLeft}`}
             onPointerDown={() => handleJoystick('left', true)}
             onPointerUp={() => handleJoystick('left', false)}
             onPointerLeave={() => handleJoystick('left', false)}
-          >◀</button>
+          ><img src="/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_left.png" alt="←" className={styles.joyBtnImg} /></button>
           <button
             className={`${styles.joyBtn} ${styles.joyCenter}`}
             onPointerDown={() => { keysRef.current.e = true; }}
             onPointerUp={() => { keysRef.current.e = false; }}
-          >E</button>
+          ><img src="/assets/kenney/kenney_input-prompts_1.4.1/Generic/Double/generic_button_square.png" alt="E" className={styles.joyBtnImg} /><span className={styles.joyBtnLabel}>E</span></button>
           <button
             className={`${styles.joyBtn} ${styles.joyRight}`}
             onPointerDown={() => handleJoystick('right', true)}
             onPointerUp={() => handleJoystick('right', false)}
             onPointerLeave={() => handleJoystick('right', false)}
-          >▶</button>
+          ><img src="/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_right.png" alt="→" className={styles.joyBtnImg} /></button>
         </div>
         <button
           className={`${styles.joyBtn} ${styles.joyDown}`}
           onPointerDown={() => handleJoystick('down', true)}
           onPointerUp={() => handleJoystick('down', false)}
           onPointerLeave={() => handleJoystick('down', false)}
-        >▼</button>
+        ><img src="/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_down.png" alt="↓" className={styles.joyBtnImg} /></button>
       </div>
     </div>
   );

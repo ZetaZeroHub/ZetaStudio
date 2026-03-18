@@ -120,7 +120,7 @@ export function renderTopDown(ctx, gs, viewW, viewH, frame) {
     switch (e.type) {
       case 'star': {
         const float = Math.sin(frame * 0.08 + i) * 3;
-        const starImg = getTileImg(3); // yellow star tile in tiny-town
+        const starImg = getTileImg(93); // coin tile (tile_0093)
         if (starImg?.complete) ctx.drawImage(starImg, sx + 4, sy + 4 + float, ts - 8, ts - 8);
         break;
       }
@@ -155,7 +155,7 @@ export function renderTopDown(ctx, gs, viewW, viewH, frame) {
         break;
       }
       case 'pushBlock': {
-        const blockImg = getTileImg(47); // chest/block
+        const blockImg = getTileImg(90); // brown wall block (tile_0090)
         if (blockImg?.complete) ctx.drawImage(blockImg, sx, sy, ts, ts);
         break;
       }
@@ -177,7 +177,7 @@ export function renderTopDown(ctx, gs, viewW, viewH, frame) {
       }
       case 'exit': {
         const exitFloat = Math.sin(frame * 0.06) * 2;
-        const exitImg = getTileImg(5); // flag-like tile
+        const exitImg = getTileImg(47); // chest tile (tile_0047) as exit marker
         if (exitImg?.complete) ctx.drawImage(exitImg, sx, sy + exitFloat, ts, ts);
         // 绿色光圈
         ctx.strokeStyle = '#58CC02';

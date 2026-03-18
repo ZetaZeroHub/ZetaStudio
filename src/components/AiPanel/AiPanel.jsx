@@ -26,10 +26,10 @@ export default function AiPanel() {
   const activeProvider = getActiveProvider();
 
   const quickPrompts = [
-    t('aiPanel.prompts.nightSky'),
-    t('aiPanel.prompts.player'),
-    t('aiPanel.prompts.enemies'),
-    t('aiPanel.prompts.score'),
+    '🏰 帮我在森林关卡的中间增加3个悬浮平台',
+    '👾 在第一关添加2个巡逻的史莱姆敌人',
+    '⭐ 在高处平台上放置金币和宝石奖励',
+    '🚪 把出口门移到地图最右上角的悬崖上',
   ];
 
   useEffect(() => {
@@ -338,8 +338,8 @@ export default function AiPanel() {
       <div className={styles.inputArea}>
         <div className={styles.inputRow}>
           <textarea
-            className={`input ${styles.textInput}`}
-            placeholder={configured ? t('aiPanel.placeholder') : '请先配置 AI 模型...'}
+            className={styles.textInput}
+            placeholder={configured ? '描述你想要的关卡修改...' : '请先配置 AI 模型...'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -348,14 +348,14 @@ export default function AiPanel() {
           />
           {aiLoading ? (
             <button
-              className={`btn btn-ghost ${styles.stopBtn}`}
+             className={styles.stopBtn}
               onClick={handleStop}
             >
               ⏹
             </button>
           ) : (
             <button
-              className={`btn btn-primary ${styles.sendBtn}`}
+              className={styles.sendBtn}
               onClick={() => handleSend()}
               disabled={aiLoading || !input.trim() || !configured}
             >

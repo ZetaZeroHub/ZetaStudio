@@ -1,68 +1,11 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import { getLevelsByDifficulty, DIFFICULTY, getTheme } from '../../data/mazeLevels';
 import { getTopDownLevelsByDifficulty } from '../../data/topDownLevels';
+import { playClickSound, playSelectSound, playBackSound, playTapSound, playSwitchSound } from '../../utils/gameUISound';
 import styles from './MazeLevelSelectPage.module.css';
 
-/* Kenney asset tiles for level icons */
-const LEVEL_ICONS = [
-  '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0067.png',
-  '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0064.png',
-  '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0060.png',
-  '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0130.png',
-];
-
-/* Star asset */
-const STAR_FILLED = '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0064.png';
-
-/* Sound effects via Web Audio */
-function playClick() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(600, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.12);
-  } catch (_) {}
-}
-
-function playLevelSelect() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(440, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.2);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
-  } catch (_) {}
-}
-
-function playHover() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(500, ctx.currentTime);
-    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.06);
-  } catch (_) {}
-}
+const UI = '/assets/kenney/kenney_ui-pack/PNG';
 
 /* Strip emoji from level names */
 function cleanName(name) {
@@ -75,121 +18,177 @@ export default function MazeLevelSelectPage() {
   const isEasy = difficulty === 'easy';
   const levels = isEasy ? getTopDownLevelsByDifficulty() : getLevelsByDifficulty(difficulty);
   const diffInfo = DIFFICULTY[difficulty] || DIFFICULTY.easy;
-  const theme = getTheme(levels[0]?.theme || 'forest');
+  const [tab, setTab] = useState('official');
+
+  // Load player drafts for platformer
+  let playerDrafts = [];
+  if (!isEasy) {
+    try {
+      const raw = localStorage.getItem('game_drafts_v1');
+      const all = raw ? JSON.parse(raw) : [];
+      playerDrafts = all.filter(d => d.templateType === 'platformer' && d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    } catch {}
+  }
 
   const handleBack = () => {
-    playClick();
+    playBackSound();
     navigate('/maze/difficulty');
   };
 
   const handleLevelClick = (level) => {
-    playLevelSelect();
+    playSelectSound();
     navigate(isEasy ? `/maze/play-topdown/${level.id}` : `/maze/play/${level.id}`);
   };
 
-  const renderStars = (count) => {
-    return [1, 2, 3].map(i => (
-      <div key={i} className={styles.starWrap}>
-        <img
-          src={STAR_FILLED}
-          alt=""
-          className={styles.starIcon}
-          style={{ opacity: i <= count ? 1 : 0.2, filter: i <= count ? 'none' : 'grayscale(1)' }}
-        />
-      </div>
-    ));
+  const handleEditClick = (e, level) => {
+    e.stopPropagation();
+    playClickSound();
+    const tType = isEasy ? 'topdown' : 'platformer';
+    navigate(`/maze/editor/${tType}/${level.id}`);
   };
 
-  return (
-    <div
-      className={styles.page}
-      style={{
-        '--sky-top': theme.skyTop,
-        '--sky-bottom': theme.skyBottom,
-        '--accent': diffInfo.color,
-      }}
-    >
-      <div className={styles.skyBg} />
+  const renderStars = (count) => [1, 2, 3].map(i => (
+    <img
+      key={i}
+      src={i <= count
+        ? `${UI}/Green/Default/star.png`
+        : `${UI}/Green/Default/star_outline.png`}
+      alt=""
+      className={styles.starIcon}
+    />
+  ));
 
+  return (
+    <div className={`${styles.page} gameUI`}>
+      {/* Top Bar */}
       <header className={styles.topBar}>
         <button className={styles.backBtn} onClick={handleBack}>
-          <ArrowLeft size={16} /> 返回
+          <img src={`${UI}/Yellow/Default/arrow_basic_w.png`} alt="" className={styles.arrowIcon} />
         </button>
         <h1 className={styles.topTitle}>{diffInfo.label}</h1>
+        <div className={styles.topSpacer} />
       </header>
 
-      <div className={styles.pathContainer}>
-        <motion.div
-          className={styles.startBanner}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          <img src={diffInfo.icon} alt="" className={styles.startIcon} />
-          <h2 className={styles.startTitle}>{diffInfo.label}</h2>
-          <p className={styles.startDesc}>{diffInfo.desc}</p>
-        </motion.div>
-
-        {levels.map((level, i) => {
-          const iconSrc = LEVEL_ICONS[i % LEVEL_ICONS.length];
-          return (
-            <div key={level.id}>
-              {i > 0 && (
-                <div className={styles.connector}>
-                  <div className={styles.connectorDot} />
-                  <div className={styles.connectorLine} />
-                  <div className={styles.connectorDot} />
-                </div>
-              )}
-
-              <motion.div
-                className={styles.levelNode}
-                initial={{ opacity: 0, scale: 0.7 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 + i * 0.12, duration: 0.4 }}
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.93, y: 2 }}
-                onHoverStart={playHover}
-                onClick={() => handleLevelClick(level)}
-              >
-                <div className={styles.levelCircle}>
-                  <img src={iconSrc} alt="" className={styles.levelIcon} />
-                  <div className={styles.levelNum}>{i + 1}</div>
-                </div>
-                <div className={styles.levelName}>{cleanName(level.name)}</div>
-                <div className={styles.levelStars}>
-                  {renderStars(level.stars)}
-                </div>
-              </motion.div>
-            </div>
-          );
-        })}
-
-        {/* End — more coming */}
-        <div className={styles.connector}>
-          <div className={styles.connectorDot} />
-          <div className={styles.connectorLine} style={{ opacity: 0.3 }} />
-          <div className={styles.connectorDot} style={{ opacity: 0.3 }} />
+      <main className={styles.content}>
+        {/* Info Banner */}
+        <div className={styles.banner}>
+          <img src={diffInfo.icon} alt="" className={styles.bannerIcon} />
+          <span className={styles.bannerText}>{diffInfo.desc}</span>
         </div>
-        <motion.div
-          className={styles.levelNode}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.35 }}
-          transition={{ delay: 0.6 }}
-          style={{ pointerEvents: 'none' }}
-        >
-          <div className={styles.levelCircle} style={{ borderColor: '#bbb', background: 'rgba(255,255,255,0.5)' }}>
-            <img
-              src="/assets/kenney/kenney_platformer-art-pixel-redux/Tiles/tile_0064.png"
-              alt=""
-              className={styles.levelIcon}
-              style={{ opacity: 0.3, filter: 'grayscale(1)' }}
-            />
+
+        {/* Tab bar (platformer only) */}
+        {!isEasy && (
+          <div className={styles.tabBar}>
+            <button
+              className={`${styles.tabBtn} ${tab === 'official' ? styles.tabBtnActive : ''}`}
+              onClick={() => { playSwitchSound(); setTab('official'); }}
+            >
+              <img src={`${UI}/Green/Default/star.png`} alt="" className={styles.tabIcon} />
+              官方关卡
+            </button>
+            <button
+              className={`${styles.tabBtn} ${tab === 'player' ? styles.tabBtnActive : ''}`}
+              onClick={() => { playSwitchSound(); setTab('player'); }}
+            >
+              <img src={`${UI}/Blue/Default/star.png`} alt="" className={styles.tabIcon} />
+              我的创作
+            </button>
           </div>
-          <div className={styles.levelName} style={{ color: '#aaa' }}>更多关卡</div>
-          <div className={styles.levelStars} style={{ color: '#ccc', fontSize: '0.7rem' }}>敬请期待</div>
-        </motion.div>
-      </div>
+        )}
+
+        {/* Level Cards Grid */}
+        <div className={styles.cards}>
+          {(tab === 'official' || isEasy) && levels.map((level, i) => (
+            <button
+              key={level.id}
+              className={styles.card}
+              onClick={() => handleLevelClick(level)}
+              onMouseEnter={playTapSound}
+            >
+              <img
+                src={`${UI}/Green/Double/button_rectangle_depth_gloss.png`}
+                alt=""
+                className={styles.cardBg}
+              />
+              <div className={styles.cardInner}>
+                <div className={styles.cardNum}>{i + 1}</div>
+                <div className={styles.cardName}>{cleanName(level.name)}</div>
+                <div className={styles.cardStars}>{renderStars(level.stars || 0)}</div>
+                <button
+                  className={styles.editBtn}
+                  onClick={(e) => handleEditClick(e, level)}
+                >
+                  <img src={`${UI}/Blue/Default/button_square_depth_gloss.png`} alt="" className={styles.editBtnBg} />
+                  <span className={styles.editBtnText}>✏️</span>
+                </button>
+              </div>
+            </button>
+          ))}
+
+          {/* Player drafts */}
+          {tab === 'player' && !isEasy && (
+            playerDrafts.length === 0 ? (
+              <div className={styles.emptyCard}>
+                <p>还没有创作哦！</p>
+                <p className={styles.emptyHint}>去"创作工坊"设计你的关卡吧</p>
+              </div>
+            ) : (
+              playerDrafts.map((d, i) => (
+                <button
+                  key={d.id}
+                  className={styles.card}
+                  onClick={() => { playSelectSound(); navigate(`/maze/editor/draft/${d.id}`); }}
+                  onMouseEnter={playTapSound}
+                >
+                  <img
+                    src={`${UI}/Blue/Double/button_rectangle_depth_gloss.png`}
+                    alt=""
+                    className={styles.cardBg}
+                  />
+                  <div className={styles.cardInner}>
+                    <div className={styles.cardNum}>{i + 1}</div>
+                    <div className={styles.cardName}>{d.name || '未命名'}</div>
+                    <div className={styles.cardMeta}>
+                      {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString('zh-CN') : ''}
+                    </div>
+                    <button
+                      className={styles.deleteBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playClickSound();
+                        if (!confirm('确定删除这个作品吗？')) return;
+                        try {
+                          const raw = localStorage.getItem('game_drafts_v1');
+                          const all = raw ? JSON.parse(raw) : [];
+                          const filtered = all.filter(x => x.id !== d.id);
+                          localStorage.setItem('game_drafts_v1', JSON.stringify(filtered));
+                          window.location.reload();
+                        } catch {}
+                      }}
+                    >🗑️</button>
+                  </div>
+                </button>
+              ))
+            )
+          )}
+
+          {/* Coming soon placeholder (official tab) */}
+          {tab === 'official' && (
+            <div className={styles.comingSoonCard}>
+              <img
+                src={`${UI}/Grey/Double/button_rectangle_depth_flat.png`}
+                alt=""
+                className={styles.cardBg}
+              />
+              <div className={styles.cardInner}>
+                <div className={styles.cardNum}>?</div>
+                <div className={styles.cardName} style={{ color: 'rgba(255,255,255,0.5)' }}>更多关卡</div>
+                <div className={styles.cardMeta}>敬请期待</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

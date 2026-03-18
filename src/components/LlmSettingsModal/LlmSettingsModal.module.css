@@ -1,0 +1,94 @@
+/* LlmSettingsModal — 多领国绿白风格 */
+
+.overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.modal {
+  background: #fff; border-radius: 20px;
+  padding: 24px 20px; max-width: 380px; width: 92%;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  max-height: 85vh; overflow-y: auto;
+}
+
+.title {
+  font-size: 1.15rem; font-weight: 800;
+  color: #2E3A2F; margin: 0 0 16px; text-align: center;
+}
+
+.providerCard {
+  background: #f8f8f8; border-radius: 14px;
+  padding: 12px; margin-bottom: 10px;
+  border: 2px solid transparent;
+  transition: background 0.15s, transform 0.15s;
+}
+.providerCardActive {
+  border-color: #58CC02;
+  background: #E8F5E9;
+}
+
+.providerName {
+  font-size: 0.85rem; font-weight: 700; color: #2E3A2F;
+}
+
+.providerMeta {
+  font-size: 0.7rem; color: #888; margin-top: 2px;
+}
+
+.providerActions {
+  display: flex; gap: 6px; margin-top: 8px;
+}
+
+.actionBtn {
+  padding: 5px 10px; border-radius: 8px; border: none;
+  font-size: 0.7rem; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.actionBtn:active { transform: translateY(1px); }
+
+.selectBtn { background: #58CC02; color: #fff; }
+.deleteBtn { background: #fce4ec; color: #c62828; }
+.testBtn { background: #E3F2FD; color: #1565C0; }
+
+.divider {
+  height: 1px; background: #eee; margin: 14px 0;
+}
+
+.formGroup {
+  margin-bottom: 10px;
+}
+.formLabel {
+  display: block; font-size: 0.72rem; font-weight: 700;
+  color: #666; margin-bottom: 3px;
+}
+.formInput, .formSelect {
+  width: 100%; box-sizing: border-box;
+  padding: 8px 10px; border-radius: 10px;
+  border: 2px solid #E0E0E0; font-size: 0.82rem;
+  outline: none; transition: border-color 0.2s;
+}
+.formInput:focus, .formSelect:focus { border-color: #58CC02; }
+
+.addBtn {
+  width: 100%; padding: 10px; border-radius: 12px;
+  border: none; background: #58CC02; color: #fff;
+  font-weight: 700; font-size: 0.85rem; cursor: pointer;
+  box-shadow: 0 3px 0 #46a302;
+}
+.addBtn:active { transform: translateY(2px); box-shadow: 0 1px 0 #46a302; }
+
+.closeBtn {
+  width: 100%; padding: 10px; border-radius: 12px;
+  border: 2px solid #E0E0E0; background: #fff;
+  font-weight: 700; font-size: 0.85rem; color: #888;
+  cursor: pointer; margin-top: 8px;
+}
+
+.testResult {
+  font-size: 0.72rem; padding: 6px 10px;
+  border-radius: 8px; margin-top: 6px;
+}
+.testSuccess { background: #E8F5E9; color: #2E7D32; }
+.testFail { background: #FFEBEE; color: #C62828; }

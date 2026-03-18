@@ -63,7 +63,7 @@
   border-radius: 20px;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .optionSimple {
