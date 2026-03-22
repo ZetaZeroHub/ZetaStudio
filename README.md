@@ -89,6 +89,28 @@ A top-down maze creation tool designed for children aged 2-6:
 - **Draft Editing Mode** — Save/restore full creation context
 - **Pro Mode Integration** — Template drawer entry + my works merge display
 
+### 🕹️ Side-Scroll Level Editor
+
+A complete side-scrolling platformer level creation and gameplay system:
+
+**Level Editor** (GameEditorPage + EditorCanvas)
+- **PixiJS Canvas Editor** — 32px grid snapping, element drag-move, zoom (0.25x-3x), pan navigation
+- **Three Tools** — Select (click to select / drag elements), Brush (continuous draw / single place), Eraser
+- **11-Category Asset Library (300+ assets)** — Terrain (6 materials × 7 variants), special terrain (lava/water/conveyor/ramp), building blocks, collectibles (coins/gems/stars), pickups (keys/mushrooms/fireballs), mechanisms (springs/spikes/bombs/switches/saws/ladders), doors & exits, enemies (6 types), characters (4 colors), decorations, backgrounds (8 scenes + 25 background elements)
+- **Property Inspector** — Bottom sheet panel showing selected element type & properties (terrain/item/enemy/mechanism/spawn/exit)
+- **AI Level Design Assistant** — Resizable right-side panel with LLM-powered natural language level design
+- **Draft Management** — Auto-save (60s interval) + manual save + multi-version save records + publish to "My Works"
+- **Intro Animation** — Opening zoom-out overview of entire level, then smooth pan to player spawn point
+
+**Platformer Game Engine** (MazeGamePage)
+- **Physics Engine** — Gravity, horizontal movement, jumping, collision detection (ground/platforms/walls), fall death
+- **Combat System** — Bubble/fireball/water 3 weapon types × projectile shooting × aim angle, enemy AI patrol, Boss battles (HP bar + 2x size)
+- **Merchant System** — NPC merchants (theme-based animal sprites) selling shields/speed boots/coin magnets/double jump/extra lives
+- **Level Mechanisms** — Question blocks (drop items on hit), breakable blocks (shatter animation), springs, portals, key-locked doors, water pits
+- **HUD** — Health ❤️, coin counter, timer, weapon indicator, element switching
+- **Touch Support** — Virtual joystick (left direction + right jump/attack), tap merchant interaction
+- **Audio System** — Jump, land, shoot, collect, hurt instant synthesized sound effects
+
 ### 🎨 Visual Scene Editor
 
 - Drag-and-drop element placement with resize handles
