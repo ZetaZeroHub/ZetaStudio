@@ -6,7 +6,12 @@
 
 [English](./README.md)
 
-✨ **[立即在线体验：https://studio.zzh.app/](https://studio.zzh.app/)** ✨
+### 🚀 产品已上线
+
+| 产品 | 链接 | 简介 |
+| --- | --- | --- |
+| 🎮 **游戏梦想家** | **[game.zzh.app](https://game.zzh.app)** | 适龄 3-8 岁，通过「拖拉拽」的方式与 AI 趣味创作游戏 |
+| 🛠️ **Zeta 创作工作室** | **[studio.zzh.app](https://studio.zzh.app)** | 专业级 2D/3D AI 游戏创作平台 |
 
 ---
 

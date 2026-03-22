@@ -6,7 +6,12 @@ Natural language driven 2D/3D game generation. Fusing generative audiovisuals an
 
 [中文文档](./README_zh.md)
 
-✨ **[Experience Online Now: https://studio.zzh.app/](https://studio.zzh.app/)** ✨
+### 🚀 Products Now Live
+
+| Product | Link | Description |
+| --- | --- | --- |
+| 🎮 **Game Dreamers** | **[game.zzh.app](https://game.zzh.app)** | Ages 3-8 — Create games through drag-and-drop with AI-powered fun |
+| 🛠️ **Zeta Studio** | **[studio.zzh.app](https://studio.zzh.app)** | Professional-grade 2D/3D AI game creation platform |
 
 ---
 
