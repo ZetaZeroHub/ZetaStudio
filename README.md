@@ -70,9 +70,24 @@ The platform combines a visual scene editor, a code editor, and an AI assistant 
 | Pixel Platformer | 2D | Side-scrolling platformer with collectibles and scoring |
 | Quiz Game | 2D | Interactive quiz with score tracking |
 | NPC Dialogue | 2D | Visual novel / Galgame-style dialogue system |
+| Side-Scroll Adventure | 2D | Platform adventure with enemies, Boss, and merchant (map editor) |
+| AI Maze Creator | 2D | AI-assisted top-down maze creation with 7 styles/11 characters/7 goals |
 | 3D Cube | 3D | Interactive 3D scene with geometry manipulation |
 | Solar System | 3D | Animated solar system with orbital mechanics |
 | 3D FPS Shooter | 3D | First-person shooter with pointer lock and scoring |
+
+### 🏗️ AI Maze Creator
+
+A top-down maze creation tool designed for children aged 2-6:
+
+- **Creation Flow** — Pick style → Draw path → One-click generate → Play → Publish/Save
+- **7 Map Styles** — Forest, Autumn, Winter, Candy, City, Village, Racing
+- **11 Playable Characters** — Duck (8-direction walk animation) + 10 single-frame characters
+- **7 Goal Types** — Pool (ripple animation) + 6 sprite-based goals
+- **Smart Generation Algorithm v4** — 3-Pass coverage, minimum straight-line constraint, 2×2 dense block cleanup
+- **9-Layer Canvas Rendering Engine** — Ground/road/decoration/character/marker layered rendering
+- **Draft Editing Mode** — Save/restore full creation context
+- **Pro Mode Integration** — Template drawer entry + my works merge display
 
 ### 🎨 Visual Scene Editor
 
@@ -206,9 +221,13 @@ src/
 ├── locales/             # i18n translations (zh/en)
 ├── pages/               # Route pages
 │   ├── HomePage/        # Project gallery + hero
-│   └── EditorPage/      # Main editor workspace
+│   ├── EditorPage/      # Main editor workspace
+│   ├── AiMazeCreatorPage/ # AI maze creator editor
+│   ├── MazePathGame/    # Top-down maze game engine
+│   └── MazeHomePage/    # Maze home + level select
 ├── services/            # API services (LLM integration)
 ├── stores/              # Zustand state stores
+├── utils/               # Utility functions (maze generator, etc.)
 └── templates/           # Game template presets (incl. FPS shooter)
 ```
 
@@ -227,6 +246,7 @@ Zeta Studio follows an **editorial minimalism** design language inspired by Appl
 
 | Version | Date | Changes |
 |---------|------|---------|
+| **v0.5.0** | 2026-03-22 | 🏗️ **AI Maze Creator** — Top-down maze creation tool (7 styles/11 characters/7 goals), maze generation algorithm v4 (3-Pass coverage + straight-line constraint + dense block cleanup), 9-layer Canvas rendering engine, draft editing mode (save/restore context), pro mode integration (template entry + works merge), goal marker enhancement (flag + rings + badge Layer9) |
 | **v0.4.0** | 2026-03-15 | 🎬 **Multi-scene management** — Independent scenes (elements/scripts/background isolation), scene selector UI, per-scene background customization (color/image upload), script `switchScene()` navigation API, backward-compatible auto-migration |
 | **v0.3.0** | 2026-03-15 | 🔦 **Advanced 3D lighting** — Spot light, hemisphere light, PCFSoft shadow mapping, PBR materials (metalness/roughness); 🌌 **Skybox** — Solid color / panorama mode + environment mapping; 🐛 Fixed 2D event/data elements rendering spurious blue squares |
 | **v0.2.1** | 2026-03-15 | 🎮 Fixed 3D editor shortcuts (G/R/S/Del/1/3/7); 🖱️ Fixed FPS preview pointer lock persistence; ⚡ Fixed element disappearance during fast editing (async race); 🛡️ NaN/Infinity transform value guards |
