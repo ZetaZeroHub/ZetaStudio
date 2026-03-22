@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Pencil, Play, Save, CheckCircle2, Rocket, Code2, ChevronUp, ChevronDown, Gamepad2, LayoutPanelLeft, Layers, Sparkles, PanelLeft, PanelBottom, PanelRight, Maximize2, Minimize2 } from 'lucide-react';
+import { Pencil, Play, Save, CheckCircle2, Rocket, Code2, ChevronUp, ChevronDown, Gamepad2, LayoutPanelLeft, Layers, Sparkles, PanelLeft, PanelBottom, PanelRight, Maximize2, Minimize2, History, Upload, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/Navbar/Navbar';
 import GameCanvas from '../../components/GameCanvas/GameCanvas';
 import ElementPanel from '../../components/ElementPanel/ElementPanel';
@@ -32,15 +33,25 @@ export default function EditorPage() {
 
   const [codeCollapsed, setCodeCollapsed] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [publishName, setPublishName] = useState('');
+  const [savesOpen, setSavesOpen] = useState(false);
+  const [publishToast, setPublishToast] = useState('');
   // Mobile: which panel is active
   const [mobileTab, setMobileTab] = useState('canvas');
   // Tablet: left panel drawer open
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false);
   // PC panel visibility toggles (VSCode-style)
-  const [leftPanelVisible, setLeftPanelVisible] = useState(true);
-  const [bottomPanelVisible, setBottomPanelVisible] = useState(true);
+  const [leftPanelVisible, setLeftPanelVisible] = useState(false);
+  const [bottomPanelVisible, setBottomPanelVisible] = useState(false);
   const [rightPanelVisible, setRightPanelVisible] = useState(true);
   const [codeFullscreen, setCodeFullscreen] = useState(false);
+  // Resizable right panel
+  const [rightPanelWidth, setRightPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('editorRightPanelWidth');
+    return saved ? parseInt(saved, 10) : 360;
+  });
+  const isResizingRef = useRef(false);
 
   // Auto-switch to canvas tab on mobile when entering preview mode
   useEffect(() => {
@@ -70,13 +81,75 @@ export default function EditorPage() {
     setSaving(true);
     const data = useEditorStore.getState().getProjectData();
     updateProject(currentProject.id, data);
+    // Also save a snapshot for version history
+    useEditorStore.getState().saveSnapshot();
     setTimeout(() => setSaving(false), 800);
   }, [currentProject, updateProject]);
 
-  const handlePublish = useCallback(() => {
-    handleSave();
-    navigate(`/play/${currentProject.id}`);
-  }, [handleSave, currentProject, navigate]);
+  // Auto-save every 60 seconds
+  useEffect(() => {
+    if (!currentProject) return;
+    const timer = setInterval(() => {
+      const state = useEditorStore.getState();
+      if (state.currentProject) {
+        const data = state.getProjectData();
+        updateProject(state.currentProject.id, data);
+        state.saveSnapshot();
+        console.log('[EditorPage] Auto-saved');
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [currentProject?.id, updateProject]);
+
+  // Open publish modal
+  const handlePublishClick = useCallback(() => {
+    setPublishName(currentProject?.name || '');
+    setPublishModalOpen(true);
+  }, [currentProject]);
+
+  // Confirm publish
+  const handleConfirmPublish = useCallback(() => {
+    if (!currentProject) return;
+    const name = publishName.trim() || currentProject.name || '';
+    const data = useEditorStore.getState().getProjectData();
+    updateProject(currentProject.id, { ...data, name, published: true, publishedAt: Date.now() });
+    useEditorStore.getState().saveSnapshot();
+    setPublishModalOpen(false);
+    setPublishToast('已发布到我的作品！');
+    console.log('[EditorPage] Published:', currentProject.id, name);
+    setTimeout(() => navigate('/'), 1500);
+  }, [currentProject, updateProject, publishName, navigate]);
+
+  // Snapshots for current project
+  const currentSnapshots = useMemo(() => {
+    return useEditorStore.getState().getSnapshotsForProject();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject?.id, saving]);
+
+  /* ── Right panel resize ── */
+  const onResizeStart = useCallback((e) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    const startX = e.clientX || e.touches?.[0]?.clientX;
+    const startW = rightPanelWidth;
+    const onMove = (ev) => {
+      const x = ev.clientX || ev.touches?.[0]?.clientX;
+      const newW = Math.max(260, Math.min(600, startW - (x - startX)));
+      setRightPanelWidth(newW);
+    };
+    const onUp = () => {
+      isResizingRef.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      setRightPanelWidth(w => { localStorage.setItem('editorRightPanelWidth', w); return w; });
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onUp);
+  }, [rightPanelWidth]);
 
   if (!currentProject) {
     return (
@@ -92,7 +165,9 @@ export default function EditorPage() {
   return (
     <div className={`${styles.editorPage} ${mode === 'preview' ? styles.previewMode : ''}`}>
       {/* Top Toolbar */}
-      <Navbar>
+      <Navbar hideBrand leftContent={
+        <button className={styles.backToHome} onClick={() => navigate('/')}>← 返回</button>
+      }>
         <span className={styles.projectTitle}>
           <LayoutPanelLeft size={16} className={styles.projectIcon} strokeWidth={2} />
           <span className={styles.projectName}>{currentProject.name}</span>
@@ -144,8 +219,12 @@ export default function EditorPage() {
             {saving ? <CheckCircle2 size={16} className={styles.iconSuccess} /> : <Save size={16} />}
             <span className={styles.actionLabel}>{saving ? t('editor.saved') : t('editor.save')}</span>
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handlePublish}>
-            <Rocket size={16} />
+          <button className="btn btn-ghost btn-sm" onClick={() => setSavesOpen(v => !v)} title="My Saves">
+            <History size={16} />
+            <span className={styles.actionLabel}>记录</span>
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={handlePublishClick}>
+            <Upload size={16} />
             <span className={styles.actionLabel}>{t('editor.publish')}</span>
           </button>
         </div>
@@ -205,12 +284,20 @@ export default function EditorPage() {
 
         {/* Mobile: AI panel */}
         <div className={`${styles.mobilePanel} ${mobileTab === 'ai' ? styles.mobilePanelActive : ''}`}>
-          <AiPanel />
+          <AiPanel theme="pro" />
         </div>
 
         {/* Right Panel - AI Assistant (desktop/tablet) */}
-        <div className={`${styles.rightPanel} ${!rightPanelVisible ? styles.rightPanelHidden : ''}`}>
-          <AiPanel />
+        <div
+          className={`${styles.rightPanel} ${!rightPanelVisible ? styles.rightPanelHidden : ''}`}
+          style={rightPanelVisible ? { width: rightPanelWidth } : undefined}
+        >
+          <div
+            className={styles.resizeHandle}
+            onMouseDown={onResizeStart}
+            onTouchStart={onResizeStart}
+          />
+          <AiPanel theme="pro" />
         </div>
       </div>
 
@@ -229,6 +316,95 @@ export default function EditorPage() {
           </button>
         ))}
       </div>
+      {/* Saves panel */}
+      <AnimatePresence>
+        {savesOpen && (
+          <motion.div
+            className={styles.savesPanel}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className={styles.savesPanelHeader}>
+              <h4 className={styles.savesPanelTitle}>My Saves</h4>
+              <button className={styles.savesPanelClose} onClick={() => setSavesOpen(false)}><X size={14} /></button>
+            </div>
+            <div className={styles.savesList}>
+              {currentSnapshots.length === 0 && (
+                <div className={styles.savesEmpty}>No saves yet</div>
+              )}
+              {currentSnapshots.map(snap => (
+                <button
+                  key={snap.id}
+                  className={styles.savesItem}
+                  onClick={() => {
+                    useEditorStore.getState().loadSnapshot(snap.id);
+                    setSavesOpen(false);
+                    setPublishToast('Loaded');
+                    setTimeout(() => setPublishToast(''), 2000);
+                  }}
+                >
+                  <span className={styles.savesItemName}>{snap.name}</span>
+                  <span className={styles.savesItemTime}>{new Date(snap.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Publish modal */}
+      <AnimatePresence>
+        {publishModalOpen && (
+          <motion.div
+            className={styles.publishOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPublishModalOpen(false)}
+          >
+            <motion.div
+              className={styles.publishModal}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className={styles.publishModalTitle}>Publish</h3>
+              <p className={styles.publishModalDesc}>Name your game</p>
+              <input
+                type="text"
+                className={styles.publishModalInput}
+                value={publishName}
+                onChange={e => setPublishName(e.target.value)}
+                placeholder="Name"
+                autoFocus
+                onKeyDown={e => e.key === 'Enter' && handleConfirmPublish()}
+              />
+              <div className={styles.publishModalActions}>
+                <button className={styles.publishConfirmBtn} onClick={handleConfirmPublish}>
+                  <Upload size={16} /> Publish
+                </button>
+                <button className={styles.publishCancelBtn} onClick={() => setPublishModalOpen(false)}>Cancel</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <AnimatePresence>
+        {publishToast && (
+          <motion.div
+            className={styles.publishToast}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 30 }}
+          >
+            {publishToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

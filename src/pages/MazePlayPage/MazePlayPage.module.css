@@ -1,0 +1,43 @@
+/* MazePlayPage — override styles for maze game inside PlayPage frame */
+
+/* The game frame: use 16:9 for platformer (wide scene), keep PlayPage's styling */
+.mazeFrame {
+  aspect-ratio: 16 / 9 !important;
+  position: relative;
+  overflow: hidden;
+  max-width: 960px !important;
+}
+
+/* Force maze game pages to fill the frame */
+.mazeFrame > div {
+  position: absolute !important;
+  inset: 0 !important;
+  min-height: unset !important;
+  height: 100% !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Hide the maze game's own back/nav buttons — we have our own Navbar */
+.mazeFrame [class*="hudBtn"]:first-child,
+.mazeFrame [class*="backBtn"],
+.mazeFrame [class*="topBar"] {
+  display: none !important;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .mazeFrame {
+    aspect-ratio: 16 / 10 !important;
+  }
+}

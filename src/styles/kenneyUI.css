@@ -1,0 +1,101 @@
+/* ========================================
+   Kenney UI Panel Utilities
+   使用 Kenney UI Pack 素材 — 统一风格
+   ======================================== */
+
+/* ── Kenney Future Font ── */
+@font-face {
+  font-family: 'Kenney Future';
+  src: url('/assets/kenney/kenney_ui-pack/Font/Kenney Future.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Kenney Future Narrow';
+  src: url('/assets/kenney/kenney_ui-pack/Font/Kenney Future Narrow.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ══════════════════════════════
+   Panel containers — CSS替代pixel-adventure
+   使用kenney_ui-pack风格的圆角/渐变/阴影
+   ══════════════════════════════ */
+
+/* ── Beige parchment panel ── */
+.kenneyPanelBeige {
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 100%);
+  border: 3px solid #D7A34A;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #BF8C30, inset 0 1px 0 rgba(255,255,255,0.5);
+}
+
+/* ── Brown / wood panel ── */
+.kenneyPanelBrown {
+  background: linear-gradient(180deg, #A1887F 0%, #795548 100%);
+  border: 3px solid #5D4037;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #3E2723, inset 0 1px 0 rgba(255,255,255,0.2);
+  color: #FFF8E1;
+}
+
+/* ── Blue panel ── */
+.kenneyPanelBlue {
+  background: linear-gradient(180deg, #64B5F6 0%, #1E88E5 100%);
+  border: 3px solid #1565C0;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #0D47A1, inset 0 1px 0 rgba(255,255,255,0.3);
+  color: #FFF;
+}
+
+/* ── Gray panel ── */
+.kenneyPanelGray {
+  background: linear-gradient(180deg, #CFD8DC 0%, #90A4AE 100%);
+  border: 3px solid #607D8B;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #455A64, inset 0 1px 0 rgba(255,255,255,0.4);
+}
+
+/* ── Dark brown panel ── */
+.kenneyPanelDarkBrown {
+  background: linear-gradient(180deg, #6D4C41 0%, #4E342E 100%);
+  border: 3px solid #3E2723;
+  border-radius: 12px;
+  box-shadow: 0 3px 0 #1B0000, inset 0 1px 0 rgba(255,255,255,0.1);
+  color: #FFF;
+}
+
+/* ── Fancy decorated panel ── */
+.kenneyPanelFancy {
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFECB3 100%);
+  border: 3px solid #D7A34A;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #BF8C30, 0 6px 20px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+/* ── Inner bordered panel ── */
+.kenneyPanelInner {
+  background: linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 100%);
+  border: 3px solid #D7A34A;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px rgba(215,163,74,0.3), 0 3px 0 #BF8C30;
+}
+
+/* ── Blue frame ── */
+.kenneyFrameBlue {
+  background: linear-gradient(180deg, #42A5F5 0%, #1565C0 100%);
+  border: 4px solid #0D47A1;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #0D47A1, inset 0 2px 0 rgba(255,255,255,0.2);
+}
+
+/* ── Gray frame ── */
+.kenneyFrameGray {
+  background: linear-gradient(180deg, #78909C 0%, #455A64 100%);
+  border: 4px solid #37474F;
+  border-radius: 14px;
+  box-shadow: 0 4px 0 #263238, inset 0 2px 0 rgba(255,255,255,0.15);
+}

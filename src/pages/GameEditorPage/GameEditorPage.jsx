@@ -3,8 +3,8 @@
    支持横版(platformer) + 2.5D(topdown)
    移动端优化 + 属性编辑 + 开始游戏
    ======================================== */
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Save, CheckCircle2, Pencil, Play, MousePointer,
   PaintBucket, Eraser, ZoomIn, ZoomOut, PanelLeftClose, PanelLeft,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useGameDraftStore from '../../stores/gameDraftStore';
+import useProjectStore from '../../stores/projectStore';
 import { getLevelById } from '../../data/mazeLevels';
 import TilePanel from '../../components/TilePanel/TilePanel';
 import EditorCanvas from '../../components/EditorCanvas/EditorCanvas';
@@ -70,6 +71,9 @@ const PROP_LABELS = {
 export default function GameEditorPage() {
   const { templateType, levelId, draftId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Detect if entered from pro mode (URL contains query param or referrer)
+  const fromPro = location.search?.includes('from=pro');
   const {
     currentDraft, mode, selectedTool, selectedTile, brushMode, drafts, saves,
     loadDrafts, createDraft, openDraft, saveDraft, closeDraft,
@@ -78,9 +82,15 @@ export default function GameEditorPage() {
   } = useGameDraftStore();
 
   const [saving, setSaving] = useState(false);
-  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  // Desktop: default AI panel open; read cached width
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const [rightPanelOpen, setRightPanelOpen] = useState(isDesktop);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [zoom, setZoom] = useState(1);
+  // AI panel resizable width
+  const cachedW = typeof window !== 'undefined' ? parseInt(localStorage.getItem('gameEditorAiWidth') || '320', 10) : 320;
+  const [aiPanelWidth, setAiPanelWidth] = useState(Math.max(200, Math.min(cachedW, 600)));
+  const resizingRef = useRef(false);
   // Section collapse states
   const [sectionsOpen, setSectionsOpen] = useState({ tools: true, tiles: true });
   // Selected element for property editing
@@ -116,46 +126,63 @@ export default function GameEditorPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [publishToast, setPublishToast] = useState('');
   const [savesOpen, setSavesOpen] = useState(false);
-  const [saveNameModal, setSaveNameModal] = useState(false);
-  const [quickSaveName, setQuickSaveName] = useState('');
 
   // Filter saves for current draft
   const currentSaves = saves.filter(s => s.draftId === currentDraft?.id)
     .sort((a, b) => b.createdAt - a.createdAt);
+
+  // ── Auto-save every 60 seconds ──
+  useEffect(() => {
+    if (!currentDraft) return;
+    const timer = setInterval(() => {
+      const draft = useGameDraftStore.getState().currentDraft;
+      if (draft) {
+        useGameDraftStore.getState().saveRecord();
+        console.log('[GameEditorPage] Auto-saved');
+      }
+    }, 60_000);
+    return () => clearInterval(timer);
+  }, [currentDraft?.id]);
 
   const handlePublishClick = useCallback(() => {
     setSaveName(currentDraft?.name || '我的关卡');
     setSaveModalOpen(true);
   }, [currentDraft]);
 
-  // Quick save with auto-naming
-  const handleQuickSave = useCallback(() => {
-    const baseName = currentDraft?.name || '我的关卡';
-    const count = saves.filter(s => s.draftId === currentDraft?.id).length;
-    const autoName = `${baseName.replace(/-\d+$/, '')}-${count + 1}`;
-    setQuickSaveName(autoName);
-    setSaveNameModal(true);
-  }, [currentDraft, saves]);
-
-  const handleConfirmSave = useCallback(() => {
-    const name = quickSaveName.trim() || '未命名';
-    saveRecord(name);
+  // Manual save — no popup, directly save
+  const handleManualSave = useCallback(() => {
+    saveRecord();
     playSaveSound();
-    setSaveNameModal(false);
     setPublishToast('✅ 已保存');
     setTimeout(() => setPublishToast(''), 2000);
-  }, [quickSaveName, saveRecord]);
+  }, [saveRecord]);
 
-  // Publish (simulate server upload)
+  // Publish
   const handlePublishLevel = useCallback(() => {
     const name = saveName.trim() || currentDraft?.name || '我的关卡';
-    publishDraft(name);
-    playSaveSound();
-    setSaveModalOpen(false);
-    setPublishToast('🎉 作品已发布！（模拟）');
-    console.log('[GameEditorPage] Level published (simulated):', currentDraft?.id);
-    setTimeout(() => setPublishToast(''), 3000);
-  }, [saveName, publishDraft, currentDraft]);
+    if (fromPro) {
+      // Publish to pro mode's projectStore ("我的作品")
+      const project = useProjectStore.getState().createProject(name, 'mazeAdventure', '2D');
+      useProjectStore.getState().updateProject(project.id, {
+        mazeLevelData: currentDraft?.levelData,
+        baseLevelId: levelId,
+        gameDraftId: currentDraft?.id, // link to gameDraftStore draft
+      });
+      publishDraft(name); // also keep in draft store
+      playSaveSound();
+      setSaveModalOpen(false);
+      setPublishToast('🎉 已发布到我的作品！');
+      console.log('[GameEditorPage] Published to pro projectStore:', project.id);
+      setTimeout(() => navigate('/'), 1500);
+    } else {
+      publishDraft(name);
+      playSaveSound();
+      setSaveModalOpen(false);
+      setPublishToast('🎉 作品已发布！（模拟）');
+      console.log('[GameEditorPage] Level published (simulated):', currentDraft?.id);
+      setTimeout(() => setPublishToast(''), 3000);
+    }
+  }, [saveName, publishDraft, currentDraft, fromPro, levelId, navigate]);
 
   const handleLoadSave = useCallback((saveId) => {
     loadSaveRecord(saveId);
@@ -168,6 +195,16 @@ export default function GameEditorPage() {
   const handleBack = () => {
     playClick();
     if (currentDraft) saveDraft();
+    if (fromPro) {
+      navigate('/');
+      return;
+    }
+    // If navigated from maze-home (my works), go back in history
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('from') === 'maze-home') {
+      navigate(-1);
+      return;
+    }
     const tType = currentDraft?.templateType;
     const diff = tType === 'topdown' ? 'easy' : 'medium';
     navigate(`/maze/creator/levels/${diff}`);
@@ -243,8 +280,8 @@ export default function GameEditorPage() {
               </div>
             )}
           </div>
-          {/* Quick save button */}
-          <button className={styles.quickSaveBtn} onClick={handleQuickSave}>
+          {/* Save button — direct save, no popup */}
+          <button className={styles.quickSaveBtn} onClick={handleManualSave}>
             <Save size={14} /> <span>保存</span>
           </button>
           <button className={styles.saveBtn} onClick={handlePublishClick}>
@@ -273,6 +310,7 @@ export default function GameEditorPage() {
               exit={{ x: -260 }}
               transition={{ duration: 0.25 }}
             >
+
               {/* ── Tools (compact row) ── */}
               <div className={styles.section}>
                 <button className={styles.sectionHeader} onClick={() => toggleSection('tools')}>
@@ -288,7 +326,6 @@ export default function GameEditorPage() {
                         onClick={() => {
                           playClick();
                           setSelectedTool(key);
-                          // Auto-select grass tile when switching to brush with no tile
                           if (key === 'brush' && !selectedTile) {
                             setSelectedTile({ id: 'terrain_grass_block_top', name: '草地', src: '' });
                           }
@@ -301,7 +338,6 @@ export default function GameEditorPage() {
                     ))}
                   </div>
                 )}
-                {/* Brush mode toggle (only visible when brush selected) */}
                 {sectionsOpen.tools && selectedTool === 'brush' && (
                   <div className={styles.brushModeRow}>
                     <button
@@ -338,19 +374,21 @@ export default function GameEditorPage() {
           )}
         </AnimatePresence>
 
-        {/* Center: Canvas */}
+        {/* Persistent toggle tab — always rendered, CSS-animated position */}
+        {mode === 'edit' && (
+          <button
+            className={`${styles.panelToggleTab} ${leftPanelOpen ? styles.panelToggleTabOpen : ''}`}
+            onClick={() => { playClick(); setLeftPanelOpen(!leftPanelOpen); }}
+            title={leftPanelOpen ? '收起面板' : '展开素材面板'}
+          >
+            {leftPanelOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
+          </button>
+        )}
+
         <div className={styles.centerPanel}>
           {/* Controls overlay */}
           {mode === 'edit' && (
             <div className={styles.canvasControls}>
-              <button
-                className={styles.ctrlBtn}
-                onClick={() => { playClick(); setLeftPanelOpen(!leftPanelOpen); }}
-                title={leftPanelOpen ? '收起' : '展开素材面板'}
-              >
-                {leftPanelOpen ? <PanelLeftClose size={14} /> : <PanelLeft size={14} />}
-              </button>
-              <div className={styles.ctrlDivider} />
               <button className={styles.ctrlBtn} onClick={() => setZoom(z => Math.min(z + 0.25, 3))}>
                 <ZoomIn size={14} />
               </button>
@@ -359,17 +397,6 @@ export default function GameEditorPage() {
                 <ZoomOut size={14} />
               </button>
             </div>
-          )}
-
-          {/* Prominent FAB when panel is collapsed */}
-          {mode === 'edit' && !leftPanelOpen && (
-            <button
-              className={styles.expandFab}
-              onClick={() => { playClick(); setLeftPanelOpen(true); }}
-            >
-              <PanelLeft size={18} />
-              <span>素材面板</span>
-            </button>
           )}
 
           <EditorCanvas
@@ -447,11 +474,36 @@ export default function GameEditorPage() {
           {rightPanelOpen && (
             <motion.div
               className={styles.rightPanel}
-              initial={{ x: 320 }}
+              style={{ width: aiPanelWidth }}
+              initial={{ x: aiPanelWidth }}
               animate={{ x: 0 }}
-              exit={{ x: 320 }}
+              exit={{ x: aiPanelWidth }}
               transition={{ duration: 0.25 }}
             >
+              {/* Drag resize handle */}
+              <div
+                className={styles.resizeHandle}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  resizingRef.current = true;
+                  const startX = e.clientX;
+                  const startW = aiPanelWidth;
+                  const onMove = (ev) => {
+                    if (!resizingRef.current) return;
+                    const delta = startX - ev.clientX;
+                    const newW = Math.max(200, Math.min(startW + delta, 600));
+                    setAiPanelWidth(newW);
+                  };
+                  const onUp = () => {
+                    resizingRef.current = false;
+                    localStorage.setItem('gameEditorAiWidth', String(aiPanelWidth));
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onUp);
+                  };
+                  document.addEventListener('mousemove', onMove);
+                  document.addEventListener('mouseup', onUp);
+                }}
+              />
               <div className={styles.aiPanelHeader}>
                 <Sparkles size={16} />
                 <span>AI 关卡设计助手</span>
@@ -506,44 +558,7 @@ export default function GameEditorPage() {
         )}
       </AnimatePresence>
 
-      {/* Quick save name modal */}
-      <AnimatePresence>
-        {saveNameModal && (
-          <motion.div
-            className={styles.saveOverlay}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSaveNameModal(false)}
-          >
-            <motion.div
-              className={styles.saveModal}
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className={styles.saveModalTitle}>💾 保存记录</h3>
-              <p className={styles.saveModalDesc}>为这个保存命名</p>
-              <input
-                type="text"
-                className={styles.saveModalInput}
-                value={quickSaveName}
-                onChange={(e) => setQuickSaveName(e.target.value)}
-                placeholder="保存名称"
-                autoFocus
-                onKeyDown={(e) => e.key === 'Enter' && handleConfirmSave()}
-              />
-              <div className={styles.saveModalActions}>
-                <button className={styles.publishBtn} onClick={handleConfirmSave}>
-                  <Save size={16} /> 确认保存
-                </button>
-                <button className={styles.saveModalCancel} onClick={() => setSaveNameModal(false)}>取消</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Publish toast notification */}
       <AnimatePresence>

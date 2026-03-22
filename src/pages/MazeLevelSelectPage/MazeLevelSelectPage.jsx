@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getLevelsByDifficulty, DIFFICULTY, getTheme } from '../../data/mazeLevels';
-import { getTopDownLevelsByDifficulty } from '../../data/topDownLevels';
+import { getMazeLevels } from '../../data/topDownLevels';
 import { playClickSound, playSelectSound, playBackSound, playTapSound, playSwitchSound } from '../../utils/gameUISound';
 import styles from './MazeLevelSelectPage.module.css';
 
@@ -16,19 +16,18 @@ export default function MazeLevelSelectPage() {
   const { difficulty } = useParams();
   const navigate = useNavigate();
   const isEasy = difficulty === 'easy';
-  const levels = isEasy ? getTopDownLevelsByDifficulty() : getLevelsByDifficulty(difficulty);
+  const levels = isEasy ? getMazeLevels() : getLevelsByDifficulty(difficulty);
   const diffInfo = DIFFICULTY[difficulty] || DIFFICULTY.easy;
   const [tab, setTab] = useState('official');
 
-  // Load player drafts for platformer
+  // Load player drafts — for BOTH platformer and topdown
   let playerDrafts = [];
-  if (!isEasy) {
-    try {
-      const raw = localStorage.getItem('game_drafts_v1');
-      const all = raw ? JSON.parse(raw) : [];
-      playerDrafts = all.filter(d => d.templateType === 'platformer' && d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    } catch {}
-  }
+  try {
+    const raw = localStorage.getItem('game_drafts_v1');
+    const all = raw ? JSON.parse(raw) : [];
+    const tType = isEasy ? 'topdown' : 'platformer';
+    playerDrafts = all.filter(d => d.templateType === tType && d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  } catch {}
 
   const handleBack = () => {
     playBackSound();
@@ -45,6 +44,30 @@ export default function MazeLevelSelectPage() {
     playClickSound();
     const tType = isEasy ? 'topdown' : 'platformer';
     navigate(`/maze/editor/${tType}/${level.id}`);
+  };
+
+  const handleDraftClick = (d) => {
+    playSelectSound();
+    if (isEasy) {
+      // Topdown drafts: open in AI maze creator editor
+      navigate(`/maze/ai-maze?draftId=${d.id}`);
+    } else {
+      // Platformer drafts: open editor
+      navigate(`/maze/editor/draft/${d.id}`);
+    }
+  };
+
+  const handleDeleteDraft = (e, id) => {
+    e.stopPropagation();
+    playClickSound();
+    if (!confirm('确定删除这个作品吗？')) return;
+    try {
+      const raw = localStorage.getItem('game_drafts_v1');
+      const all = raw ? JSON.parse(raw) : [];
+      const filtered = all.filter(x => x.id !== id);
+      localStorage.setItem('game_drafts_v1', JSON.stringify(filtered));
+      window.location.reload();
+    } catch {}
   };
 
   const renderStars = (count) => [1, 2, 3].map(i => (
@@ -76,29 +99,27 @@ export default function MazeLevelSelectPage() {
           <span className={styles.bannerText}>{diffInfo.desc}</span>
         </div>
 
-        {/* Tab bar (platformer only) */}
-        {!isEasy && (
-          <div className={styles.tabBar}>
-            <button
-              className={`${styles.tabBtn} ${tab === 'official' ? styles.tabBtnActive : ''}`}
-              onClick={() => { playSwitchSound(); setTab('official'); }}
-            >
-              <img src={`${UI}/Green/Default/star.png`} alt="" className={styles.tabIcon} />
-              官方关卡
-            </button>
-            <button
-              className={`${styles.tabBtn} ${tab === 'player' ? styles.tabBtnActive : ''}`}
-              onClick={() => { playSwitchSound(); setTab('player'); }}
-            >
-              <img src={`${UI}/Blue/Default/star.png`} alt="" className={styles.tabIcon} />
-              我的创作
-            </button>
-          </div>
-        )}
+        {/* Tab bar (always shown) */}
+        <div className={styles.tabBar}>
+          <button
+            className={`${styles.tabBtn} ${tab === 'official' ? styles.tabBtnActive : ''}`}
+            onClick={() => { playSwitchSound(); setTab('official'); }}
+          >
+            <img src={`${UI}/Green/Default/star.png`} alt="" className={styles.tabIcon} />
+            官方关卡
+          </button>
+          <button
+            className={`${styles.tabBtn} ${tab === 'player' ? styles.tabBtnActive : ''}`}
+            onClick={() => { playSwitchSound(); setTab('player'); }}
+          >
+            <img src={`${UI}/Blue/Default/star.png`} alt="" className={styles.tabIcon} />
+            我的创作
+          </button>
+        </div>
 
         {/* Level Cards Grid */}
         <div className={styles.cards}>
-          {(tab === 'official' || isEasy) && levels.map((level, i) => (
+          {tab === 'official' && levels.map((level, i) => (
             <button
               key={level.id}
               className={styles.card}
@@ -126,18 +147,20 @@ export default function MazeLevelSelectPage() {
           ))}
 
           {/* Player drafts */}
-          {tab === 'player' && !isEasy && (
+          {tab === 'player' && (
             playerDrafts.length === 0 ? (
               <div className={styles.emptyCard}>
                 <p>还没有创作哦！</p>
-                <p className={styles.emptyHint}>去"创作工坊"设计你的关卡吧</p>
+                <p className={styles.emptyHint}>
+                  {isEasy ? '去"AI创作游戏"设计你的迷宫吧' : '去"创作工坊"设计你的关卡吧'}
+                </p>
               </div>
             ) : (
               playerDrafts.map((d, i) => (
                 <button
                   key={d.id}
                   className={styles.card}
-                  onClick={() => { playSelectSound(); navigate(`/maze/editor/draft/${d.id}`); }}
+                  onClick={() => handleDraftClick(d)}
                   onMouseEnter={playTapSound}
                 >
                   <img
@@ -153,18 +176,7 @@ export default function MazeLevelSelectPage() {
                     </div>
                     <button
                       className={styles.deleteBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        playClickSound();
-                        if (!confirm('确定删除这个作品吗？')) return;
-                        try {
-                          const raw = localStorage.getItem('game_drafts_v1');
-                          const all = raw ? JSON.parse(raw) : [];
-                          const filtered = all.filter(x => x.id !== d.id);
-                          localStorage.setItem('game_drafts_v1', JSON.stringify(filtered));
-                          window.location.reload();
-                        } catch {}
-                      }}
+                      onClick={(e) => handleDeleteDraft(e, d.id)}
                     >🗑️</button>
                   </div>
                 </button>

@@ -17,6 +17,7 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
   const appRef = useRef(null);
   const worldRef = useRef(null);
   const cursorRef = useRef(null);      // Grid cursor overlay
+  const selGfxRef = useRef(null);      // Selection highlight graphics
   const panRef = useRef({ x: 0, y: 0 });
   const assetsRef = useRef(null);
   const toolRef = useRef('brush');     // Avoid stale closures
@@ -26,6 +27,7 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
   const onSelectRef = useRef(null);    // Element select callback
   const [ready, setReady] = useState(false);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
+  const initializedDraftRef = useRef(null); // Track which draft we've auto-centered on
 
   const {
     currentDraft, mode, selectedTool, selectedTile,
@@ -536,7 +538,8 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
     if (ld.playerStart) {
       const px = ld.playerStart.x || 80, py = ld.playerStart.y || 300;
       if (Math.abs(px - gx - 16) < GRID && Math.abs(py - gy - GRID) < GRID) {
-        cb({ kind: 'playerStart', index: 0, data: { x: px, y: py } });
+        const info = { kind: 'playerStart', index: 0, data: { x: px, y: py } };
+        cb(info); drawSelectionHighlight(info);
         return;
       }
     }
@@ -545,7 +548,8 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
     if (ld.exitDoor) {
       const ex = ld.exitDoor.x || 3650, ey = ld.exitDoor.y || 400;
       if (Math.abs(ex - gx - 16) < GRID && Math.abs(ey - gy - GRID) < GRID) {
-        cb({ kind: 'exitDoor', index: 0, data: { x: ex, y: ey } });
+        const info = { kind: 'exitDoor', index: 0, data: { x: ex, y: ey } };
+        cb(info); drawSelectionHighlight(info);
         return;
       }
     }
@@ -555,7 +559,8 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       Math.abs((it.x || 0) - gx - 16) < GRID && Math.abs((it.y || 0) - gy - 16) < GRID
     );
     if (item) {
-      cb({ kind: 'item', index: (ld.items || []).indexOf(item), data: { ...item } });
+      const info = { kind: 'item', index: (ld.items || []).indexOf(item), data: { ...item } };
+      cb(info); drawSelectionHighlight(info);
       return;
     }
 
@@ -564,7 +569,8 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       Math.abs((en.x || 0) - gx) < GRID && Math.abs((en.y || 0) - gy - GRID) < GRID
     );
     if (enemy) {
-      cb({ kind: 'enemy', index: (ld.enemies || []).indexOf(enemy), data: { ...enemy } });
+      const info = { kind: 'enemy', index: (ld.enemies || []).indexOf(enemy), data: { ...enemy } };
+      cb(info); drawSelectionHighlight(info);
       return;
     }
 
@@ -574,7 +580,8 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       gy >= (obj.y || 0) && gy < (obj.y || 0) + (obj.h || GRID)
     );
     if (inter) {
-      cb({ kind: 'interactable', index: (ld.interactables || []).indexOf(inter), data: { ...inter } });
+      const info = { kind: 'interactable', index: (ld.interactables || []).indexOf(inter), data: { ...inter } };
+      cb(info); drawSelectionHighlight(info);
       return;
     }
 
@@ -584,12 +591,70 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       gy >= (p.y || 0) && gy < (p.y || 0) + TILE_SIZE
     );
     if (plat) {
-      cb({ kind: 'platform', index: (ld.platforms || []).indexOf(plat), data: { ...plat } });
+      const info = { kind: 'platform', index: (ld.platforms || []).indexOf(plat), data: { ...plat } };
+      cb(info); drawSelectionHighlight(info);
       return;
     }
 
     // Nothing hit - deselect
     cb(null);
+    // Clear highlight
+    if (selGfxRef.current) selGfxRef.current.clear();
+  }, []);
+
+  // ── Draw selection highlight around an element ──
+  const drawSelectionHighlight = useCallback((info) => {
+    const gfx = selGfxRef.current;
+    if (!gfx) return;
+    gfx.clear();
+    if (!info) return;
+    const state = useGameDraftStore.getState();
+    const ld = state.currentDraft?.levelData;
+    if (!ld) return;
+
+    let x, y, w, h;
+    if (info.kind === 'playerStart' && ld.playerStart) {
+      x = (ld.playerStart.x || 80) - 20; y = (ld.playerStart.y || 300) - 36;
+      w = 40; h = 40;
+    } else if (info.kind === 'exitDoor' && ld.exitDoor) {
+      x = (ld.exitDoor.x || 3650) - 20; y = (ld.exitDoor.y || 400) - 44;
+      w = 40; h = 48;
+    } else if (info.kind === 'item') {
+      const it = (ld.items || [])[info.index];
+      if (!it) return;
+      x = (it.x || 0) - 20; y = (it.y || 0) - 20; w = 40; h = 40;
+    } else if (info.kind === 'enemy') {
+      const en = (ld.enemies || [])[info.index];
+      if (!en) return;
+      x = (en.x || 0) - 20; y = (en.y || 0) - 36; w = 40; h = 40;
+    } else if (info.kind === 'interactable') {
+      const obj = (ld.interactables || [])[info.index];
+      if (!obj) return;
+      x = (obj.x || 0) - 4; y = (obj.y || 0) - 4;
+      w = (obj.w || GRID) + 8; h = (obj.h || GRID) + 8;
+    } else if (info.kind === 'platform') {
+      const p = (ld.platforms || [])[info.index];
+      if (!p) return;
+      x = (p.x || 0) - 2; y = (p.y || 0) - 2;
+      w = (p.w || TILE_SIZE) + 4; h = TILE_SIZE + 4;
+    } else return;
+
+    // Draw highlight: animated dashed border + glow fill
+    gfx.lineStyle(2.5, 0x1CB0F6, 0.9);
+    gfx.beginFill(0x1CB0F6, 0.08);
+    gfx.drawRoundedRect(x, y, w, h, 4);
+    gfx.endFill();
+    // Corner markers
+    const m = 6;
+    gfx.lineStyle(3, 0x1CB0F6, 1);
+    // top-left
+    gfx.moveTo(x, y + m); gfx.lineTo(x, y); gfx.lineTo(x + m, y);
+    // top-right
+    gfx.moveTo(x + w - m, y); gfx.lineTo(x + w, y); gfx.lineTo(x + w, y + m);
+    // bottom-left
+    gfx.moveTo(x, y + h - m); gfx.lineTo(x, y + h); gfx.lineTo(x + m, y + h);
+    // bottom-right
+    gfx.moveTo(x + w - m, y + h); gfx.lineTo(x + w, y + h); gfx.lineTo(x + w, y + h - m);
   }, []);
 
   // ── Render level ──
@@ -609,8 +674,52 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
     worldRef.current = world;
     app.stage.addChild(world);
     world.scale.set(zoom);
-    world.x = panRef.current.x;
-    world.y = panRef.current.y;
+
+    // Cinematic intro: zoom out to show whole level, then zoom into playerStart
+    const draftId = currentDraft.id || currentDraft.levelId;
+    let introTimer = null;
+    if (draftId && initializedDraftRef.current !== draftId && ld.playerStart) {
+      initializedDraftRef.current = draftId;
+      const canvasW = app.canvas.width / (window.devicePixelRatio || 1);
+      const canvasH = app.canvas.height / (window.devicePixelRatio || 1);
+
+      const globalZoom = Math.min(canvasW / ww, canvasH / wh) * 0.9;
+      const globalPan = {
+        x: (canvasW - ww * globalZoom) / 2,
+        y: (canvasH - wh * globalZoom) / 2,
+      };
+      const cx = ld.playerStart.x || 80;
+      const cy = ld.playerStart.y || 300;
+      const targetZoom = zoom;
+      const targetPan = {
+        x: canvasW / 2 - cx * targetZoom,
+        y: canvasH / 2 - cy * targetZoom,
+      };
+
+      world.scale.set(globalZoom);
+      world.x = globalPan.x;
+      world.y = globalPan.y;
+
+      introTimer = setTimeout(() => {
+        const startT = performance.now();
+        const animate = (now) => {
+          const t = Math.min((now - startT) / 1000, 1);
+          const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          world.scale.set(globalZoom + (targetZoom - globalZoom) * ease);
+          world.x = globalPan.x + (targetPan.x - globalPan.x) * ease;
+          world.y = globalPan.y + (targetPan.y - globalPan.y) * ease;
+          if (t < 1) requestAnimationFrame(animate);
+          else {
+            panRef.current = { x: targetPan.x, y: targetPan.y };
+            if (onZoomRef.current) onZoomRef.current(targetZoom);
+          }
+        };
+        requestAnimationFrame(animate);
+      }, 800);
+    } else {
+      world.x = panRef.current.x;
+      world.y = panRef.current.y;
+    }
 
     const material = theme === 'desert' ? 'sand'
       : theme === 'candy' ? 'purple'
@@ -619,7 +728,7 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
 
     const tiles = assets?.tiles || {};
 
-    // Background
+    // Background — keep aspect ratio, cover height, tile horizontally
     if (assets?.backgrounds) {
       const bgKey = theme === 'desert' ? 'background_color_desert'
         : theme === 'candy' ? 'background_color_mushrooms'
@@ -627,9 +736,22 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
         : 'background_color_trees';
       const bgTex = assets.backgrounds[bgKey] || assets.backgrounds['background_color_trees'];
       if (bgTex) {
-        const bgSpr = new PIXI.Sprite(bgTex);
-        bgSpr.width = ww; bgSpr.height = wh; bgSpr.alpha = 0.5;
-        world.addChild(bgSpr);
+        // Scale to cover world height while preserving aspect ratio
+        const texW = bgTex.width;
+        const texH = bgTex.height;
+        const scale = wh / texH; // stretch height to fill
+        const tileW = texW * scale; // width per tile at this scale
+        const tilesNeeded = Math.ceil(ww / tileW);
+
+        for (let i = 0; i < tilesNeeded; i++) {
+          const bgSpr = new PIXI.Sprite(bgTex);
+          bgSpr.x = i * tileW;
+          bgSpr.y = 0;
+          bgSpr.width = tileW;
+          bgSpr.height = wh;
+          bgSpr.alpha = 0.5;
+          world.addChild(bgSpr);
+        }
       }
     }
 
@@ -793,6 +915,12 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
     world.addChild(cursor);
     cursorRef.current = cursor;
 
+    // Selection highlight overlay (above cursor)
+    const selGfx = new PIXI.Graphics();
+    world.addChild(selGfx);
+    selGfxRef.current = selGfx;
+
+    return () => { if (introTimer) clearTimeout(introTimer); };
   }, [ready, assetsLoaded, currentDraft, mode, zoom]);
 
   // ── Drag & Drop from TilePanel ──

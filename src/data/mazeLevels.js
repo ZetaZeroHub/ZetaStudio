@@ -5,8 +5,8 @@
    ======================================== */
 
 export const DIFFICULTY = {
-  medium: { label: '横版闯关冒险', icon: '/assets/kenney/kenney_cursor-pixel-pack/Tiles/tile_0042.png', color: '#FFC800', desc: '经典横版平台跳跃，勇闯四大关卡', ageRange: '5-8岁', templateType: 'platformer' },
-  easy: { label: '开放世界探索', icon: '/assets/kenney/kenney_cursor-pixel-pack/Tiles/tile_0043.png', color: '#58CC02', desc: '2.5D俯视角冒险，探索神秘小镇', ageRange: '3-6岁', templateType: 'topdown' },
+  medium: { label: '闯关冒险', icon: '/assets/kenney/kenney_cursor-pixel-pack/Tiles/tile_0042.png', color: '#FFC800', desc: '跳跃闯关，打败怪物，成为小英雄！', ageRange: '6-8岁', templateType: 'platformer' },
+  easy: { label: '走出迷宫', icon: '/assets/kenney/kenney_cursor-pixel-pack/Tiles/tile_0043.png', color: '#58CC02', desc: '走迷宫、找出口，动动小脑瓜！', ageRange: '1-5岁', templateType: 'topdown' },
 };
 
 export const THEMES = {

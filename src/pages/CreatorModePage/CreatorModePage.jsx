@@ -11,19 +11,18 @@ const TEMPLATES = [
   {
     key: 'topdown',
     difficulty: 'easy',
-    title: '开放世界探索',
-    subtitle: '2.5D 俯视角',
-    desc: '探索神秘小镇，收集宝藏，解开谜题',
+    title: '走出迷宫',
+    subtitle: '适合 1-5 岁宝宝',
+    desc: '走迷宫、找出口，动动小脑瓜！',
     color: 'Blue',
-    tags: ['解谜', '寻宝', '探索'],
-    disabled: true,
+    tags: ['迷宫', '益智', '寻宝'],
   },
   {
     key: 'platformer',
     difficulty: 'medium',
-    title: '横版闯关冒险',
-    subtitle: '经典横版跳跃',
-    desc: '勇闯四大主题关卡，击败强力BOSS',
+    title: '闯关冒险',
+    subtitle: '适合 6-8 岁宝宝',
+    desc: '跳跃闯关，打败怪物，成为小英雄！',
     color: 'Yellow',
     tags: ['闯关', '战斗', '成就'],
   },
@@ -35,7 +34,7 @@ export default function CreatorModePage() {
   return (
     <div className={`${styles.page} gameUI`}>
       <header className={styles.topBar}>
-        <button className={styles.backBtn} onClick={() => { playBackSound(); navigate('/maze'); }}>
+        <button className={styles.backBtn} onClick={() => { playBackSound(); navigate('/maze/home'); }}>
           <img src={`${UI}/Yellow/Default/arrow_basic_w.png`} alt="" className={styles.arrowIcon} />
         </button>
         <h1 className={styles.topTitle}>创作工坊</h1>
@@ -54,7 +53,11 @@ export default function CreatorModePage() {
               className={`${styles.card} ${t.disabled ? styles.cardDisabled : ''}`}
               style={t.color === 'Yellow' ? { '--card-text': '#5D4037', '--card-text-sub': '#795548' } : {}}
               onClick={() => {
-                if (!t.disabled) { playSelectSound(); navigate(`/maze/creator/levels/${t.difficulty}`); }
+                if (!t.disabled) {
+                  playSelectSound();
+                  if (t.key === 'topdown') navigate('/maze/ai-maze');
+                  else navigate(`/maze/creator/levels/${t.difficulty}`);
+                }
               }}
               onMouseEnter={() => !t.disabled && playTapSound()}
             >

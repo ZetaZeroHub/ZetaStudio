@@ -480,8 +480,8 @@ const level4 = {
   },
 };
 
-/* ── 导出 ── */
-export const TOP_DOWN_LEVELS = [level1, level2, level3, level4];
+/* ── 导出 (关卡暂空，等待后续设计) ── */
+export const TOP_DOWN_LEVELS = [];
 
 export function getTopDownLevel(id) {
   return TOP_DOWN_LEVELS.find(l => l.id === id);
@@ -494,5 +494,307 @@ export function getTopDownLevelsByDifficulty() {
     theme: l.theme,
     stars: 0,
     character: '',
+  }));
+}
+
+/* ══════════════════════════════════════════════
+   走出迷宫 — 路径绘制型迷宫关卡系统
+   Grid 值: 0=草地(不可走) 1=泥土路(可走) 2=水池(终点)
+   ══════════════════════════════════════════════ */
+
+/* ── 素材路径常量 ── */
+const TANKS = '/assets/kenney/2.5d/kenney_top-down-tanks-redux/PNG/Default size';
+const FOLIAGE = '/assets/kenney/2.5d/kenney_foliage-pack/PNG/Default size';
+const DUCK_DIR = '/assets/kenney/2.5d/kenney_shooting-gallery/PNG/Objects';
+
+export const MAZE_ASSETS = {
+  grass: `${TANKS}/tileGrass1.png`,
+  grass2: `${TANKS}/tileGrass2.png`,
+  // Road tiles — auto-selected by resolveRoadTile
+  roadH: `${TANKS}/tileGrass_roadEast.png`,
+  roadV: `${TANKS}/tileGrass_roadNorth.png`,
+  roadCross: `${TANKS}/tileGrass_roadCrossing.png`,
+  cornerUL: `${TANKS}/tileGrass_roadCornerUL.png`,
+  cornerUR: `${TANKS}/tileGrass_roadCornerUR.png`,
+  cornerLL: `${TANKS}/tileGrass_roadCornerLL.png`,
+  cornerLR: `${TANKS}/tileGrass_roadCornerLR.png`,
+  splitN: `${TANKS}/tileGrass_roadSplitN.png`,
+  splitS: `${TANKS}/tileGrass_roadSplitS.png`,
+  splitE: `${TANKS}/tileGrass_roadSplitE.png`,
+  splitW: `${TANKS}/tileGrass_roadSplitW.png`,
+  // Duck — 8 directions + walking frames
+  duckDown:      '/assets/custom/duck/duck_down.png',
+  duckDown1:     '/assets/custom/duck/duck_down_1.png',
+  duckDown2:     '/assets/custom/duck/duck_down_2.png',
+  duckUp:        '/assets/custom/duck/duck_up.png',
+  duckUp1:       '/assets/custom/duck/duck_up_1.png',
+  duckUp2:       '/assets/custom/duck/duck_up_2.png',
+  duckLeft:      '/assets/custom/duck/duck_left.png',
+  duckLeft1:     '/assets/custom/duck/duck_left_1.png',
+  duckLeft2:     '/assets/custom/duck/duck_left_2.png',
+  duckRight:     '/assets/custom/duck/duck_right.png',
+  duckRight1:    '/assets/custom/duck/duck_right_1.png',
+  duckRight2:    '/assets/custom/duck/duck_right_2.png',
+  duckUpLeft:    '/assets/custom/duck/duck_up_left.png',
+  duckUpRight:   '/assets/custom/duck/duck_up_right.png',
+  duckDownLeft:  '/assets/custom/duck/duck_down_left.png',
+  duckDownRight: '/assets/custom/duck/duck_down_right.png',
+  // Foliage decorations — expanded full catalog
+  treePine: `${FOLIAGE}/foliagePack_005.png`,         // 针叶松树
+  treeRound: `${FOLIAGE}/foliagePack_008.png`,        // 圆形绿树
+  treeBig: `${FOLIAGE}/foliagePack_010.png`,          // 大圆绿树
+  treeSlim: `${FOLIAGE}/foliagePack_006.png`,         // 细长绿树
+  treeTall: `${FOLIAGE}/foliagePack_007.png`,         // 高绿树
+  treeBroad: `${FOLIAGE}/foliagePack_009.png`,        // 宽阔绿树
+  treeOrange1: `${FOLIAGE}/foliagePack_011.png`,      // 橙色针叶树
+  treeOrange2: `${FOLIAGE}/foliagePack_012.png`,      // 橙色细树
+  treeOrange3: `${FOLIAGE}/foliagePack_013.png`,      // 橙色圆树
+  treeOrangeRound: `${FOLIAGE}/foliagePack_014.png`,  // 橙色大圆树
+  treeOrangeBig: `${FOLIAGE}/foliagePack_015.png`,    // 橙色宽树
+  treeOrangeBroad: `${FOLIAGE}/foliagePack_016.png`,  // 橙色宽阔树
+  treeOrangeTall: `${FOLIAGE}/foliagePack_017.png`,   // 橙色高树
+  treeSnowPine1: `${FOLIAGE}/foliagePack_042.png`,    // 雪松树A
+  treeSnowPine2: `${FOLIAGE}/foliagePack_043.png`,    // 雪松树B
+  treeSnowPine3: `${FOLIAGE}/foliagePack_044.png`,    // 雪松树C
+  treeIcePine1: `${FOLIAGE}/foliagePack_047.png`,     // 冰蓝松树A
+  treeIcePine2: `${FOLIAGE}/foliagePack_048.png`,     // 冰蓝松树B
+  bush: `${FOLIAGE}/foliagePack_040.png`,             // 灌木
+  bushSmall: `${FOLIAGE}/foliagePack_050.png`,        // 小灌木
+  bushBig: `${FOLIAGE}/foliagePack_021.png`,          // 大灌木
+  flower: `${FOLIAGE}/foliagePack_001.png`,           // 红花
+  flowerWhite: `${FOLIAGE}/foliagePack_002.png`,      // 白花
+  grassTuft: `${FOLIAGE}/foliagePack_020.png`,        // 草丛
+  trunk1: `${FOLIAGE}/foliagePack_003.png`,           // 树干A
+  trunk2: `${FOLIAGE}/foliagePack_004.png`,           // 树干B
+  rockSmall: `${FOLIAGE}/foliagePack_060.png`,        // 小石头
+  rockBig: `${FOLIAGE}/foliagePack_061.png`,          // 大石头
+  // Racing-pack scene decorations
+  raceTreeLarge: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/tree_large.png',
+  raceTreeSmall: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/tree_small.png',
+  raceRock1: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/rock1.png',
+  raceRock2: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/rock2.png',
+  raceRock3: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/rock3.png',
+  raceTentBlue: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/tent_blue.png',
+  raceTentRed: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/tent_red.png',
+  raceBarrelBlue: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/barrel_blue.png',
+  raceBarrelRed: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/barrel_red.png',
+  raceCone: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Objects/cone_straight.png',
+  // Block-pack — buildings, characters, objects
+  blockTreeGreen: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/foliageTree_green.png',
+  blockTreeOrange: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/foliageTree_orange.png',
+  blockTreeRed: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/foliageTree_red.png',
+  blockBushLarge: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/foliageBush_large.png',
+  blockBushSmall: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/foliageBush_small.png',
+  blockMarketBlue: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/market_stallBlue.png',
+  blockMarketRed: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/market_stallRed.png',
+  blockFenceSingle: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/fence_single.png',
+  blockFenceDouble: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/fence_double.png',
+  blockCart: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/cart.png',
+  blockCartHorse: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/cart_horse.png',
+  blockBox: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/box.png',
+  blockBoxWide: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/box_wide.png',
+  blockBoxTreasure: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/box_treasure.png',
+  blockDoor: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/door.png',
+  blockDoorOpen: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/door_open.png',
+  blockDoorGlass: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/door_glass.png',
+  blockLadderLarge: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/ladder_large.png',
+  blockLadderSmall: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/ladder_small.png',
+  blockHouseBlue: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/tileBuilding_roofBluePoint.png',
+  blockHouseRed: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/tileBuilding_roofRedPoint.png',
+  blockCastle: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/tileCastle.png',
+  blockCastleGate: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/tileCastle_gate.png',
+  blockBridge: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/tileBridge.png',
+  blockCharMan: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/character_man.png',
+  blockCharWoman: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/character_woman.png',
+  blockCharWizard: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/character_wizard.png',
+  blockCharHorse: '/assets/kenney/2.5d/kenney_block-pack/PNG/Default (64px)/character_horse.png',
+  // Candy pack — sweets and treats
+  candyBlue: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/candyBlue.png',
+  candyRed: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/candyRed.png',
+  candyGreen: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/candyGreen.png',
+  candyYellow: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/candyYellow.png',
+  lollipopRed: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/lollipopRed.png',
+  lollipopGreen: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/lollipopGreen.png',
+  lollipopFruitRed: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/lollipopFruitRed.png',
+  lollipopFruitGreen: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/lollipopFruitGreen.png',
+  lollipopFruitYellow: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/lollipopFruitYellow.png',
+  cherry: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/cherry.png',
+  cookieBrown: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/cookieBrown.png',
+  cookieChoco: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/cookieChoco.png',
+  cookiePink: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/cookiePink.png',
+  cupCake: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/cupCake.png',
+  heart: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/heart.png',
+  canePink: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/canePink.png',
+  canePinkSmall: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/canePinkSmall.png',
+  waffleChoco: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/waffleChoco.png',
+  wafflePink: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/wafflePink.png',
+  creamChoco: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/creamChoco.png',
+  creamPink: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/creamPink.png',
+  gummyWormGreen: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/gummyWormGreenHead.png',
+  gummyWormRed: '/assets/kenney/2.5d/kenney_platformer-art-candy/Tiles/gummyWormRedHead.png',
+  // New-platformer animals/enemies (idle poses as decorations)
+  animalBee: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/bee_rest.png',
+  animalFrog: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/frog_idle.png',
+  animalLadybug: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/ladybug_rest.png',
+  animalSnail: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/snail_rest.png',
+  animalMouse: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/mouse_rest.png',
+  animalFishBlue: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/fish_blue_rest.png',
+  animalFishYellow: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/fish_yellow_rest.png',
+  animalWorm: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/worm_normal_rest.png',
+  animalFly: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Enemies/Double/fly_rest.png',
+  // New-platformer characters (idle poses)
+  npcGreen: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double/character_green_idle.png',
+  npcPink: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double/character_pink_idle.png',
+  npcYellow: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double/character_yellow_idle.png',
+  npcPurple: '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double/character_purple_idle.png',
+  // Background-elements decorations
+  bgHouse1: '/assets/kenney/kenney_background-elements-redux/PNG/Default/house1.png',
+  bgHouse2: '/assets/kenney/kenney_background-elements-redux/PNG/Default/house2.png',
+  bgHouseSmall1: '/assets/kenney/kenney_background-elements-redux/PNG/Default/houseSmall1.png',
+  bgHouseSmall2: '/assets/kenney/kenney_background-elements-redux/PNG/Default/houseSmall2.png',
+  bgCastleSmall: '/assets/kenney/kenney_background-elements-redux/PNG/Default/castleSmall.png',
+  bgTower: '/assets/kenney/kenney_background-elements-redux/PNG/Default/tower.png',
+  bgTreePine: '/assets/kenney/kenney_background-elements-redux/PNG/Default/treePine.png',
+  bgTreePalm: '/assets/kenney/kenney_background-elements-redux/PNG/Default/treePalm.png',
+  bgTreeOrange: '/assets/kenney/kenney_background-elements-redux/PNG/Default/treeOrange.png',
+  bgTreeFrozen: '/assets/kenney/kenney_background-elements-redux/PNG/Default/treeFrozen.png',
+  bgFence: '/assets/kenney/kenney_background-elements-redux/PNG/Default/fence.png',
+  bgSun: '/assets/kenney/kenney_background-elements-redux/PNG/Default/sun.png',
+  bgMoon: '/assets/kenney/kenney_background-elements-redux/PNG/Default/moon.png',
+  bgPyramid: '/assets/kenney/kenney_background-elements-redux/PNG/Default/pyramid.png',
+  bgCloud1: '/assets/kenney/kenney_background-elements-redux/PNG/Default/cloud1.png',
+  bgCloud2: '/assets/kenney/kenney_background-elements-redux/PNG/Default/cloud2.png',
+};
+
+/**
+ * 根据相邻格子自动选择正确的道路 tile 图
+ * @param {number[][]} grid - 地图数据
+ * @param {number} x - 列
+ * @param {number} y - 行
+ * @returns {string} tile 图路径
+ */
+export function resolveRoadTile(grid, x, y, groundTiles) {
+  const h = grid.length, w = grid[0].length;
+  const isRoad = (gx, gy) => gx >= 0 && gy >= 0 && gx < w && gy < h && grid[gy][gx] > 0;
+  // Use provided groundTiles or MAZE_ASSETS as default
+  const tiles = groundTiles || MAZE_ASSETS;
+
+  const N = isRoad(x, y - 1);
+  const S = isRoad(x, y + 1);
+  const E = isRoad(x + 1, y);
+  const W = isRoad(x - 1, y);
+  const count = [N, S, E, W].filter(Boolean).length;
+
+  // 4-way crossing
+  if (count >= 4) return tiles.roadCross;
+  // T-junctions (3 connections)
+  if (count === 3) {
+    if (!N) return tiles.splitS;
+    if (!S) return tiles.splitN;
+    if (!E) return tiles.splitW;
+    if (!W) return tiles.splitE;
+  }
+  // Corners (2 adj perpendicular connections)
+  if (count === 2) {
+    if (N && E) return tiles.cornerUR;
+    if (N && W) return tiles.cornerUL;
+    if (S && E) return tiles.cornerLR;
+    if (S && W) return tiles.cornerLL;
+    if (N && S) return tiles.roadV;
+    if (E && W) return tiles.roadH;
+  }
+  // Dead-ends (1 connection)
+  if (count === 1) {
+    if (N || S) return tiles.roadV;
+    return tiles.roadH;
+  }
+  // Isolated: default to crossing
+  return tiles.roadCross;
+}
+
+/* ══════════════════════════════════════
+   关卡 1: 小鸭子找水池
+   适合 1-3 岁，简单路径
+   ══════════════════════════════════════ */
+const maze1 = {
+  id: 'maze-1',
+  name: '🦆 小鸭子找水池',
+  desc: '帮小鸭子画出一条路，走到水池去游泳吧！',
+  gridW: 20,
+  gridH: 12,
+  tileSize: 64,
+  grid: [
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0],
+    [0, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0],
+    [0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0],
+    [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0],
+    [0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0],
+    [0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  ],
+  playerStart: { gx: 1, gy: 1 },
+  decorations: [
+    // 顶部树木带
+    { type: 'treePine',  gx: 0,  gy: 0 },
+    { type: 'treeRound', gx: 5,  gy: 0 },
+    { type: 'treeBig',   gx: 12, gy: 0 },
+    { type: 'treePine',  gx: 14, gy: 0 },
+    { type: 'treePine',  gx: 19, gy: 0 },
+    // 左侧
+    { type: 'bush',      gx: 0,  gy: 4 },
+    { type: 'flower',    gx: 1,  gy: 4 },
+    { type: 'treePine',  gx: 0,  gy: 6 },
+    // 中间装饰
+    { type: 'bush',      gx: 5,  gy: 2 },
+    { type: 'grassTuft', gx: 8,  gy: 4 },
+    { type: 'flower',    gx: 6,  gy: 5 },
+    { type: 'treePine',  gx: 14, gy: 4 },
+    { type: 'bush',      gx: 7,  gy: 6 },
+    { type: 'treeRound', gx: 16, gy: 6 },
+    // 底部装饰
+    { type: 'treeBig',   gx: 0,  gy: 9 },
+    { type: 'flower',    gx: 3,  gy: 10 },
+    { type: 'bush',      gx: 6,  gy: 10 },
+    { type: 'treePine',  gx: 9,  gy: 10 },
+    { type: 'grassTuft', gx: 4,  gy: 11 },
+    { type: 'treePine',  gx: 12, gy: 10 },
+    { type: 'bush',      gx: 15, gy: 10 },
+    { type: 'flower',    gx: 18, gy: 10 },
+    { type: 'treePine',  gx: 19, gy: 11 },
+  ],
+  stars: { s3: 35, s2: 50, s1: 80 },
+};
+
+/* ── 迷宫关卡导出 ── */
+export const MAZE_LEVELS = [maze1];
+
+export function getMazeLevel(id) {
+  // Support draft-prefixed IDs: load from localStorage
+  if (id && id.startsWith('draft-')) {
+    const draftId = id.replace('draft-', '');
+    try {
+      const drafts = JSON.parse(localStorage.getItem('game_drafts_v1') || '[]');
+      const draft = drafts.find(d => d.id === draftId);
+      if (draft && draft.levelData) {
+        console.log('[getMazeLevel] Loaded draft:', draftId);
+        return draft.levelData;
+      }
+    } catch (e) { console.error('[getMazeLevel] Draft load error:', e); }
+    return null;
+  }
+  return MAZE_LEVELS.find(l => l.id === id);
+}
+
+export function getMazeLevels() {
+  return MAZE_LEVELS.map(l => ({
+    id: l.id,
+    name: l.name,
+    desc: l.desc,
+    stars: 0,
   }));
 }

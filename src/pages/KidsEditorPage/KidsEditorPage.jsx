@@ -76,7 +76,7 @@ export default function KidsEditorPage() {
       <div className={styles.content}>
         {/* Left: AI Panel — hidden on mobile in preview mode */}
         <div className={`${styles.aiPanel} ${mode === 'preview' ? styles.aiPanelHiddenMobile : ''}`}>
-          <AiPanel />
+          <AiPanel theme="kids" />
         </div>
 
         {/* Right: Game Canvas */}

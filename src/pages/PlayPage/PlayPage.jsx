@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Pencil, Copy, Check, ArrowLeft, Share2 } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import GameCanvas from '../../components/GameCanvas/GameCanvas';
 import useProjectStore from '../../stores/projectStore';
@@ -56,26 +57,25 @@ export default function PlayPage() {
 
   return (
     <div className={styles.playPage}>
-      <Navbar>
-        <div className={styles.playHeader}>
-          <span className={styles.gameTitle}>🎮 {project.name}</span>
-          <button className="btn btn-secondary btn-sm" onClick={() => navigate(`/editor/${project.id}`)}>
-            ✏️ 编辑
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/')}>
-            🏠 首页
-          </button>
-        </div>
+      <Navbar hideBrand leftContent={
+        <button className={styles.backBtn} onClick={() => navigate('/')}><ArrowLeft size={14} /> 返回首页</button>
+      }>
+        <span className={styles.gameTitle}>{project.name}</span>
       </Navbar>
 
       <div className={styles.gameWrapper}>
         <div className={styles.gameFrame}>
           <GameCanvas mode="preview" />
         </div>
+        <div className={styles.belowCanvasActions}>
+          <button className={styles.editBtn} onClick={() => navigate(`/editor/${project.id}`)}>
+            <Pencil size={14} /> 编辑关卡
+          </button>
+        </div>
       </div>
 
       <div className={styles.shareSection}>
-        <p className={styles.shareInfo}>🎉 游戏已发布！分享链接给好友一起玩：</p>
+        <p className={styles.shareInfo}><Share2 size={14} style={{display:'inline',verticalAlign:'-2px'}} /> 游戏已发布，分享链接给好友一起玩：</p>
         <div className={styles.shareUrl}>
           <input
             className={`input ${styles.shareUrlInput}`}
@@ -83,7 +83,7 @@ export default function PlayPage() {
             readOnly
           />
           <button className="btn btn-primary btn-sm" onClick={handleCopy}>
-            {copied ? '✅ 已复制' : '📋 复制'}
+            {copied ? <><Check size={13} /> 已复制</> : <><Copy size={13} /> 复制</>}
           </button>
         </div>
       </div>

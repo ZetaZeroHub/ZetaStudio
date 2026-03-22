@@ -12,7 +12,7 @@ export default function MazeDifficultyPage() {
 
   const handleBack = () => {
     playBackSound();
-    navigate('/maze');
+    navigate('/maze/home');
   };
 
   const handleSelect = (key) => {
@@ -42,13 +42,12 @@ export default function MazeDifficultyPage() {
         <div className={styles.cards}>
           {TEMPLATE_ORDER.map((key) => {
             const d = DIFFICULTY[key];
-            const isDisabled = key === 'easy';
             const color = key === 'easy' ? 'Blue' : 'Green';
             return (
               <button
                 key={key}
-                className={`${styles.card} ${isDisabled ? styles.cardDisabled : ''}`}
-                onClick={() => !isDisabled && handleSelect(key)}
+                className={styles.card}
+                onClick={() => handleSelect(key)}
                 onMouseEnter={playClickSound}
               >
                 {/* Card background using Kenney button */}
@@ -57,7 +56,6 @@ export default function MazeDifficultyPage() {
                   alt=""
                   className={styles.cardBg}
                 />
-                {isDisabled && <div className={styles.comingSoonBadge}>敬请期待</div>}
                 <div className={styles.cardInner}>
                   <div className={styles.cardIconWrap}>
                     <img src={d.icon} alt="" className={styles.cardIconImg} />

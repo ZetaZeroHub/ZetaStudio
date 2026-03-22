@@ -109,30 +109,31 @@ const useGameDraftStore = create((set, get) => ({
     persistDrafts(drafts);
   },
 
-  // ── Save record (separate storage, auto-naming) ──
-  saveRecord: (customName) => {
+  // ── Save record (auto-naming, no popup needed) ──
+  saveRecord: () => {
     const { currentDraft, saves } = get();
     if (!currentDraft) return;
-    // Auto-generate name if not provided: "关卡名-1", "关卡名-2"...
-    const baseName = customName || currentDraft.name || '我的关卡';
-    const existingCount = saves.filter(s => s.name && s.name.startsWith(baseName.replace(/-\d+$/, ''))).length;
-    const saveName = customName || `${baseName.replace(/-\d+$/, '')}-${existingCount + 1}`;
+    const now = Date.now();
+    const ts = new Date(now).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const saveName = `${currentDraft.name || '我的关卡'} · ${ts}`;
 
     const saveEntry = {
-      id: `save_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      id: `save_${now}_${Math.random().toString(36).substr(2, 6)}`,
       draftId: currentDraft.id,
       name: saveName,
       templateType: currentDraft.templateType,
       baseLevelId: currentDraft.baseLevelId,
       levelData: JSON.parse(JSON.stringify(currentDraft.levelData)),
-      createdAt: Date.now(),
+      createdAt: now,
     };
     const newSaves = [saveEntry, ...saves];
-    set({ saves: newSaves });
-    persistSaves(newSaves);
+    // Trim to keep only the most recent 20
+    const trimmed = newSaves.slice(0, 20);
+    set({ saves: trimmed });
+    persistSaves(trimmed);
     // Also update the draft in main storage
     get().saveDraft();
-    console.log('[gameDraftStore] Saved record:', saveName);
+    console.log('[gameDraftStore] Auto-saved:', saveName);
     return saveName;
   },
 

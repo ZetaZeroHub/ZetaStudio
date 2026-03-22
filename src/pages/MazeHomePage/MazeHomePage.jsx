@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import styles from './MazeHomePage.module.css';
@@ -7,8 +7,7 @@ import styles from './MazeHomePage.module.css';
 const C = '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double';
 const T = '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Tiles/Double';
 const R = '/assets/kenney/kenney_platformer-art-pixel-redux/Tiles';
-const CUR = '/assets/kenney/kenney_cursor-pixel-pack/Tiles';
-const UI = '/assets/kenney/kenney_ui-pack-pixel-adventure/Tiles/Large tiles/Thick outline';
+const UI = '/assets/kenney/kenney_ui-pack/PNG';
 
 const ASSETS = {
   // Hero frames
@@ -26,19 +25,16 @@ const ASSETS = {
   cloud1:  `${R}/tile_0231.png`,
   cloud2:  `${R}/tile_0232.png`,
   tree:    `${R}/tile_0198.png`,
-  // Collectibles — cursor-pixel-pack icons
-  gem:     `${CUR}/tile_0064.png`,   // diamond shape
-  star:    `${CUR}/tile_0058.png`,   // hand/click icon
-  key:     `${CUR}/tile_0068.png`,   // lock icon
-  heart:   `${CUR}/tile_0057.png`,   // crosshair/target
-  flag:    `${CUR}/tile_0150.png`,   // pencil/edit icon
-  // Button icons — cursor-pixel-pack
-  iconPlay:    `${CUR}/tile_0042.png`,  // pointing cursor
-  iconCreate:  `${CUR}/tile_0043.png`,  // pointer alt
-  iconArrow:   `${CUR}/tile_0072.png`,  // right arrow
-  // UI panels
-  panelBg:     `${UI}/tile_0000.png`,   // beige panel
-  panelFrame:  `${UI}/tile_0006.png`,   // fancy frame
+  // Collectibles — kenney_ui-pack icons
+  gem:     `${UI}/Blue/Default/icon_circle.png`,
+  star:    `${UI}/Yellow/Default/icon_circle.png`,
+  key:     `${UI}/Green/Default/icon_circle.png`,
+  heart:   `${UI}/Red/Default/icon_circle.png`,
+  flag:    `${UI}/Yellow/Default/icon_square.png`,
+  // Button icons — kenney_ui-pack
+  iconPlay:    `${UI}/Extra/Default/icon_play_light.png`,
+  iconCreate:  `${UI}/Extra/Default/icon_repeat_light.png`,
+  iconArrow:   `${UI}/Yellow/Default/arrow_basic_e.png`,
 };
 
 /* ── Preload images ── */
@@ -51,6 +47,26 @@ function loadImg(src) {
 export default function MazeHomePage() {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
+
+  /* ── My works state ── */
+  const STORAGE_KEY = 'game_drafts_v1';
+  const [works, setWorks] = useState(() => {
+    try {
+      const drafts = JSON.parse(localStorage.getItem('game_drafts_v1') || '[]');
+      return drafts.filter(d => d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3);
+    } catch { return []; }
+  });
+
+  const handleDeleteWork = (e, id) => {
+    e.stopPropagation();
+    if (!confirm('确定删除这个作品吗？')) return;
+    try {
+      const drafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const updated = drafts.filter(d => d.id !== id);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      setWorks(updated.filter(d => d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3));
+    } catch {}
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -353,80 +369,87 @@ export default function MazeHomePage() {
 
       {/* Content Overlay */}
       <div className={styles.contentOverlay}>
-        <motion.div
-          className={styles.titleBlock}
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className={styles.titlePanel} style={{ backgroundImage: `url(${ASSETS.panelFrame})` }}>
-            <h1 className={styles.heroTitle}>游戏梦想家</h1>
+        <div className={styles.mainGroup}>
+          <motion.div
+            className={styles.logoBlock}
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, type: 'spring', stiffness: 120 }}
+          >
+            <img
+              src="/assets/custom/迷宫冒险家LOGO.png"
+              alt="迷宫冒险家"
+              className={styles.logoImg}
+            />
+          </motion.div>
+
+          <div className={styles.actions}>
+            <motion.button
+              className={`${styles.btnPrimary} kenneyPanelBrown`}
+              onClick={() => navigate('/maze/difficulty')}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <img src={ASSETS.iconPlay} alt="" className={styles.btnIcon} />
+              <span>开始游戏</span>
+              <img src={ASSETS.iconArrow} alt="" className={styles.btnIconSmall} />
+            </motion.button>
+
+            <motion.button
+              className={`${styles.btnSecondary} kenneyPanelBeige`}
+              onClick={() => navigate('/maze/creator')}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              <img src={ASSETS.iconCreate} alt="" className={styles.btnIcon} />
+              <span>AI创作游戏</span>
+            </motion.button>
           </div>
-          <p className={styles.heroSub}>AI 驱动创作 · 用想象力生成你的游戏世界</p>
-        </motion.div>
-
-        <div className={styles.actions}>
-          <motion.button
-            className={styles.btnPrimary}
-            onClick={() => navigate('/maze/difficulty')}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            whileTap={{ scale: 0.96 }}
-          >
-            <img src={ASSETS.iconPlay} alt="" className={styles.btnIcon} />
-            <span>开始冒险</span>
-            <img src={ASSETS.iconArrow} alt="" className={styles.btnIconSmall} />
-          </motion.button>
-
-          <motion.button
-            className={styles.btnSecondary}
-            onClick={() => navigate('/maze/creator')}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            whileTap={{ scale: 0.96 }}
-          >
-            <img src={ASSETS.iconCreate} alt="" className={styles.btnIcon} />
-            <span>创作游戏</span>
-          </motion.button>
         </div>
 
         {/* User works section */}
-        {(() => {
-          const STORAGE_KEY = 'game_drafts_v1';
-          let drafts = [];
-          try { drafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch {}
-          const recent = drafts.filter(d => d.published).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)).slice(0, 3);
-          if (recent.length === 0) return null;
-          return (
-            <motion.div
-              className={styles.worksSection}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <h3 className={styles.worksSectionTitle}>我的作品</h3>
-              <div className={styles.worksGrid}>
-                {recent.map((d) => (
-                  <div
-                    key={d.id}
-                    className={styles.workCard}
-                    onClick={() => navigate(`/maze/editor/${d.templateType || 'platformer'}/${d.baseLevelId || d.id}`)}
-                  >
-                    <div className={styles.workCardType}>
-                      {d.templateType === 'topdown' ? '🌍 2.5D' : '🎮 横版'}
-                    </div>
-                    <div className={styles.workCardName}>{d.name || '未命名'}</div>
-                    <div className={styles.workCardTime}>
-                      {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString('zh-CN') : ''}
-                    </div>
+        {works.length > 0 && (
+          <motion.div
+            className={styles.worksSection}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <h3 className={styles.worksSectionTitle}>我的作品</h3>
+            <div className={styles.worksGrid}>
+              {works.map((d) => (
+                <div
+                  key={d.id}
+                  className={`${styles.workCard} kenneyPanelFancy`}
+                  onClick={() => {
+                    if (d.templateType === 'topdown') {
+                      navigate(`/maze/ai-maze?draftId=${d.id}`);
+                    } else {
+                      navigate(`/maze/editor/draft/${d.id}?from=maze-home`);
+                    }
+                  }}
+                >
+                  <button
+                    className={styles.workDeleteBtn}
+                    onClick={(e) => handleDeleteWork(e, d.id)}
+                    title="删除作品"
+                  >×</button>
+                  <div className={styles.workCardType}>
+                    {d.templateType === 'topdown' ? '🌍 2.5D' : '🎮 横版'}
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          );
-        })()}
+                  <div className={styles.workCardName}>{d.name || '未命名'}</div>
+                  <div className={styles.workCardTime}>
+                    {d.updatedAt ? new Date(d.updatedAt).toLocaleDateString('zh-CN') : ''}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import useI18nStore from '../../stores/i18nStore';
 import SettingsModal from '../SettingsModal/SettingsModal';
 import styles from './Navbar.module.css';
 
-export default function Navbar({ children }) {
+export default function Navbar({ children, hideBrand = false, leftContent }) {
   const { language, setLanguage, t } = useI18nStore();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -16,10 +16,14 @@ export default function Navbar({ children }) {
   return (
     <>
       <nav className={styles.navbar}>
-        <Link to="/" className={styles.navBrand}>
-          <Sparkles className={styles.navLogo} size={20} strokeWidth={2.5} />
-          <span>{t('nav.brand')}</span>
-        </Link>
+        {hideBrand ? (
+          leftContent || null
+        ) : (
+          <Link to="/" className={styles.navBrand}>
+            <Sparkles className={styles.navLogo} size={20} strokeWidth={2.5} />
+            <span>{t('nav.brand')}</span>
+          </Link>
+        )}
         <div className={styles.navRight}>
           <div className={styles.navActions}>
             {children}

@@ -1,5 +1,5 @@
 export default {
-  name: '像素冒险',
+  name: '平台跳跃',
   description: '经典平台跳跃冒险游戏，收集星星获取分数',
   templateType: 'platformer',
   icon: '🏃',

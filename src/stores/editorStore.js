@@ -90,9 +90,21 @@ function updateActiveScene(state, modifier) {
   };
 }
 
+// ── Editor snapshots (version history) ──
+const EDITOR_SAVES_KEY = 'editor_snapshots_v1';
+function loadEditorSnapshots() {
+  try { return JSON.parse(localStorage.getItem(EDITOR_SAVES_KEY) || '[]'); } catch { return []; }
+}
+function persistEditorSnapshots(snaps) {
+  try { localStorage.setItem(EDITOR_SAVES_KEY, JSON.stringify(snaps)); } catch (e) { console.warn('Failed to persist editor snapshots', e); }
+}
+
 const useEditorStore = create((set, get) => ({
   currentProject: null,
   dimension: '2D',
+
+  // === Snapshot save records ===
+  editorSnapshots: loadEditorSnapshots(),
   
   // === Multi-scene state ===
   scenes: [],
@@ -361,6 +373,51 @@ const useEditorStore = create((set, get) => ({
   addAiMessage: (msg) => set((state) => ({ aiMessages: [...state.aiMessages, msg] })),
   setAiLoading: (loading) => set({ aiLoading: loading }),
   clearAiMessages: () => set({ aiMessages: [] }),
+
+  // ── Snapshot save/load (version history) ──
+  saveSnapshot: () => {
+    const { currentProject, scenes } = get();
+    if (!currentProject) return;
+    const now = Date.now();
+    const ts = new Date(now).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const snap = {
+      id: `esnap_${now}_${Math.random().toString(36).substr(2, 6)}`,
+      projectId: currentProject.id,
+      name: `${currentProject.name || '项目'} · ${ts}`,
+      scenes: JSON.parse(JSON.stringify(scenes)),
+      createdAt: now,
+    };
+    const snaps = [snap, ...get().editorSnapshots];
+    const trimmed = snaps.slice(0, 20);
+    set({ editorSnapshots: trimmed });
+    persistEditorSnapshots(trimmed);
+    console.log('[editorStore] Snapshot saved:', snap.name);
+    return snap.name;
+  },
+
+  loadSnapshot: (snapId) => {
+    const snap = get().editorSnapshots.find(s => s.id === snapId);
+    if (!snap) return;
+    const activeSceneId = snap.scenes[0]?.id;
+    const activeScene = snap.scenes[0];
+    set({
+      scenes: JSON.parse(JSON.stringify(snap.scenes)),
+      activeSceneId,
+      elements: activeScene?.elements || [],
+      scripts: activeScene?.scripts || [],
+      activeScriptId: activeScene?.scripts?.[0]?.id || null,
+      selectedElementId: null,
+    });
+    console.log('[editorStore] Snapshot loaded:', snap.name);
+  },
+
+  getSnapshotsForProject: () => {
+    const { currentProject, editorSnapshots } = get();
+    if (!currentProject) return [];
+    return editorSnapshots
+      .filter(s => s.projectId === currentProject.id)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  },
 
   clearEditor: () => set({
     currentProject: null, scenes: [], activeSceneId: null,

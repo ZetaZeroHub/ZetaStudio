@@ -5,23 +5,62 @@
   flex-direction: column;
 }
 
+/* ── Top Bar: left-aligned back/home, centered title ── */
 .playHeader {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  width: 100%;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s, color 0.12s;
+}
+
+.backBtn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .gameTitle {
+  flex: 1;
+  text-align: center;
   font-weight: 600;
   font-size: 1rem;
 }
 
+.headerRight {
+  visibility: hidden; /* spacer to keep title centered */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Center: Game canvas ── */
 .gameWrapper {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: var(--space-xl);
+  gap: var(--space-md);
 }
 
 .gameFrame {
@@ -34,6 +73,35 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Edit button below canvas */
+.belowCanvasActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.editBtn:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+/* ── Bottom: Share section ── */
 .shareSection {
   text-align: center;
   padding: var(--space-lg);
@@ -75,6 +143,5 @@
   .shareUrl { flex-direction: column; }
   .shareUrlInput { width: 100%; font-size: 0.7rem; }
   .playHeader { gap: var(--space-sm); flex-wrap: wrap; }
-  .playHeader button { font-size: 0.75rem; }
+  .backBtn { font-size: 0.75rem; padding: 4px 8px; }
 }
-

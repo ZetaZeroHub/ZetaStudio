@@ -573,7 +573,7 @@ export default function MazeGamePage() {
         inventory: [], // collected keys etc.
         frame: 0, cameraX: 0, cameraY: 0,
         keys: {},
-        mLeft: false, mRight: false, mJump: false, mAttack: false,
+        mBtnLeft: false, mBtnRight: false, mJump: false, mAttack: false,
         won: false, dead: false,
         currentElement: 'none',
         currentWeapon: 'bubble',
@@ -606,8 +606,8 @@ export default function MazeGamePage() {
         gs.frame += delta;
 
         // Read input into gs
-        gs.inputLeft  = gs.keys['ArrowLeft']  || gs.keys['KeyA'] || gs.mLeft;
-        gs.inputRight = gs.keys['ArrowRight'] || gs.keys['KeyD'] || gs.mRight;
+        gs.inputLeft  = gs.keys['ArrowLeft']  || gs.keys['KeyA'] || gs.mBtnLeft;
+        gs.inputRight = gs.keys['ArrowRight'] || gs.keys['KeyD'] || gs.mBtnRight;
         gs.inputJump  = gs.keys['ArrowUp']    || gs.keys['KeyW'] || gs.keys['Space'] || gs.mJump;
         gs.inputAttack = gs.keys['KeyJ'] || gs.keys['KeyX'] || gs.mAttack;
 
@@ -1111,70 +1111,35 @@ export default function MazeGamePage() {
     gs.aimAngle = 0; gs.isAiming = false;
   }, [level]);
 
-  // Mobile controls — D-pad state
-  const [dpadDir, setDpadDir] = useState('none'); // 'none'|'left'|'right'|'up'
-  const dpadRef = useRef(null);
-  const dpadStartRef = useRef({ x: 0, y: 0 });
+  // Mobile controls — left/right triangle buttons
+  const [btnLeftActive, setBtnLeftActive] = useState(false);
+  const [btnRightActive, setBtnRightActive] = useState(false);
 
-  // D-pad touch handler — detect swipe direction from start point
-  const onDpadPointerDown = useCallback((e) => {
+  const ARROW_BASE = '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double';
+
+  const onLeftDown = useCallback((e) => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    dpadStartRef.current = { x: e.clientX, y: e.clientY, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 };
-    // Determine direction from touch position relative to center
-    const dx = e.clientX - (rect.left + rect.width / 2);
-    const dy = e.clientY - (rect.top + rect.height / 2);
-    const dir = getDpadDirection(dx, dy);
-    applyDpadDir(dir);
+    const gs = gsRef.current;
+    if (gs) gs.mBtnLeft = true;
+    setBtnLeftActive(true);
+  }, []);
+  const onLeftUp = useCallback(() => {
+    const gs = gsRef.current;
+    if (gs) gs.mBtnLeft = false;
+    setBtnLeftActive(false);
   }, []);
 
-  const onDpadPointerMove = useCallback((e) => {
+  const onRightDown = useCallback((e) => {
     e.preventDefault();
-    const start = dpadStartRef.current;
-    const dx = e.clientX - start.cx;
-    const dy = e.clientY - start.cy;
-    const dir = getDpadDirection(dx, dy);
-    applyDpadDir(dir);
-  }, []);
-
-  const onDpadPointerUp = useCallback(() => {
     const gs = gsRef.current;
-    if (gs) { gs.mLeft = false; gs.mRight = false; gs.mJump = false; }
-    setDpadDir('none');
+    if (gs) gs.mBtnRight = true;
+    setBtnRightActive(true);
   }, []);
-
-  function getDpadDirection(dx, dy) {
-    const absDx = Math.abs(dx);
-    const absDy = Math.abs(dy);
-    if (absDx < 10 && absDy < 10) return 'none';
-    // Diagonal: up-left / up-right (45° zones)
-    if (dy < 0 && absDx > 8 && absDy > 8) {
-      return dx < 0 ? 'upleft' : 'upright';
-    }
-    if (absDy > absDx && dy < 0) return 'up';
-    if (absDx > absDy && dx < 0) return 'left';
-    if (absDx > absDy && dx > 0) return 'right';
-    return 'none';
-  }
-
-  function applyDpadDir(dir) {
+  const onRightUp = useCallback(() => {
     const gs = gsRef.current;
-    if (!gs) return;
-    gs.mLeft  = (dir === 'left' || dir === 'upleft');
-    gs.mRight = (dir === 'right' || dir === 'upright');
-    gs.mJump  = (dir === 'up' || dir === 'upleft' || dir === 'upright');
-    setDpadDir(dir);
-  }
-
-  // D-pad image map
-  const DPAD_IMGS = {
-    none: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad.png',
-    left: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_left.png',
-    right: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_right.png',
-    up: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
-    upleft: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
-    upright: '/assets/kenney/kenney_input-prompts_1.4.1/Nintendo Switch 2/Double/switch_dpad_up.png',
-  };
+    if (gs) gs.mBtnRight = false;
+    setBtnRightActive(false);
+  }, []);
 
   // Right joystick — 360° aim & shoot
   const [stickDir, setStickDir] = useState('none'); // tracks visual direction
@@ -1302,17 +1267,35 @@ export default function MazeGamePage() {
       {/* Mobile controls */}
       {!loading && !victory && !gameOver && (
         <div className={styles.mobileControls}>
-          {/* Left: Unified D-pad touch zone */}
-          <div
-            className={styles.dpadZone}
-            ref={dpadRef}
-            onPointerDown={onDpadPointerDown}
-            onPointerMove={onDpadPointerMove}
-            onPointerUp={onDpadPointerUp}
-            onPointerLeave={onDpadPointerUp}
-            onPointerCancel={onDpadPointerUp}
-          >
-            <img src={DPAD_IMGS[dpadDir]} alt="dpad" className={styles.dpadImg} />
+          {/* Left/Right arrow buttons handle all movement — no swipe zone needed */}
+          {/* Left: L/R triangle buttons */}
+          <div className={styles.arrowBtnGroup}>
+            <button
+              className={`${styles.arrowBtn} ${btnLeftActive ? styles.arrowBtnActive : ''}`}
+              onPointerDown={onLeftDown}
+              onPointerUp={onLeftUp}
+              onPointerLeave={onLeftUp}
+              onPointerCancel={onLeftUp}
+            >
+              <img
+                src={`${ARROW_BASE}/${btnLeftActive ? 'switch_left.png' : 'switch_left_outline.png'}`}
+                alt="left"
+                className={styles.arrowBtnImg}
+              />
+            </button>
+            <button
+              className={`${styles.arrowBtn} ${btnRightActive ? styles.arrowBtnActive : ''}`}
+              onPointerDown={onRightDown}
+              onPointerUp={onRightUp}
+              onPointerLeave={onRightUp}
+              onPointerCancel={onRightUp}
+            >
+              <img
+                src={`${ARROW_BASE}/${btnRightActive ? 'switch_right.png' : 'switch_right_outline.png'}`}
+                alt="right"
+                className={styles.arrowBtnImg}
+              />
+            </button>
           </div>
 
           {/* Center: Weapon selector */}
@@ -1336,17 +1319,41 @@ export default function MazeGamePage() {
             })}
           </div>
 
-          {/* Right: 360° Joystick for aiming & shooting */}
-          <div
-            className={styles.stickZone}
-            onPointerDown={onStickPointerDown}
-            onPointerMove={onStickPointerMove}
-            onPointerUp={onStickPointerUp}
-            onPointerLeave={onStickPointerUp}
-            onPointerCancel={onStickPointerUp}
-          >
-            <img src={STICK_IMGS[stickDir]} alt="aim" className={styles.stickImg} />
-            <span className={styles.stickLabel}>{elemDef.icon}</span>
+          {/* Right: JUMP button + 360° Joystick */}
+          <div className={styles.rightControls}>
+            <button
+              className={styles.jumpBtn}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                const gs = gsRef.current;
+                if (gs) gs.mJump = true;
+              }}
+              onPointerUp={() => {
+                const gs = gsRef.current;
+                if (gs) gs.mJump = false;
+              }}
+              onPointerLeave={() => {
+                const gs = gsRef.current;
+                if (gs) gs.mJump = false;
+              }}
+              onPointerCancel={() => {
+                const gs = gsRef.current;
+                if (gs) gs.mJump = false;
+              }}
+            >
+              <span className={styles.jumpBtnLabel}>JUMP</span>
+            </button>
+            <div
+              className={styles.stickZone}
+              onPointerDown={onStickPointerDown}
+              onPointerMove={onStickPointerMove}
+              onPointerUp={onStickPointerUp}
+              onPointerLeave={onStickPointerUp}
+              onPointerCancel={onStickPointerUp}
+            >
+              <img src={STICK_IMGS[stickDir]} alt="aim" className={styles.stickImg} />
+              <span className={styles.stickLabel}>{elemDef.icon}</span>
+            </div>
           </div>
         </div>
       )}
@@ -1478,7 +1485,7 @@ export default function MazeGamePage() {
                   <RotateCcw size={14} /> 重新挑战
                 </button>
                 <button className={styles.btnVictorySecondary} onClick={() => navigate(-1)}>
-                  返回关卡选择
+                  退出
                 </button>
               </div>
             </motion.div>

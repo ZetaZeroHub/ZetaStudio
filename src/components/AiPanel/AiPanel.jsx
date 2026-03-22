@@ -7,7 +7,7 @@ import { generateGameCode } from '../../services/aiService';
 import { createNewElement } from '../../stores/editorStore';
 import styles from './AiPanel.module.css';
 
-export default function AiPanel() {
+export default function AiPanel({ theme = 'maze' }) {
   const [input, setInput] = useState('');
   const messagesRef = useRef(null);
   const abortRef = useRef(null);
@@ -246,7 +246,7 @@ export default function AiPanel() {
   };
 
   return (
-    <div className={styles.aiPanel}>
+    <div className={`${styles.aiPanel} ${styles[`theme_${theme}`] || ''}`}>
       <div className={styles.panelHeader}>
         <div className={styles.panelTitle}>
           <div className={styles.panelIcon}><Sparkles size={14} /></div>
