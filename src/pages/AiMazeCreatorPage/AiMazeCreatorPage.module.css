@@ -68,8 +68,8 @@
   position: relative; z-index: 5;
 }
 
-.leftPanel {
-  width: 220px;
+.rightPanel {
+  width: 240px;
   flex-shrink: 0;
   padding: 10px;
   display: flex;
@@ -104,6 +104,110 @@
 }
 .textInput::placeholder { color: #b8956a; }
 .textInput:focus { border-color: #8B5A2B; }
+
+/* ── Text area (2-line description) ── */
+.textArea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 2px solid #c4a26a;
+  background: #faf0d7;
+  font-size: 0.78rem;
+  color: #3e2712;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+  line-height: 1.4;
+}
+.textArea::placeholder { color: #b8956a; }
+.textArea:focus { border-color: #8B5A2B; }
+
+/* ── Voice input (WeChat style) ── */
+.voiceSection {
+  padding: 0;
+}
+.voiceBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 0;
+  border: 2px dashed #c4a26a;
+  background: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5D4037;
+  font-family: inherit;
+  transition: all 0.15s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.voiceBtn:hover {
+  background: rgba(244,228,196,0.6);
+}
+.voiceBtnActive {
+  border-color: #e74c3c !important;
+  background: rgba(231,76,60,0.08) !important;
+  color: #c0392b;
+  animation: voicePulse 1s ease-in-out infinite;
+}
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(231,76,60,0); }
+  50% { box-shadow: 0 0 0 6px rgba(231,76,60,0.15); }
+}
+.voiceIcon {
+  font-size: 1.2rem;
+}
+
+/* ── Preset prompt buttons ── */
+.presetRow {
+  display: flex;
+  gap: 6px;
+}
+.presetBtn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 2px solid #c4a26a;
+  background: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #5D4037;
+  font-family: inherit;
+  transition: all 0.12s;
+  text-align: center;
+}
+.presetBtn:hover {
+  background: rgba(244,228,196,0.8);
+  border-color: #8B5A2B;
+}
+.presetBtn:active { transform: scale(0.96); }
+
+/* ── Game rendered inside canvas area ── */
+.gameInCanvas {
+  width: 100%; height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+/* Override MazePathGame's position:fixed to be contained */
+.gameInCanvas > div {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Loading Modal Overlay ── */
+.loadingOverlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* ── Quick tags (multi-select) ── */
 .tagGrid {
@@ -247,6 +351,8 @@
   justify-content: center;
   position: relative;
   z-index: 5;
+  overflow: hidden;
+  min-width: 0;
 }
 .canvasFrame {
   position: relative;
@@ -349,21 +455,26 @@
 /* ── Toast ── */
 .toast {
   position: fixed;
-  bottom: 60px; left: 50%; transform: translateX(-50%);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
   background: linear-gradient(135deg, #27ae60, #2ecc71);
   border: 2px solid #1e8449;
   color: #fff;
-  padding: 8px 20px;
+  padding: 10px 24px;
   font-weight: 700;
   font-size: 0.82rem;
   z-index: 300;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  cursor: pointer;
+  max-width: 80vw;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .drawMain { flex-direction: column; }
-  .leftPanel {
+  .drawMain { flex-direction: column-reverse; }
+  .rightPanel {
     width: 100%; flex-direction: row; flex-wrap: wrap;
     padding: 6px; gap: 6px;
     max-height: 150px; overflow-y: auto; overflow-x: hidden;
@@ -375,7 +486,7 @@
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .leftPanel { width: 180px; padding: 6px; gap: 4px; }
+  .rightPanel { width: 180px; padding: 6px; gap: 4px; }
   .styleGrid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
 }
 

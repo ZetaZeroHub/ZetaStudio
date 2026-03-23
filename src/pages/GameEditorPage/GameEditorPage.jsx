@@ -311,6 +311,40 @@ export default function GameEditorPage() {
               transition={{ duration: 0.25 }}
             >
 
+              {/* ── Level Template Selector (prominent section) ── */}
+              {currentDraft?.templateType === 'platformer' && (
+                <div className={styles.section}>
+                  <div className={styles.sectionHeader}>
+                    <span className={styles.sectionLabel}>📋 关卡模板</span>
+                  </div>
+                  <div className={styles.templateRow}>
+                    {[
+                      { id: 'medium-1', name: '🌳 森林', color: '#43A047' },
+                      { id: 'medium-2', name: '🏖️ 海滩', color: '#0097A7' },
+                      { id: 'medium-3', name: '🍬 糖果', color: '#E91E63' },
+                      { id: 'medium-4', name: '🏜️ 沙漠', color: '#F57C00' },
+                    ].map(tpl => (
+                      <button
+                        key={tpl.id}
+                        className={`${styles.templateChip} ${
+                          currentDraft?.levelData?.id === tpl.id ? styles.templateChipActive : ''
+                        }`}
+                        style={{ '--tpl-color': tpl.color }}
+                        onClick={() => {
+                          if (currentDraft?.levelData?.id === tpl.id) return;
+                          playClick();
+                          // Save current draft then navigate to the new template
+                          saveRecord();
+                          navigate(`/maze/editor/platformer/${tpl.id}?from=maze-home`, { replace: true });
+                        }}
+                      >
+                        {tpl.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ── Tools (compact row) ── */}
               <div className={styles.section}>
                 <button className={styles.sectionHeader} onClick={() => toggleSection('tools')}>

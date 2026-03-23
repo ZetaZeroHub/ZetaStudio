@@ -87,6 +87,8 @@ export const PLAYER_CHARACTERS = [
   { key: 'charWizard', name: '巫师', img: MAZE_ASSETS.blockCharWizard, single: true },
   { key: 'npcGreen', name: '绿色小人', img: MAZE_ASSETS.npcGreen, single: true },
   { key: 'npcPink', name: '粉色小人', img: MAZE_ASSETS.npcPink, single: true },
+  { key: 'carRed', name: '红色赛车', img: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Cars/car_red_1.png', single: true, rotate: true, baseDir: 'up', scale: 0.55, anchor: 'center' },
+  { key: 'carBlue', name: '蓝色赛车', img: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Cars/car_blue_1.png', single: true, rotate: true, baseDir: 'up', scale: 0.55, anchor: 'center' },
 ];
 
 /* ═══════════════════════════════════════════
@@ -199,12 +201,103 @@ function shuffle(arr) {
  * @param {object} options - { character, goalType, extraDecoKeys }
  * @returns {object} MazePathGame-compatible level
  */
+/* ═══════════════════════════════════════════
+   自动生成随机路径（当用户未绘制路线时使用）
+   入口：左上角附近  出口：右下角附近
+   路线带有弯曲和绕行，增加复杂度
+   ═══════════════════════════════════════════ */
+function generateRandomPath(gridW, gridH) {
+  const dirs = [[1, 0], [0, 1], [-1, 0], [0, -1]]; // right, down, left, up
+  const minLen = Math.max(10, gridW + gridH); // longer paths for complexity
+  const maxAttempts = 30;
+
+  // Fixed start: upper-left corner area
+  const sx = 1 + Math.floor(Math.random() * 2);
+  const sy = 1 + Math.floor(Math.random() * 2);
+  // Fixed exit target: lower-right corner area
+  const ex = gridW - 2 - Math.floor(Math.random() * 2);
+  const ey = gridH - 2 - Math.floor(Math.random() * 2);
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const path = [{ gx: sx, gy: sy }];
+    const visited = new Set();
+    visited.add(`${sx},${sy}`);
+    let cx = sx, cy = sy;
+
+    const targetLen = minLen + Math.floor(Math.random() * Math.floor(minLen * 0.6));
+
+    for (let step = 0; step < targetLen * 4; step++) {
+      if (path.length >= targetLen) break;
+
+      // Weight directions: 60% bias toward exit, 40% random detour
+      const distX = ex - cx, distY = ey - cy;
+      let weighted;
+      if (Math.random() < 0.6) {
+        // Prefer moving toward exit
+        const towards = [];
+        if (distX > 0) towards.push([1, 0]);
+        if (distX < 0) towards.push([-1, 0]);
+        if (distY > 0) towards.push([0, 1]);
+        if (distY < 0) towards.push([0, -1]);
+        // Shuffle the towards directions + add remaining as fallback
+        const rest = dirs.filter(d => !towards.some(t => t[0] === d[0] && t[1] === d[1]));
+        weighted = [...towards.sort(() => Math.random() - 0.5), ...rest.sort(() => Math.random() - 0.5)];
+      } else {
+        // Random detour — perpendicular directions preferred for winding
+        const perp = (distX !== 0) ? [[0, 1], [0, -1]] : [[1, 0], [-1, 0]];
+        weighted = [...perp.sort(() => Math.random() - 0.5), ...dirs.sort(() => Math.random() - 0.5)];
+      }
+
+      let advanced = false;
+      for (const [dx, dy] of weighted) {
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 1 || nx >= gridW - 1 || ny < 1 || ny >= gridH - 1) continue;
+        if (visited.has(`${nx},${ny}`)) continue;
+
+        path.push({ gx: nx, gy: ny });
+        visited.add(`${nx},${ny}`);
+        cx = nx; cy = ny;
+        advanced = true;
+        break;
+      }
+      if (!advanced) break;
+    }
+
+    // Check quality: path should be long enough AND end near the exit
+    const lastP = path[path.length - 1];
+    const endDist = Math.abs(lastP.gx - ex) + Math.abs(lastP.gy - ey);
+    if (path.length >= minLen && endDist <= 4) {
+      console.log('[mazeGenerator] Random path: attempt', attempt + 1,
+        'len:', path.length, 'start:', `(${sx},${sy})`, 'end:', `(${lastP.gx},${lastP.gy})`);
+      return path;
+    }
+  }
+
+  // Fallback: Z-shaped path from upper-left to lower-right
+  const path = [];
+  const midY = Math.floor(gridH / 2);
+  for (let x = 1; x <= gridW - 2; x++) path.push({ gx: x, gy: 1 });
+  for (let y = 2; y <= midY; y++) path.push({ gx: gridW - 2, gy: y });
+  for (let x = gridW - 3; x >= 1; x--) path.push({ gx: x, gy: midY });
+  for (let y = midY + 1; y <= gridH - 2; y++) path.push({ gx: 1, gy: y });
+  for (let x = 2; x <= gridW - 2; x++) path.push({ gx: x, gy: gridH - 2 });
+  console.log('[mazeGenerator] Random path fallback Z-shape, len:', path.length);
+  return path;
+}
+
 export function generateMazeFromPath(userPath, gridW = 18, gridH = 14, style = 'forest', options = {}) {
   const { character = 'duck', goalType = 'pool', extraDecoKeys = [] } = options;
   console.log('[mazeGenerator] v3 generating', { gridW, gridH, style, character, goalType, pathLen: userPath.length });
 
   const grid = Array.from({ length: gridH }, () => Array(gridW).fill(0));
   const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
+  // ── Auto-generate path if user didn't draw one ──
+  if (!userPath || userPath.length < 3) {
+    console.log('[mazeGenerator] Auto-generating random path...');
+    userPath = generateRandomPath(gridW, gridH);
+    console.log('[mazeGenerator] Auto-generated path length:', userPath.length);
+  }
 
   // 1. Mark user path
   userPath.forEach((p, i) => {
@@ -393,6 +486,39 @@ export function generateMazeFromPath(userPath, gridW = 18, gridH = 14, style = '
           }
         }
       }
+    }
+  }
+
+  // ─── Pass 4: Connectivity audit — remove disconnected paths ───
+  // BFS from the start cell to find all reachable road cells
+  {
+    const visited = Array.from({ length: gridH }, () => Array(gridW).fill(false));
+    const queue = [{ gx: start.gx, gy: start.gy }];
+    visited[start.gy][start.gx] = true;
+
+    while (queue.length > 0) {
+      const { gx, gy } = queue.shift();
+      for (const [dx, dy] of dirs) {
+        const nx = gx + dx, ny = gy + dy;
+        if (nx >= 0 && nx < gridW && ny >= 0 && ny < gridH && !visited[ny][nx] && grid[ny][nx] > 0) {
+          visited[ny][nx] = true;
+          queue.push({ gx: nx, gy: ny });
+        }
+      }
+    }
+
+    // Remove any road cells not reachable from start (disconnected fragments)
+    let removedCount = 0;
+    for (let y = 1; y < gridH - 1; y++) {
+      for (let x = 1; x < gridW - 1; x++) {
+        if (grid[y][x] > 0 && !visited[y][x]) {
+          grid[y][x] = 0;
+          removedCount++;
+        }
+      }
+    }
+    if (removedCount > 0) {
+      console.log('[mazeGenerator] Connectivity audit removed', removedCount, 'disconnected road cells');
     }
   }
 

@@ -243,6 +243,37 @@
   border-color: #58CC02; background: #F0FFF0; color: #2E7D32;
 }
 
+/* Template selector row */
+.templateRow {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px 8px;
+  flex-wrap: wrap;
+}
+.templateChip {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 2px solid #E0E0E0;
+  border-left: 3px solid var(--tpl-color, #999);
+  background: #fafafa;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+}
+.templateChip:hover {
+  background: #f0f0f0;
+  border-color: var(--tpl-color, #999);
+}
+.templateChipActive {
+  background: #E8F5E9;
+  border-color: #58CC02;
+  border-left-color: var(--tpl-color, #58CC02);
+  color: #2E7D32;
+}
+
 .tilePanelWrap { flex: 1; overflow: hidden; }
 
 /* Center panel */

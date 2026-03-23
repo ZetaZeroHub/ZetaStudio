@@ -126,25 +126,27 @@ const useEditorStore = create((set, get) => ({
   variables: {},
 
   initEditor: (project, templateData) => {
-    const rawElements = project.elements?.length > 0
-      ? project.elements
-      : (templateData?.elements || []);
-    
-    // Load scripts or fallback
-    const defaultScripts = [{ id: 's_main', name: 'main.js', content: '// 游戏主脚本\n\napp.ticker.add((ticker) => {\n  // 每帧更新逻辑\n});\n' }];
-    const rawScripts = project.scripts?.length > 0 
-      ? project.scripts 
-      : (templateData?.scripts || defaultScripts);
-
     const dimension = project.dimension || templateData?.dimension || '2D';
 
-    // === Backward-compatible migration ===
-    // If project already has scenes array, use it; otherwise, migrate flat format
+    // === Priority: saved scenes > saved flat elements > template defaults ===
     let scenes;
     if (project.scenes?.length > 0) {
+      // Project already has scenes array (saved with new format) — use it directly
       scenes = project.scenes;
+      console.log('[editorStore] initEditor: loaded', scenes.length, 'saved scenes');
     } else {
+      // No saved scenes — fall back to flat elements/scripts or template
+      const rawElements = project.elements?.length > 0
+        ? project.elements
+        : (templateData?.elements || []);
+      
+      const defaultScripts = [{ id: 's_main', name: 'main.js', content: '// 游戏主脚本\n\napp.ticker.add((ticker) => {\n  // 每帧更新逻辑\n});\n' }];
+      const rawScripts = project.scripts?.length > 0 
+        ? project.scripts 
+        : (templateData?.scripts || defaultScripts);
+
       scenes = [createDefaultScene('场景 1', rawElements, rawScripts)];
+      console.log('[editorStore] initEditor: migrated from flat format, elements:', rawElements.length);
     }
 
     const activeSceneId = scenes[0].id;
@@ -428,6 +430,7 @@ const useEditorStore = create((set, get) => ({
   getProjectData: () => {
     const { currentProject, scenes } = get();
     // Save in the new scenes format
+    console.log('[editorStore] getProjectData: saving', scenes.length, 'scenes');
     return { ...currentProject, scenes, updatedAt: Date.now() };
   },
 }));

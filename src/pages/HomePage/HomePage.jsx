@@ -1,11 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Crosshair, ArrowRight, Sparkles, Bot, X, Loader2, CheckSquare, Square, ArrowUpDown, Filter, Swords, Map, Layers, Cpu } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Crosshair, ArrowRight, Sparkles, Bot, X, Loader2, CheckSquare, Square, ArrowUpDown, Filter, Swords, Map, Layers, Cpu, Wallet, Coins, TrendingUp, Eye, Heart, MessageCircle, Link2, Palette, GraduationCap, Trophy, BookOpen, User, Star } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import ParticleField from '../../components/ParticleField/ParticleField';
-import ModeSelectorOverlay from '../../components/ModeSelectorOverlay/ModeSelectorOverlay';
-import KidsHomePage from '../../pages/KidsHomePage/KidsHomePage';
 import useProjectStore from '../../stores/projectStore';
 import useAppStore from '../../stores/appStore';
 import useI18nStore from '../../stores/i18nStore';
@@ -55,23 +53,140 @@ const FEATURED_GAMES = [
     tag: '2D',
     route: '/play-maze/topdown/maze-1',
   },
+  {
+    id: 'featured-tank',
+    title: '坦克大战',
+    titleEn: 'Tank Battle',
+    desc: '驾驶坦克击破敌方阵地，保卫基地',
+    descEn: 'Drive your tank, destroy enemies and protect the base',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-坦克大战.png',
+    templateType: 'tankBattle',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-balloon',
+    title: '气球射击',
+    titleEn: 'Balloon Pop',
+    desc: '瞄准天空中飘过的气球，比拼你的反应速度',
+    descEn: 'Pop the balloons floating across the sky',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-气球射击.png',
+    templateType: 'balloonPop',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-tetris',
+    title: '俄罗斯方块',
+    titleEn: 'Tetris',
+    desc: '经典俄罗斯方块，消除整行方块拿高分',
+    descEn: 'Classic Tetris — clear rows and chase the high score',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-俄罗斯方块.png',
+    templateType: 'tetris',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-breakout',
+    title: '打砖块',
+    titleEn: 'Breakout',
+    desc: '用弹球击碎所有砖块，考验你的操控精度',
+    descEn: 'Smash all the bricks with a bouncing ball',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-打砖块.png',
+    templateType: 'breakout',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-memory',
+    title: '记忆翻牌',
+    titleEn: 'Memory Card',
+    desc: '翻开卡片配对相同图案，训练你的记忆力',
+    descEn: 'Flip cards and match pairs to train your memory',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-记忆翻牌.png',
+    templateType: 'memoryCard',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-whackmole',
+    title: '打地鼠',
+    titleEn: 'Whack-a-Mole',
+    desc: '地鼠冒头就打，手速越快分数越高',
+    descEn: 'Whack the moles as they pop up — speed is key',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-打地鼠.png',
+    templateType: 'whackMole',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-fruitcatch',
+    title: '接水果',
+    titleEn: 'Fruit Catch',
+    desc: '用篮子接住掉落的水果，别让它们落地',
+    descEn: 'Catch the falling fruits with your basket',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-接水果.png',
+    templateType: 'fruitCatch',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-counting',
+    title: '数数乐',
+    titleEn: 'Counting Fun',
+    desc: '和可爱动物一起学数数，寓教于乐',
+    descEn: 'Learn counting with cute animals',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-数数乐.png',
+    templateType: 'counting',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-colorbook',
+    title: '涂色本',
+    titleEn: 'Color Book',
+    desc: '发挥想象力，给各种图案涂上喜欢的颜色',
+    descEn: 'Color beautiful patterns with your imagination',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-涂色本.png',
+    templateType: 'colorBook',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-animalquiz',
+    title: '动物认知',
+    titleEn: 'Animal Quiz',
+    desc: '认识各种动物，看看你能答对多少',
+    descEn: 'Identify animals and test your knowledge',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-动物认知.png',
+    templateType: 'animalQuiz',
+    dimension: '2D',
+    tag: '2D',
+  },
+  {
+    id: 'featured-maze',
+    title: '迷宫冒险',
+    titleEn: 'Maze Adventure',
+    desc: '在迷宫中寻找出口，挑战你的方向感',
+    descEn: 'Find your way out of the maze',
+    poster: '/assets/custom/朋友们的游戏-游戏封面-迷宫冒险.png',
+    templateType: 'maze',
+    dimension: '2D',
+    tag: '2D',
+  },
 ];
 
-/* ── 朋友们的游戏 ── */
+/* ── 朋友们的游戏 (已合并入精选) ──
 const FRIENDS_GAME_PICKS = [
   { type: 'whackMole', poster: '/assets/custom/朋友们的游戏-游戏封面-打地鼠.png' },
-  { type: 'memoryCard', poster: '/assets/custom/朋友们的游戏-游戏封面-记忆翻牌.png' },
   { type: 'fruitCatch', poster: '/assets/custom/朋友们的游戏-游戏封面-接水果.png' },
   { type: 'counting', poster: '/assets/custom/朋友们的游戏-游戏封面-数数乐.png' },
   { type: 'colorBook', poster: '/assets/custom/朋友们的游戏-游戏封面-涂色本.png' },
-  { type: 'balloonPop', poster: '/assets/custom/朋友们的游戏-游戏封面-气球射击.png' },
-  { type: 'tetris', poster: '/assets/custom/朋友们的游戏-游戏封面-俄罗斯方块.png' },
-  { type: 'breakout', poster: '/assets/custom/朋友们的游戏-游戏封面-打砖块.png' },
   { type: 'animalQuiz', poster: '/assets/custom/朋友们的游戏-游戏封面-动物认知.png' },
   { type: 'wordPicture', poster: '/assets/posters/wordpicture_poster.png' },
   { type: 'maze', poster: '/assets/custom/朋友们的游戏-游戏封面-迷宫冒险.png' },
-  { type: 'tankBattle', poster: '/assets/custom/朋友们的游戏-游戏封面-坦克大战.png' },
 ];
+*/
 
 /* ── 模板海报映射 ── */
 const TEMPLATE_POSTERS = {
@@ -146,7 +261,7 @@ export default function HomePage() {
         _isMazeDraft: true,
       }));
     } catch (e) { /* ignore */ }
-    let list = [...projects.filter(p => p.published), ...mazeDrafts];
+    let list = [...projects, ...mazeDrafts];
     if (filterDim !== 'all') {
       list = list.filter(p => (p.dimension || '2D') === filterDim);
     }
@@ -188,11 +303,6 @@ export default function HomePage() {
 
   const templates = getAllTemplates();
   const drawerTemplates = [
-    ...templates.filter(t => t.templateType !== 'cube3d').map(t => ({
-      ...t,
-      editorCategory: (t.dimension === '3D') ? '3d' : '2d',
-    })),
-    // 游戏梦想家 special entries
     {
       templateType: 'mazeAdventure',
       name: '横版闯关',
@@ -209,6 +319,10 @@ export default function HomePage() {
       editorCategory: 'adventure',
       route: '/maze/ai-maze?from=pro',
     },
+    ...templates.filter(t => t.templateType !== 'cube3d').map(t => ({
+      ...t,
+      editorCategory: (t.dimension === '3D') ? '3d' : '2d',
+    })),
   ];
 
   const TPL_CATEGORIES = [
@@ -223,6 +337,7 @@ export default function HomePage() {
     : drawerTemplates.filter(t => t.editorCategory === tplCategory);
 
   const kidsTemplates = getKidsTemplates();
+  /* friendsGames — commented out, all merged into FEATURED_GAMES
   const friendsGames = useMemo(() => {
     return FRIENDS_GAME_PICKS.map((pick) => {
       const tpl = kidsTemplates.find(t => t.templateType === pick.type);
@@ -230,6 +345,7 @@ export default function HomePage() {
       return { ...tpl, poster: pick.poster };
     }).filter(Boolean);
   }, [kidsTemplates]);
+  */
 
   const placeholder = useMemo(() => {
     const list = language === 'zh' ? AI_PLACEHOLDERS_ZH : AI_PLACEHOLDERS_EN;
@@ -346,17 +462,14 @@ export default function HomePage() {
     }
   };
 
-  if (appMode === null) return <ModeSelectorOverlay onSelect={setAppMode} />;
-  if (appMode === 'simple') return <KidsHomePage onSwitchToPro={() => setAppMode('pro')} />;
-  if (appMode === 'maze') setAppMode('pro');
+  // Always use pro mode — no mode selector
+  if (appMode === null || appMode === 'simple' || appMode === 'maze') {
+    setAppMode('pro');
+  }
 
   return (
     <div className={styles.page}>
-      <Navbar>
-        <button className={styles.modeSwitchBtn} onClick={() => setAppMode('simple')} title="切换到简易模式">
-          <Sparkles size={14} /> 简易模式
-        </button>
-      </Navbar>
+      <Navbar />
 
       {/* ── Hero ── */}
       <section className={styles.hero}>
@@ -409,7 +522,7 @@ export default function HomePage() {
         </button>
       </section>
 
-      {/* ── Featured Section ── */}
+      {/* ── Featured + My Works Section (Tabbed) ── */}
       <section className={styles.featuredSection}>
         <div className={styles.featuredHeader}>
           <div className={styles.tabBar}>
@@ -421,197 +534,334 @@ export default function HomePage() {
             </button>
             <span className={styles.tabDivider}>/</span>
             <button
-              className={`${styles.tabBtn} ${activeTab === 'friends' ? styles.tabBtnActive : ''}`}
-              onClick={() => setActiveTab('friends')}
+              className={`${styles.tabBtn} ${activeTab === 'myworks' ? styles.tabBtnActive : ''}`}
+              onClick={() => setActiveTab('myworks')}
             >
-              {language === 'zh' ? '朋友们的游戏' : "Community Games"}
+              {language === 'zh' ? '我的作品' : 'My Works'}
+              {projects.length > 0 && <span className={styles.tabCount}>{projects.length}</span>}
             </button>
           </div>
         </div>
 
+        {/* ── Featured Games: Hero + Grid ── */}
         {activeTab === 'featured' && (
-          <div className={styles.scrollContainer}>
-            <div className={styles.featuredGrid}>
-              {FEATURED_GAMES.map((game, i) => (
-                <motion.div
+          <div className={styles.featuredPane}>
+            {/* Hero row — top 2 flagship games */}
+            <div className={styles.featuredHeroRow}>
+              {FEATURED_GAMES.slice(0, 2).map((game) => (
+                <div
                   key={game.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: i * 0.08, ease: [0.25, 1, 0.5, 1] }}
-                  className={styles.featuredCard}
+                  className={styles.featuredCardHero}
                   onClick={() => handleFeaturedPlay(game)}
                 >
-                  <div className={styles.featuredPoster}>
+                  <div className={styles.featuredPosterHero}>
                     <SkeletonImg src={game.poster} alt={game.title} className={styles.featuredImg} />
-                    <div className={styles.featuredOverlay}>
+                    <div className={styles.featuredOverlayHero}>
                       <span className={styles.featuredTag}>{game.tag}</span>
+                      <div className={styles.heroTextBlock}>
+                        <h3 className={styles.heroGameTitle}>{language === 'zh' ? game.title : game.titleEn}</h3>
+                        <p className={styles.heroGameDesc}>{language === 'zh' ? game.desc : game.descEn}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className={styles.featuredBody}>
-                    <h3 className={styles.featuredGameTitle}>{language === 'zh' ? game.title : game.titleEn}</h3>
-                    <p className={styles.featuredDesc}>{language === 'zh' ? game.desc : game.descEn}</p>
-                  </div>
-                </motion.div>
+                </div>
               ))}
             </div>
-          </div>
-        )}
 
-        {activeTab === 'friends' && (
-          <div className={styles.scrollContainer}>
-            <div className={styles.friendsGrid}>
-              {friendsGames.map((game, i) => (
-                <motion.div
-                  key={game.templateType}
-                  initial={{ opacity: 0, scale: 0.97 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: i * 0.03 }}
-                  className={styles.friendsCard}
-                  onClick={() => handleFriendsPlay(game)}
+            {/* Compact grid — remaining games */}
+            <div className={styles.featuredCompactGrid}>
+              {FEATURED_GAMES.slice(2).map((game) => (
+                <div
+                  key={game.id}
+                  className={styles.featuredCardCompact}
+                  onClick={() => handleFeaturedPlay(game)}
                 >
-                  <div className={styles.friendsPoster}>
-                    <SkeletonImg src={game.poster} alt={game.name} className={styles.friendsImg} />
+                  <div className={styles.compactPoster}>
+                    <SkeletonImg src={game.poster} alt={game.title} className={styles.featuredImg} />
                   </div>
-                  <div className={styles.friendsBody}>
-                    <h4 className={styles.friendsName}>{game.name}</h4>
-                    <p className={styles.friendsDesc}>{game.description}</p>
-                    <span className={styles.friendsAuthor}>
-                      {language === 'zh' ? '匿名创作者' : 'Anonymous'}
-                    </span>
+                  <div className={styles.compactBody}>
+                    <h4 className={styles.compactTitle}>{language === 'zh' ? game.title : game.titleEn}</h4>
+                    <p className={styles.compactDesc}>{language === 'zh' ? game.desc : game.descEn}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
         )}
-      </section>
 
-      {/* ── Projects ── */}
-      <section className={styles.projectsSection}>
-        <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>{t('home.recentProjects')}</h2>
-          <span className={styles.count}>{filteredProjects.length}</span>
-        </div>
-
-        {/* Toolbar */}
-        {projects.length > 0 && (
-          <div className={styles.toolbar}>
-            <div className={styles.toolbarLeft}>
-              <button
-                className={`${styles.toolBtn} ${selectMode ? styles.toolBtnActive : ''}`}
-                onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); }}
-              >
-                <CheckSquare size={14} />
-                {language === 'zh' ? '选择' : 'Select'}
-              </button>
-
-              {selectMode && (
-                <>
-                  <button className={styles.toolBtn} onClick={toggleSelectAll}>
-                    {selectedIds.size === filteredProjects.length
-                      ? (language === 'zh' ? '取消全选' : 'Deselect All')
-                      : (language === 'zh' ? '全选' : 'Select All')}
+        {/* ── My Works Tab ── */}
+        {activeTab === 'myworks' && (
+          <div className={styles.myWorksPane}>
+            {/* Toolbar */}
+            {projects.length > 0 && (
+              <div className={styles.toolbar}>
+                <div className={styles.toolbarLeft}>
+                  <button
+                    className={`${styles.toolBtn} ${selectMode ? styles.toolBtnActive : ''}`}
+                    onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()); }}
+                  >
+                    <CheckSquare size={14} />
+                    {language === 'zh' ? '选择' : 'Select'}
                   </button>
-                  {selectedIds.size > 0 && (
-                    <button className={`${styles.toolBtn} ${styles.toolBtnDanger}`} onClick={handleBatchDelete}>
-                      <Trash2 size={13} />
-                      {language === 'zh' ? `删除 (${selectedIds.size})` : `Delete (${selectedIds.size})`}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
 
-            <div className={styles.toolbarRight}>
-              {/* Sort */}
-              <div className={styles.toolSelect}>
-                <ArrowUpDown size={12} />
-                <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  <option value="newest">{language === 'zh' ? '最近创建' : 'Newest'}</option>
-                  <option value="oldest">{language === 'zh' ? '最早创建' : 'Oldest'}</option>
-                  <option value="name">{language === 'zh' ? '按名称' : 'By Name'}</option>
-                </select>
-              </div>
-
-              {/* Dimension filter */}
-              <div className={styles.toolSelect}>
-                <Filter size={12} />
-                <select value={filterDim} onChange={e => setFilterDim(e.target.value)}>
-                  <option value="all">{language === 'zh' ? '全部' : 'All'}</option>
-                  <option value="2D">2D</option>
-                  <option value="3D">3D</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {filteredProjects.length > 0 ? (
-          <div className={styles.projectsGrid}>
-            {filteredProjects.map((p, i) => (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                key={p.id}
-                className={`${styles.projectCard} ${selectedIds.has(p.id) ? styles.projectCardSelected : ''}`}
-                onClick={() => {
-                  if (selectMode) { toggleSelect(p.id); return; }
-                  if (p.templateType === 'mazeAdventure') {
-                    if (p.gameDraftId) {
-                      navigate(`/maze/editor/draft/${p.gameDraftId}?from=pro`);
-                    } else {
-                      navigate(`/maze/editor/platformer/${p.baseLevelId || 'medium-1'}?from=pro`);
-                    }
-                  } else if (p.templateType === 'topdown' || p._isMazeDraft) {
-                    navigate(`/maze/ai-maze?draftId=${p.id}&from=pro`);
-                  } else {
-                    navigate(`/editor/${p.id}`);
-                  }
-                }}
-              >
-                {selectMode && (
-                  <div className={styles.checkboxArea}>
-                    {selectedIds.has(p.id)
-                      ? <CheckSquare size={16} className={styles.checked} />
-                      : <Square size={16} className={styles.unchecked} />
-                    }
-                  </div>
-                )}
-                <div className={styles.projectThumb}>
-                  {renderTemplateIcon(p.templateType, 36)}
-                </div>
-                <div className={styles.projectBody}>
-                  <div className={styles.projectName}>
-                    {p.name}
-                    <span className={styles.dimBadge}>{p.dimension || '2D'}</span>
-                  </div>
-                  <div className={styles.projectMeta}>
-                    <span>{formatDate(p.updatedAt)}</span>
-                    {!selectMode && (
-                      <button className={styles.delBtn} onClick={(e) => handleDelete(e, p.id)}>
-                        <Trash2 size={13} />
+                  {selectMode && (
+                    <>
+                      <button className={styles.toolBtn} onClick={toggleSelectAll}>
+                        {selectedIds.size === filteredProjects.length
+                          ? (language === 'zh' ? '取消全选' : 'Deselect All')
+                          : (language === 'zh' ? '全选' : 'Select All')}
                       </button>
-                    )}
+                      {selectedIds.size > 0 && (
+                        <button className={`${styles.toolBtn} ${styles.toolBtnDanger}`} onClick={handleBatchDelete}>
+                          <Trash2 size={13} />
+                          {language === 'zh' ? `删除 (${selectedIds.size})` : `Delete (${selectedIds.size})`}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className={styles.toolbarRight}>
+                  <div className={styles.toolSelect}>
+                    <ArrowUpDown size={12} />
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                      <option value="newest">{language === 'zh' ? '最近创建' : 'Newest'}</option>
+                      <option value="oldest">{language === 'zh' ? '最早创建' : 'Oldest'}</option>
+                      <option value="name">{language === 'zh' ? '按名称' : 'By Name'}</option>
+                    </select>
+                  </div>
+                  <div className={styles.toolSelect}>
+                    <Filter size={12} />
+                    <select value={filterDim} onChange={e => setFilterDim(e.target.value)}>
+                      <option value="all">{language === 'zh' ? '全部' : 'All'}</option>
+                      <option value="2D">2D</option>
+                      <option value="3D">3D</option>
+                    </select>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            <p>{projects.length > 0
-              ? (language === 'zh' ? '没有匹配的项目' : 'No matching projects')
-              : t('home.noProjects')
-            }</p>
-            {projects.length === 0 && (
-              <button className="btn btn-secondary" onClick={() => setDrawerOpen(true)} style={{ marginTop: 12 }}>
-                <Plus size={14} /> {t('home.createProject')}
-              </button>
+              </div>
+            )}
+
+            {filteredProjects.length > 0 ? (
+              <div className={styles.projectsGrid}>
+                {filteredProjects.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className={`${styles.projectCard} ${selectedIds.has(p.id) ? styles.projectCardSelected : ''}`}
+                    onClick={() => {
+                      if (selectMode) { toggleSelect(p.id); return; }
+                      if (p.templateType === 'mazeAdventure') {
+                        if (p.gameDraftId) {
+                          navigate(`/maze/editor/draft/${p.gameDraftId}?from=pro`);
+                        } else {
+                          navigate(`/maze/editor/platformer/${p.baseLevelId || 'medium-1'}?from=pro`);
+                        }
+                      } else if (p.templateType === 'topdown' || p._isMazeDraft) {
+                        navigate(`/maze/ai-maze?draftId=${p.id}&from=pro`);
+                      } else {
+                        navigate(`/editor/${p.id}`);
+                      }
+                    }}
+                  >
+                    {selectMode && (
+                      <div className={styles.checkboxArea}>
+                        {selectedIds.has(p.id)
+                          ? <CheckSquare size={16} className={styles.checked} />
+                          : <Square size={16} className={styles.unchecked} />
+                        }
+                      </div>
+                    )}
+                    <div className={styles.projectThumb}>
+                      {renderTemplateIcon(p.templateType, 36)}
+                    </div>
+                    <div className={styles.projectBody}>
+                      <div className={styles.projectName}>
+                        {p.name}
+                        <span className={styles.dimBadge}>{p.dimension || '2D'}</span>
+                      </div>
+                      <div className={styles.projectMeta}>
+                        <span>{formatDate(p.updatedAt)}</span>
+                        {!selectMode && (
+                          <button className={styles.delBtn} onClick={(e) => handleDelete(e, p.id)}>
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.empty}>
+                <p>{projects.length > 0
+                  ? (language === 'zh' ? '没有匹配的项目' : 'No matching projects')
+                  : t('home.noProjects')
+                }</p>
+                {projects.length === 0 && (
+                  <button className="btn btn-secondary" onClick={() => setDrawerOpen(true)} style={{ marginTop: 12 }}>
+                    <Plus size={14} /> {t('home.createProject')}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
       </section>
+
+      {/* ── Community Hub (Steam-style) — 暂时隐藏 ── */}
+      {false && (
+      <section className={styles.communitySection}>
+        <div className={styles.communityHeader}>
+          <h2 className={styles.communityTitle}>
+            <MessageSquare size={16} strokeWidth={2} />
+            {language === 'zh' ? '社区中心' : 'Community Hub'}
+          </h2>
+          <span className={styles.communityOnline}>
+            <span className={styles.onlineDot} />
+            {language === 'zh' ? '1,247 人在线' : '1,247 online'}
+          </span>
+        </div>
+
+        <div className={styles.communityLayout}>
+          {/* ── Left Sidebar ── */}
+          <aside className={styles.communitySidebar}>
+            <nav className={styles.sidebarNav}>
+              <span className={styles.sidebarLabel}>{language === 'zh' ? '分类浏览' : 'Categories'}</span>
+              {[
+                { key: 'all', label: '全部讨论', labelEn: 'All Discussions', count: 342, icon: <MessageSquare size={14} /> },
+                { key: 'share', label: '作品分享', labelEn: 'Showcase', count: 86, icon: <Palette size={14} /> },
+                { key: 'guide', label: '攻略教程', labelEn: 'Guides', count: 54, icon: <BookOpen size={14} /> },
+                { key: 'review', label: '游戏测评', labelEn: 'Reviews', count: 28, icon: <Gamepad2 size={14} /> },
+                { key: 'suggest', label: '功能建议', labelEn: 'Suggestions', count: 67, icon: <Sparkles size={14} /> },
+                { key: 'official', label: '官方公告', labelEn: 'Announcements', count: 12, icon: <Trophy size={14} /> },
+              ].map(cat => (
+                <button key={cat.key} className={`${styles.sidebarItem} ${cat.key === 'all' ? styles.sidebarItemActive : ''}`}>
+                  {cat.icon}
+                  <span>{language === 'zh' ? cat.label : cat.labelEn}</span>
+                  <span className={styles.sidebarCount}>{cat.count}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className={styles.sidebarBlock}>
+              <span className={styles.sidebarLabel}>{language === 'zh' ? '热门标签' : 'Trending'}</span>
+              <div className={styles.tagCloud}>
+                {['迷宫创作', '赛车主题', 'Boss设计', '像素画', 'AI生成', '亲子游戏', '关卡编辑', '新手求助'].map(tag => (
+                  <span key={tag} className={styles.trendTag}># {tag}</span>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.sidebarBlock}>
+              <span className={styles.sidebarLabel}>{language === 'zh' ? '本周数据' : 'This Week'}</span>
+              <div className={styles.statsGrid}>
+                <div className={styles.statItem}><span className={styles.statVal}>342</span><span className={styles.statKey}>{language === 'zh' ? '新帖' : 'Posts'}</span></div>
+                <div className={styles.statItem}><span className={styles.statVal}>1.2k</span><span className={styles.statKey}>{language === 'zh' ? '回复' : 'Replies'}</span></div>
+                <div className={styles.statItem}><span className={styles.statVal}>89</span><span className={styles.statKey}>{language === 'zh' ? '新作品' : 'Works'}</span></div>
+                <div className={styles.statItem}><span className={styles.statVal}>3.4k</span><span className={styles.statKey}>{language === 'zh' ? '点赞' : 'Likes'}</span></div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ── Main Feed ── */}
+          <div className={styles.communityFeed}>
+            {[
+              {
+                id: 'c1', author: '小明同学', icon: <Palette size={15} />, iconColor: '#c89b3c', time: '2小时前',
+                content: '分享一下我做的恐龙迷宫！用了AI生成的沙漠地图风格，配上赛车角色，感觉非常酷',
+                likes: 42, comments: 8, tag: '作品分享', pinned: false,
+                replies: [
+                  { author: '果果', content: '好酷！赛车怎么设置转弯的？', time: '1小时前' },
+                  { author: '小杰', content: '沙漠主题太帅了～', time: '45分钟前' },
+                ],
+              },
+              {
+                id: 'c3', author: '创客少年团', icon: <Trophy size={15} />, iconColor: '#c89b3c', time: '1天前',
+                content: '本周最佳作品投票开始啦！参赛作品已更新到精选区，大家快来投票支持你最喜欢的创作者吧',
+                likes: 256, comments: 67, tag: '官方活动', pinned: true,
+                replies: [
+                  { author: '皮皮', content: '投了3号作品！太空迷宫做得惊艳', time: '20小时前' },
+                  { author: '小花', content: '已投票！支持花园主题的～', time: '18小时前' },
+                  { author: '大白', content: '恐龙迷宫必须第一名！', time: '12小时前' },
+                ],
+              },
+              {
+                id: 'c2', author: '乐乐老师', icon: <GraduationCap size={15} />, iconColor: '#67c1f5', time: '5小时前',
+                content: '给各位家长推荐，用"小鸭子找水池"这个模板可以锻炼孩子的空间规划能力，3-5岁孩子玩得特别开心',
+                likes: 128, comments: 23, tag: '教育分享', pinned: false,
+                replies: [
+                  { author: '宝妈Amy', content: '太实用了，谢谢老师！我家5岁小朋友反复玩了好多次', time: '4小时前' },
+                ],
+              },
+              {
+                id: 'c4', author: '技术小达人', icon: <BookOpen size={15} />, iconColor: '#67c1f5', time: '2天前',
+                content: '教程：如何让AI生成的迷宫更复杂——在描述中加入"森林"、"冰雪"等关键词，AI会自动匹配对应的风格瓷砖哦',
+                likes: 89, comments: 15, tag: '攻略教程', pinned: false,
+                replies: [
+                  { author: '新手小白', content: '原来描述词这么重要！感谢分享', time: '1天前' },
+                ],
+              },
+              {
+                id: 'c5', author: '游戏测评员', icon: <Gamepad2 size={15} />, iconColor: '#a4d007', time: '3天前',
+                content: '玩了十几个社区作品，发现横版闯关的Boss设计越来越有创意了！特别是那个会分裂的史莱姆Boss，太惊喜了',
+                likes: 64, comments: 11, tag: '游戏测评', pinned: false,
+                replies: [],
+              },
+              {
+                id: 'c6', author: '美术小能手', icon: <Sparkles size={15} />, iconColor: '#a4d007', time: '4天前',
+                content: '建议新增像素画编辑器！让大家能自己画游戏角色，这样每个人的迷宫都会更独特',
+                likes: 203, comments: 34, tag: '功能建议', pinned: false,
+                replies: [
+                  { author: '官方团队', content: '好建议！已经在规划中了，敬请期待～', time: '3天前' },
+                ],
+              },
+            ].map(post => (
+              <div key={post.id} className={`${styles.postRow} ${post.pinned ? styles.postPinned : ''}`}>
+                {/* Avatar */}
+                <div className={styles.postAvatar} style={{color: post.iconColor}}>{post.icon}</div>
+
+                {/* Body */}
+                <div className={styles.postBody}>
+                  <div className={styles.postMeta}>
+                    <span className={styles.postAuthor}>{post.author}</span>
+                    <span className={styles.postTagBadge} data-tag={post.tag}>{post.tag}</span>
+                    {post.pinned && <span className={styles.postPin}>{language === 'zh' ? '置顶' : 'Pinned'}</span>}
+                    <span className={styles.postTime}>{post.time}</span>
+                  </div>
+                  <p className={styles.postText}>{post.content}</p>
+
+                  {/* Replies */}
+                  {post.replies.length > 0 && (
+                    <div className={styles.postReplies}>
+                      {post.replies.slice(0, 2).map((r, ri) => (
+                        <div key={ri} className={styles.postReplyRow}>
+                          <User size={11} strokeWidth={2.5} className={styles.postReplyIcon} />
+                          <span className={styles.postReplyAuthor}>{r.author}</span>
+                          <span className={styles.postReplyText}>{r.content}</span>
+                          <span className={styles.postReplyTime}>{r.time}</span>
+                        </div>
+                      ))}
+                      {post.replies.length > 2 && (
+                        <button className={styles.postReplyMore}>
+                          {language === 'zh' ? `查看全部 ${post.replies.length} 条回复` : `View all ${post.replies.length} replies`}
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className={styles.postActions}>
+                    <button className={styles.postActionBtn}><Heart size={12} /> {post.likes}</button>
+                    <button className={styles.postActionBtn}><MessageCircle size={12} /> {post.comments}</button>
+                    <button className={styles.postActionBtn}><Link2 size={12} /> {language === 'zh' ? '分享' : 'Share'}</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      )}
 
       {/* ── Fullscreen Drawer ── */}
       <AnimatePresence>
@@ -632,50 +882,98 @@ export default function HomePage() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             >
               <div className={styles.drawerHeader}>
-                <h2 className={styles.drawerTitle}>{t('home.createProject')}</h2>
+                <h2 className={styles.drawerTitle}>{language === 'zh' ? '创作工作台' : 'Creator Workbench'}</h2>
                 <button className={styles.drawerClose} onClick={() => setDrawerOpen(false)}>
                   <X size={22} />
                 </button>
               </div>
 
               <div className={styles.drawerContent}>
-                {/* AI Input */}
-                <div className={styles.aiSection}>
-                  <div className={styles.aiLabel}>
-                    <Bot size={20} strokeWidth={1.8} />
-                    <span>{language === 'zh' ? '你想创建什么？' : 'What do you want to create?'}</span>
+                {/* ── Section 1: AI Smart Assistant ── */}
+                <div className={styles.wbSection}>
+                  <div className={styles.wbSectionHeader}>
+                    <div className={styles.wbSectionIcon}><Cpu size={16} /></div>
+                    <div>
+                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? 'AI 智能助手' : 'AI Smart Assistant'}</h3>
+                      <p className={styles.wbSectionSub}>{language === 'zh' ? '核心生产力入口 · 描述你的游戏创意' : 'Core productivity — describe your game idea'}</p>
+                    </div>
                   </div>
-                  <textarea
-                    className={styles.aiInput}
-                    placeholder={placeholder}
-                    value={aiInput}
-                    onChange={e => setAiInput(e.target.value)}
-                    rows={3}
-                  />
+                  <div className={styles.aiInputWrap}>
+                    <textarea
+                      className={styles.aiInput}
+                      placeholder={placeholder}
+                      value={aiInput}
+                      onChange={e => setAiInput(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
                   <button
                     className={`btn btn-primary ${styles.aiGenBtn}`}
                     onClick={handleAiGenerate}
                     disabled={!aiInput.trim() || generating}
                   >
                     <Sparkles size={16} />
-                    {language === 'zh' ? 'AI 生成' : 'AI Generate'}
+                    {language === 'zh' ? 'AI 生成游戏' : 'AI Generate Game'}
                     <ArrowRight size={14} />
                   </button>
                 </div>
 
-                <div className={styles.drawerDivider}>
-                  <span>{language === 'zh' ? '或' : 'or'}</span>
+                {/* ── Section 2: Wallet & Income ── */}
+                <div className={styles.walletSection}>
+                  <div className={styles.wbSectionHeader}>
+                    <div className={`${styles.wbSectionIcon} ${styles.wbIconGold}`}><Wallet size={16} /></div>
+                    <div>
+                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? '创作者钱包' : 'Creator Wallet'}</h3>
+                      <p className={styles.wbSectionSub}>{language === 'zh' ? '创作即价值 · 社区化运营激励' : 'Create value · Community incentives'}</p>
+                    </div>
+                  </div>
+                  <div className={styles.walletGrid}>
+                    <div className={styles.walletCard}>
+                      <div className={styles.walletCardIcon}><Coins size={18} /></div>
+                      <div className={styles.walletCardInfo}>
+                        <span className={styles.walletCardLabel}>{language === 'zh' ? '虚拟余额' : 'Balance'}</span>
+                        <span className={styles.walletCardValue}>0.00</span>
+                      </div>
+                    </div>
+                    <div className={styles.walletCard}>
+                      <div className={`${styles.walletCardIcon} ${styles.walletIconGreen}`}><TrendingUp size={18} /></div>
+                      <div className={styles.walletCardInfo}>
+                        <span className={styles.walletCardLabel}>{language === 'zh' ? '累计收益' : 'Earnings'}</span>
+                        <span className={styles.walletCardValue}>0.00</span>
+                      </div>
+                    </div>
+                    <div className={styles.walletCard}>
+                      <div className={`${styles.walletCardIcon} ${styles.walletIconBlue}`}><Eye size={18} /></div>
+                      <div className={styles.walletCardInfo}>
+                        <span className={styles.walletCardLabel}>{language === 'zh' ? '作品播放量' : 'Views'}</span>
+                        <span className={styles.walletCardValue}>0</span>
+                      </div>
+                    </div>
+                    <div className={styles.walletCard}>
+                      <div className={`${styles.walletCardIcon} ${styles.walletIconPurple}`}><Gamepad2 size={18} /></div>
+                      <div className={styles.walletCardInfo}>
+                        <span className={styles.walletCardLabel}>{language === 'zh' ? '已发布作品' : 'Published'}</span>
+                        <span className={styles.walletCardValue}>{filteredProjects.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className={styles.walletHint}>
+                    {language === 'zh'
+                      ? '💡 优质作品将获得社区推荐与虚拟收益——创作即价值'
+                      : '💡 Quality works earn community recommendations & virtual rewards'}
+                  </p>
                 </div>
 
-                {/* Template section — same level as AI */}
-                <div className={styles.aiSection}>
-                  <div className={styles.aiLabel}>
-                    <Gamepad2 size={20} strokeWidth={1.8} />
-                    <span>{language === 'zh' ? '选择模板' : 'Choose a game template'}</span>
+                {/* ── Section 3: Game Templates ── */}
+                <div className={styles.wbSection}>
+                  <div className={styles.wbSectionHeader}>
+                    <div className={`${styles.wbSectionIcon} ${styles.wbIconTeal}`}><Layers size={16} /></div>
+                    <div>
+                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? '海量益智游戏模板' : 'Game Templates'}</h3>
+                      <p className={styles.wbSectionSub}>{language === 'zh' ? '在成熟框架上发起二次创作' : 'Build upon proven frameworks'}</p>
+                    </div>
                   </div>
                 </div>
-
-
 
                 {/* Template cards with posters */}
                 <div className={styles.drawerTplGrid}>

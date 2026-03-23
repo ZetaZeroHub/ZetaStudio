@@ -574,9 +574,12 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
 
         const charImg = imgs[spriteSrc];
         if (charImg) {
-          const dw = T * 1.1;
+          // Per-character scale: default 1.0, cars use 0.5 etc.
+          const charScale = (charDef && charDef.scale) || 1.0;
+          const dw = T * 1.1 * charScale;
           const dh = dw * (charImg.naturalHeight / charImg.naturalWidth);
-          const bob = isWalking ? Math.sin(gs.duck.bobT * 8) * 2 : 0;
+          const isCenterAnchored = charDef && charDef.anchor === 'center';
+          const bob = isWalking && !isCenterAnchored ? Math.sin(gs.duck.bobT * 8) * 2 : 0;
 
           // ── Shadow ──
           ctx.save();
@@ -592,10 +595,29 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
           ctx.fill();
           ctx.restore();
 
-          // ── Character sprite (foot-anchored) ──
+          // ── Character sprite ──
           ctx.save();
           ctx.translate(gs.duck.px, gs.duck.py + bob);
-          ctx.drawImage(charImg, -dw / 2, -dh, dw, dh);
+
+          // If character uses rotation (e.g. car), rotate the canvas
+          if (charDef && charDef.rotate) {
+            const DIR_ANGLES = {
+              up: 0, upRight: Math.PI * 0.25, right: Math.PI * 0.5,
+              downRight: Math.PI * 0.75, down: Math.PI,
+              downLeft: -Math.PI * 0.75, left: -Math.PI * 0.5,
+              upLeft: -Math.PI * 0.25,
+            };
+            const angle = DIR_ANGLES[dir] || 0;
+            ctx.rotate(angle);
+          }
+
+          if (isCenterAnchored) {
+            // Center-anchored: draw centered on position (vehicles, top-down sprites)
+            ctx.drawImage(charImg, -dw / 2, -dh / 2, dw, dh);
+          } else {
+            // Foot-anchored: draw above position (characters standing up)
+            ctx.drawImage(charImg, -dw / 2, -dh, dw, dh);
+          }
           ctx.restore();
         }
       }
@@ -1042,8 +1064,8 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
       {phase !== PHASE.VICTORY && (
         <div className={styles.ribbon}>
           {phase === PHASE.INTRO && '正在查看地图...'}
-          {phase === PHASE.DRAWING && '用手指拖动主角走路！'}
-          {phase === PHASE.WALKING && '主角正在走路...'}
+          {phase === PHASE.DRAWING && '用手指拖动主角前进！'}
+          {phase === PHASE.WALKING && '主角正在行动中...'}
         </div>
       )}
 

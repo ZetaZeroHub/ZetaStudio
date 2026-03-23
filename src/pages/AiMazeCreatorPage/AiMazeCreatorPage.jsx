@@ -1,7 +1,7 @@
 /* ========================================
    AiMazeCreatorPage — AI 创作迷宫
-   v3: 多选标签 + 画布尺寸 + 角色/终点选择
-   Play phase: directly reuses MazePathGame
+   v4: 统一界面 — 左画布/右AI面板
+   创作/体验/发布全在一个界面完成
    ======================================== */
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,6 +13,7 @@ import {
 import { MAZE_ASSETS } from '../../data/topDownLevels';
 import MazePathGame from '../MazePathGame/MazePathGame';
 import { playClickSound, playSelectSound, playBackSound } from '../../utils/gameUISound';
+import { parseMazePrompt } from '../../utils/mazePromptParser';
 import styles from './AiMazeCreatorPage.module.css';
 
 /* ── Asset paths ── */
@@ -87,13 +88,15 @@ const STYLE_OPTIONS = [
   { key: 'racing', label: '赛车', icon: '/assets/kenney/2.5d/kenney_racing-pack/PNG/Cars/car_red_1.png' },
 ];
 
-/* ── Phases ── */
-const PHASE = { DRAW: 'draw', LOADING: 'loading', PLAY: 'play' };
+/* ── Phases: now DRAW + PLAY (loading is a modal overlay, not separate) ── */
+const PHASE = { DRAW: 'draw', PLAY: 'play' };
 
 export default function AiMazeCreatorPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const draftId = searchParams.get('draftId');
+  const fromPro = searchParams.get('from') === 'pro';
+  const returnPath = fromPro ? '/' : '/maze/home';
   const canvasRef = useRef(null);
 
   const [phase, setPhase] = useState(PHASE.DRAW);
@@ -108,11 +111,16 @@ export default function AiMazeCreatorPage() {
   const [loadingAssetIdx, setLoadingAssetIdx] = useState(0);
   const [textInput, setTextInput] = useState('');
   const [editingDraftId, setEditingDraftId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [publishOpen, setPublishOpen] = useState(false);
   const [publishName, setPublishName] = useState('');
   const [toast, setToast] = useState('');
   const [helpOpen, setHelpOpen] = useState(false);
+
+  /* ── Voice recording state ── */
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
 
   /* ── Load draft for editing ── */
   useEffect(() => {
@@ -123,7 +131,10 @@ export default function AiMazeCreatorPage() {
       if (!draft) { console.warn('[AiMaze] Draft not found:', draftId); return; }
       console.log('[AiMaze] Loading draft for editing:', draftId);
       setEditingDraftId(draftId);
-      if (draft.levelData) setGeneratedLevel(draft.levelData);
+      if (draft.levelData) {
+        setGeneratedLevel(draft.levelData);
+        setPhase(PHASE.PLAY);
+      }
       if (draft.creationContext) {
         const ctx = draft.creationContext;
         if (ctx.textInput) setTextInput(ctx.textInput);
@@ -236,24 +247,96 @@ export default function AiMazeCreatorPage() {
     playClickSound();
   }, []);
 
-  /* ═════ GENERATE ═════ */
+  /* ═════ VOICE INPUT ═════ */
+  const startVoiceInput = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setToast('当前浏览器不支持语音识别');
+      setTimeout(() => setToast(''), 2000);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognitionRef.current = recognition;
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(r => r[0].transcript)
+        .join('');
+      setTextInput(prev => {
+        // Replace from last voice session or append
+        return transcript;
+      });
+    };
+
+    recognition.onerror = (e) => {
+      console.error('[Voice] Error:', e.error);
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    setIsRecording(true);
+    recognition.start();
+  }, []);
+
+  const stopVoiceInput = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsRecording(false);
+  }, []);
+
+  /* ═════ PRESET PROMPTS — only fill text, let AI parser handle the rest ═════ */
+  const applyPreset = useCallback((promptText) => {
+    playClickSound();
+    setTextInput(promptText);
+    setToast(`✨ 已填入描述，点击"生成迷宫"开始创作`);
+    setTimeout(() => setToast(''), 2000);
+  }, []);
+
+  /* ═════ GENERATE — AI prompt parsing + auto path ═════ */
   const handleGenerate = useCallback(() => {
-    if (userPath.length < 3) { setToast('请至少画3格路'); setTimeout(() => setToast(''), 2000); return; }
     playSelectSound();
-    setPhase(PHASE.LOADING);
+
+    // Step 1: AI 意图识别 — 解析用户描述文本
+    const parsed = parseMazePrompt(textInput);
+    console.log('[AiMaze] AI parsed config:', parsed);
+
+    // Step 2: 应用解析结果到界面状态（让用户看到AI的选择）
+    setSelectedStyle(parsed.style);
+    setSelectedChar(parsed.character);
+    setSelectedGoal(parsed.goal);
+    if (parsed.decoKeys.length > 0) {
+      setSelectedTags(new Set(parsed.decoKeys));
+    }
+
+    // 显示解析摘要
+    const summary = parsed.reasoning.slice(0, 3).join(' | ');
+    setToast(`🧠 ${summary}`);
+    setTimeout(() => setToast(''), 5000);
+
+    // Step 3: 生成迷宫
+    setIsLoading(true);
     setLoadingAssetIdx(0);
     const timer = setInterval(() => setLoadingAssetIdx(prev => (prev + 1) % LOADING_PREVIEW_ASSETS.length), 700);
     setTimeout(() => {
       clearInterval(timer);
-      const level = generateMazeFromPath(userPath, GRID_W, GRID_H, selectedStyle, {
-        character: selectedChar,
-        goalType: selectedGoal,
-        extraDecoKeys: [...selectedTags],
+      const level = generateMazeFromPath(userPath, GRID_W, GRID_H, parsed.style, {
+        character: parsed.character,
+        goalType: parsed.goal,
+        extraDecoKeys: [...(parsed.decoKeys || []), ...selectedTags],
       });
       setGeneratedLevel(level);
+      setIsLoading(false);
       setPhase(PHASE.PLAY);
     }, 2200 + Math.random() * 800);
-  }, [userPath, selectedStyle, selectedChar, selectedGoal, selectedTags, GRID_W, GRID_H]);
+  }, [textInput, userPath, selectedTags, GRID_W, GRID_H]);
 
   /* ── Save/Publish from DRAW phase ── */
   const buildCreationContext = useCallback(() => ({
@@ -262,7 +345,6 @@ export default function AiMazeCreatorPage() {
   }), [textInput, selectedStyle, canvasSize, selectedChar, selectedGoal, selectedTags, userPath]);
 
   const handleSaveOrPublish = useCallback(() => {
-    if (userPath.length < 3) { setToast('请至少画3格路'); setTimeout(() => setToast(''), 2000); return; }
     playSelectSound();
     const level = generateMazeFromPath(userPath, GRID_W, GRID_H, selectedStyle, {
       character: selectedChar, goalType: selectedGoal, extraDecoKeys: [...selectedTags],
@@ -309,7 +391,7 @@ export default function AiMazeCreatorPage() {
         }
       } catch (e) { console.error('[AiMaze] Save error', e); }
       setPublishOpen(false); setToast('已保存');
-      setTimeout(() => { setToast(''); navigate('/maze/home'); }, 1500);
+      setTimeout(() => { setToast(''); navigate(returnPath); }, 1500);
     } else {
       // Create new draft
       const draft = {
@@ -319,9 +401,9 @@ export default function AiMazeCreatorPage() {
       };
       try { const d = JSON.parse(localStorage.getItem('game_drafts_v1') || '[]'); d.unshift(draft); localStorage.setItem('game_drafts_v1', JSON.stringify(d)); } catch (e) { console.error('[AiMaze] Save error', e); }
       setPublishOpen(false); setToast('发布成功');
-      setTimeout(() => { setToast(''); navigate('/maze/home'); }, 1500);
+      setTimeout(() => { setToast(''); navigate(returnPath); }, 1500);
     }
-  }, [generatedLevel, publishName, navigate, isEditing, editingDraftId, buildCreationContext]);
+  }, [generatedLevel, publishName, navigate, returnPath, isEditing, editingDraftId, buildCreationContext]);
 
   /* ═════ HELP MODAL ═════ */
   const renderHelpModal = () => (
@@ -368,175 +450,203 @@ export default function AiMazeCreatorPage() {
     </AnimatePresence>
   );
 
-  /* ═════ DRAW PHASE ═════ */
-  if (phase === PHASE.DRAW) {
-    return (
-      <div className={`${styles.page} gameUI`}>
-        <div className={styles.bgLayer} style={{ backgroundImage: `url(${BGE}/Backgrounds/backgroundColorForest.png)` }} />
-        <div className={styles.bgClouds}><img src={`${BGE}/Backgrounds/Elements/cloudLayer1.png`} alt="" className={styles.cloudImg} /></div>
+  /* ═════ UNIFIED LAYOUT ═════ */
+  return (
+    <div className={`${styles.page} gameUI`}>
+      <div className={styles.bgLayer} style={{ backgroundImage: `url(${BGE}/Backgrounds/backgroundColorForest.png)` }} />
+      <div className={styles.bgClouds}><img src={`${BGE}/Backgrounds/Elements/cloudLayer1.png`} alt="" className={styles.cloudImg} /></div>
 
-        <header className={styles.topBar}>
-          <button className={styles.backBtn} onClick={() => { playBackSound(); navigate(-1); }}>
-            <img src={`${UI}/Yellow/Default/arrow_basic_w.png`} alt="" className={styles.arrowIcon} />
+      <header className={styles.topBar}>
+        <button className={styles.backBtn} onClick={() => { playBackSound(); navigate(-1); }}>
+          <img src={`${UI}/Yellow/Default/arrow_basic_w.png`} alt="" className={styles.arrowIcon} />
+        </button>
+        <div className={styles.titleWrap}><img src={`${BGI}/hand.png`} alt="" className={styles.titleIcon} /><h1 className={styles.topTitle}>创作迷宫</h1></div>
+        <div className={styles.topActions}>
+          <button className={styles.helpBtn} onClick={() => { setHelpOpen(true); playClickSound(); }}>
+            <img src={`${UI}/Blue/Default/button_square_depth_gloss.png`} alt="" className={styles.helpBtnBg} />
+            <span className={styles.helpBtnQ}>?</span>
           </button>
-          <div className={styles.titleWrap}><img src={`${BGI}/hand.png`} alt="" className={styles.titleIcon} /><h1 className={styles.topTitle}>创作迷宫</h1></div>
-          <div className={styles.topActions}>
-            <button className={styles.helpBtn} onClick={() => { setHelpOpen(true); playClickSound(); }}>
-              <img src={`${UI}/Blue/Default/button_square_depth_gloss.png`} alt="" className={styles.helpBtnBg} />
-              <span className={styles.helpBtnQ}>?</span>
-            </button>
-            <button className={`${styles.topActionBtn} ${userPath.length < 3 ? styles.btnDisabled : ''}`} onClick={handleSaveOrPublish} disabled={userPath.length < 3}>
-              <img src={`${UI}/Yellow/Default/button_rectangle_depth_gloss.png`} alt="" className={styles.topActionBg} />
-              <span className={styles.topActionLabel}>{isEditing ? '保存' : '发布'}</span>
-            </button>
-            <button className={`${styles.topActionBtn} ${userPath.length < 3 ? styles.btnDisabled : ''}`} onClick={handleGenerate} disabled={userPath.length < 3}>
-              <img src={`${UI}/Green/Default/button_rectangle_depth_gloss.png`} alt="" className={styles.topActionBg} />
-              <span className={styles.topActionLabel}>开始体验</span>
-            </button>
-          </div>
-        </header>
+          <button className={styles.topActionBtn} onClick={handleSaveOrPublish}>
+            <img src={`${UI}/Yellow/Default/button_rectangle_depth_gloss.png`} alt="" className={styles.topActionBg} />
+            <span className={styles.topActionLabel}>{isEditing ? '保存' : '发布'}</span>
+          </button>
+        </div>
+      </header>
 
-        <main className={styles.drawMain}>
-          <div className={`${styles.leftPanel} kenneyPanelBeige`}>
-            {/* Description */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={`${BGI}/book_open.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>描述</span></div>
-              <input type="text" className={styles.textInput} placeholder="小鸭子找水池..." value={textInput} onChange={e => setTextInput(e.target.value)} />
-            </div>
-
-            {/* Quick tags (multi-select) */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={`${BGI}/hand.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>添加元素</span></div>
-              <div className={styles.tagGrid}>
-                {QUICK_TAGS.map(t => (
-                  <button key={t.key} className={`${styles.tagChip} ${selectedTags.has(t.key) ? styles.tagActive : ''}`} onClick={() => toggleTag(t.key)}>
-                    <img src={t.img} alt="" className={styles.tagImg} />
-                    <span>{t.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Style */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>风格</span></div>
-              <div className={styles.styleGrid}>
-                {STYLE_OPTIONS.map(s => (
-                  <button key={s.key} className={`${styles.styleCard} ${selectedStyle === s.key ? styles.styleCardActive : ''}`} onClick={() => { setSelectedStyle(s.key); playClickSound(); }}>
-                    <img src={s.icon} alt="" className={styles.styleCardIcon} />
-                    <span className={styles.styleCardLabel}>{s.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Character */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={MAZE_ASSETS.duckDown} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>主角</span></div>
-              <div className={styles.charGrid}>
-                {PLAYER_CHARACTERS.slice(0, 8).map(c => (
-                  <button key={c.key} className={`${styles.charCard} ${selectedChar === c.key ? styles.charCardActive : ''}`} onClick={() => { setSelectedChar(c.key); playClickSound(); }}>
-                    <img src={c.img} alt="" className={styles.charImg} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Goal */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>终点</span></div>
-              <div className={styles.charGrid}>
-                {GOAL_TYPES.map(g => (
-                  <button key={g.key} className={`${styles.charCard} ${selectedGoal === g.key ? styles.charCardActive : ''}`} onClick={() => { setSelectedGoal(g.key); playClickSound(); }}>
-                    {g.img ? <img src={g.img} alt="" className={styles.charImg} /> : <span className={styles.poolIcon}></span>}
-                    <span className={styles.charName}>{g.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Canvas size */}
-            <div className={styles.section}>
-              <div className={styles.sectionHead}><img src={`${BGI}/dice_3D.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>画布</span></div>
-              <div className={styles.sizeRow}>
-                {Object.entries(CANVAS_SIZES).map(([k, v]) => (
-                  <button key={k} className={`${styles.sizeBtn} ${canvasSize === k ? styles.sizeBtnActive : ''}`}
-                    onClick={() => { setCanvasSize(k); setUserPath([]); playClickSound(); }}>
-                    {v.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={styles.actionsRow}>
-              <button className={styles.clearGameBtn} onClick={() => { setUserPath([]); playClickSound(); }}>
-                <img src={`${UI}/Red/Double/button_rectangle_depth_flat.png`} alt="" className={styles.gameBtnBg} />
-                <span className={styles.gameBtnLabel}>清除</span>
-              </button>
-              <button className={`${styles.generateGameBtn} ${userPath.length < 3 ? styles.btnDisabled : ''}`} onClick={handleGenerate} disabled={userPath.length < 3}>
-                <img src={`${UI}/Green/Double/button_rectangle_depth_gloss.png`} alt="" className={styles.gameBtnBg} />
-                <span className={styles.gameBtnLabel}>生成</span>
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.canvasArea}>
+      <main className={styles.drawMain}>
+        {/* ═══ LEFT: Canvas Area ═══ */}
+        <div className={styles.canvasArea}>
+          {phase === PHASE.DRAW ? (
             <div className={styles.canvasFrame}>
               <canvas ref={canvasRef} className={styles.drawCanvas}
                 onMouseDown={handleDrawStart} onMouseMove={handleDrawMove} onMouseUp={handleDrawEnd} onMouseLeave={handleDrawEnd}
                 onTouchStart={handleDrawStart} onTouchMove={handleDrawMove} onTouchEnd={handleDrawEnd} />
               {userPath.length === 0 && (
-                <div className={styles.canvasHint}><img src={`${BGI}/hand.png`} alt="" className={styles.canvasHintIcon} /><span>拖动画路线</span></div>
+                <div className={styles.canvasHint}><img src={`${BGI}/hand.png`} alt="" className={styles.canvasHintIcon} /><span>手指滑动屏幕，在画布上绘制迷宫路线</span></div>
               )}
             </div>
-          </div>
-        </main>
-
-        {renderHelpModal()}
-        <AnimatePresence>
-          {publishOpen && (
-            <motion.div className={styles.publishOverlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPublishOpen(false)}>
-              <motion.div className={`${styles.publishModal} kenneyPanelFancy`} initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.85, opacity: 0 }} onClick={e => e.stopPropagation()}>
-                <div className={styles.publishHeader}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.publishHeaderIcon} /><h3 className={styles.publishTitle}>发布迷宫</h3></div>
-                <p className={styles.publishDesc}>给你的迷宫起个名字</p>
-                <input type="text" className={styles.publishInput} placeholder="我的超酷迷宫" value={publishName} onChange={e => setPublishName(e.target.value)} onKeyDown={e => e.key === 'Enter' && doPublish()} autoFocus />
-                <div className={styles.publishActions}>
-                  <button className={styles.publishGameBtn} onClick={() => setPublishOpen(false)}><img src={`${UI}/Red/Default/button_rectangle_depth_flat.png`} alt="" className={styles.gameBtnBgSm} /><span className={styles.gameBtnLabelSm}>取消</span></button>
-                  <button className={styles.publishGameBtn} onClick={doPublish}><img src={`${UI}/Green/Default/button_rectangle_depth_gloss.png`} alt="" className={styles.gameBtnBgSm} /><span className={styles.gameBtnLabelSm}>发布</span></button>
-                </div>
-              </motion.div>
-            </motion.div>
+          ) : (
+            /* PLAY phase: render game in canvas area */
+            <div className={styles.gameInCanvas}>
+              <MazePathGame
+                level={generatedLevel}
+                onBack={() => { setPhase(PHASE.DRAW); }}
+                onPublish={handlePublish}
+                hidePublish={isEditing}
+              />
+            </div>
           )}
-        </AnimatePresence>
-        <AnimatePresence>{toast && (<motion.div className={styles.toast} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}>{toast}</motion.div>)}</AnimatePresence>
-      </div>
-    );
-  }
+        </div>
 
-  /* ═════ LOADING ═════ */
-  if (phase === PHASE.LOADING) {
-    return (
-      <div className={`${styles.page} ${styles.loadingPage}`}>
-        <div className={styles.bgLayer} style={{ backgroundImage: `url(${BGE}/Backgrounds/backgroundColorForest.png)` }} />
-        <motion.div className={`${styles.loadingCard} kenneyPanelFancy`} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
-          <div className={styles.loadingSpin}><img src={`${BGI}/dice_3D.png`} alt="" className={styles.loadingDice} /></div>
-          <h2 className={styles.loadingTitle}>创作中...</h2>
-          <p className={styles.loadingDesc}>正在为你生成迷宫世界</p>
-          <div className={styles.loadingPreviewWrap}>
-            <AnimatePresence mode="wait">
-              <motion.img key={loadingAssetIdx} src={LOADING_PREVIEW_ASSETS[loadingAssetIdx]} className={styles.loadingPreview}
-                initial={{ opacity: 0, scale: 0.6, rotate: -15 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.6, rotate: 15 }} transition={{ duration: 0.35 }} />
-            </AnimatePresence>
+        {/* ═══ RIGHT: AI Panel (simplified) ═══ */}
+        <div className={`${styles.rightPanel} kenneyPanelBeige`}>
+          {/* Description — text input (2 rows) */}
+          <div className={styles.section}>
+            <div className={styles.sectionHead}>
+              <img src={`${BGI}/book_open.png`} alt="" className={styles.sectionIcon} />
+              <span className={styles.sectionLabel}>描述你的迷宫</span>
+            </div>
+            <textarea
+              className={styles.textArea}
+              rows={2}
+              placeholder="例如：小鸭子穿过森林找水池..."
+              value={textInput}
+              onChange={e => setTextInput(e.target.value)}
+            />
           </div>
-        </motion.div>
-      </div>
-    );
-  }
 
-  /* ═════ PLAY ═════ */
-  return (
-    <div className={styles.playWrap}>
-      <MazePathGame level={generatedLevel} onBack={() => { setPhase(PHASE.DRAW); setGeneratedLevel(null); }} onPublish={handlePublish} hidePublish={isEditing} />
+          {/* ── Preset prompts ── */}
+          <div className={styles.presetRow}>
+            <button className={styles.presetBtn} onClick={() => applyPreset('小鸭子找水池')}>
+              🐤 小鸭子找水池
+            </button>
+            <button className={styles.presetBtn} onClick={() => applyPreset('小汽车沙漠越野')}>
+              🚗 小汽车沙漠越野
+            </button>
+          </div>
+
+          {/* Voice input — WeChat style "按住说话" */}
+          <div className={styles.voiceSection}>
+            <button
+              className={`${styles.voiceBtn} ${isRecording ? styles.voiceBtnActive : ''}`}
+              onMouseDown={startVoiceInput}
+              onMouseUp={stopVoiceInput}
+              onMouseLeave={() => { if (isRecording) stopVoiceInput(); }}
+              onTouchStart={(e) => { e.preventDefault(); startVoiceInput(); }}
+              onTouchEnd={(e) => { e.preventDefault(); stopVoiceInput(); }}
+            >
+              <span className={styles.voiceIcon}>{isRecording ? '🔴' : '🎤'}</span>
+              <span>{isRecording ? '松开结束' : '按住说话'}</span>
+            </button>
+          </div>
+
+          {/* ── Canvas size picker ── */}
+          <div className={styles.section}>
+            <div className={styles.sectionHead}><img src={`${BGI}/dice_3D.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>画布</span></div>
+            <div className={styles.sizeRow}>
+              {Object.entries(CANVAS_SIZES).map(([k, v]) => (
+                <button key={k} className={`${styles.sizeBtn} ${canvasSize === k ? styles.sizeBtnActive : ''}`}
+                  onClick={() => { setCanvasSize(k); setUserPath([]); playClickSound(); }}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ══════════════════════════════════════════════
+             以下 section 暂时注释掉，方便后续快速恢复
+             ══════════════════════════════════════════════ */}
+
+          {/* -- 添加元素 (COMMENTED OUT)
+          <div className={styles.section}>
+            <div className={styles.sectionHead}><img src={`${BGI}/hand.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>添加元素</span></div>
+            <div className={styles.tagGrid}>
+              {QUICK_TAGS.map(t => (
+                <button key={t.key} className={`${styles.tagChip} ${selectedTags.has(t.key) ? styles.tagActive : ''}`} onClick={() => toggleTag(t.key)}>
+                  <img src={t.img} alt="" className={styles.tagImg} />
+                  <span>{t.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          -- */}
+
+          {/* -- 风格 (COMMENTED OUT)
+          <div className={styles.section}>
+            <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>风格</span></div>
+            <div className={styles.styleGrid}>
+              {STYLE_OPTIONS.map(s => (
+                <button key={s.key} className={`${styles.styleCard} ${selectedStyle === s.key ? styles.styleCardActive : ''}`} onClick={() => { setSelectedStyle(s.key); playClickSound(); }}>
+                  <img src={s.icon} alt="" className={styles.styleCardIcon} />
+                  <span className={styles.styleCardLabel}>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          -- */}
+
+          {/* -- 主角 (COMMENTED OUT)
+          <div className={styles.section}>
+            <div className={styles.sectionHead}><img src={MAZE_ASSETS.duckDown} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>主角</span></div>
+            <div className={styles.charGrid}>
+              {PLAYER_CHARACTERS.slice(0, 8).map(c => (
+                <button key={c.key} className={`${styles.charCard} ${selectedChar === c.key ? styles.charCardActive : ''}`} onClick={() => { setSelectedChar(c.key); playClickSound(); }}>
+                  <img src={c.img} alt="" className={styles.charImg} />
+                </button>
+              ))}
+            </div>
+          </div>
+          -- */}
+
+          {/* -- 终点 (COMMENTED OUT)
+          <div className={styles.section}>
+            <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>终点</span></div>
+            <div className={styles.charGrid}>
+              {GOAL_TYPES.map(g => (
+                <button key={g.key} className={`${styles.charCard} ${selectedGoal === g.key ? styles.charCardActive : ''}`} onClick={() => { setSelectedGoal(g.key); playClickSound(); }}>
+                  {g.img ? <img src={g.img} alt="" className={styles.charImg} /> : <span className={styles.poolIcon}></span>}
+                  <span className={styles.charName}>{g.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          -- */}
+
+          {/* ── Actions: Clear + Generate ── */}
+          <div className={styles.actionsRow}>
+            <button className={styles.clearGameBtn} onClick={() => { setUserPath([]); if (phase === PHASE.PLAY) setPhase(PHASE.DRAW); playClickSound(); }}>
+              <img src={`${UI}/Red/Double/button_rectangle_depth_flat.png`} alt="" className={styles.gameBtnBg} />
+              <span className={styles.gameBtnLabel}>清除</span>
+            </button>
+            <button className={styles.generateGameBtn} onClick={handleGenerate}>
+              <img src={`${UI}/Green/Double/button_rectangle_depth_gloss.png`} alt="" className={styles.gameBtnBg} />
+              <span className={styles.gameBtnLabel}>生成迷宫</span>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* ── Loading Modal Overlay ── */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div className={styles.loadingOverlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className={`${styles.loadingCard} kenneyPanelFancy`} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}>
+              <div className={styles.loadingSpin}><img src={`${BGI}/dice_3D.png`} alt="" className={styles.loadingDice} /></div>
+              <h2 className={styles.loadingTitle}>创作中...</h2>
+              <p className={styles.loadingDesc}>正在为你生成迷宫世界</p>
+              <div className={styles.loadingPreviewWrap}>
+                <AnimatePresence mode="wait">
+                  <motion.img key={loadingAssetIdx} src={LOADING_PREVIEW_ASSETS[loadingAssetIdx]} className={styles.loadingPreview}
+                    initial={{ opacity: 0, scale: 0.6, rotate: -15 }} animate={{ opacity: 1, scale: 1, rotate: 0 }} exit={{ opacity: 0, scale: 0.6, rotate: 15 }} transition={{ duration: 0.35 }} />
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Publish Modal ── */}
+      {renderHelpModal()}
       <AnimatePresence>
         {publishOpen && (
           <motion.div className={styles.publishOverlay} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPublishOpen(false)}>
@@ -552,7 +662,7 @@ export default function AiMazeCreatorPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <AnimatePresence>{toast && (<motion.div className={styles.toast} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}>{toast}</motion.div>)}</AnimatePresence>
+      <AnimatePresence>{toast && (<motion.div className={styles.toast} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onClick={() => setToast('')}>{toast}</motion.div>)}</AnimatePresence>
     </div>
   );
 }

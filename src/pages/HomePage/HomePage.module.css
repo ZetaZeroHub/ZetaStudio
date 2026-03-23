@@ -49,7 +49,7 @@
 }
 .heroInner { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
 .heroLabel {
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -65,7 +65,7 @@
   line-height: 1.2;
 }
 .heroSub {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.8;
   max-width: 640px;
@@ -90,7 +90,7 @@
   text-align: left;
 }
 .capNum {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
   font-weight: 900;
   color: var(--cap-accent, #999);
   letter-spacing: 0.5px;
@@ -99,13 +99,13 @@
   opacity: 0.7;
 }
 .capTitle {
-  font-size: 0.78rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--text-primary, #1a1a2e);
   margin: 0 0 3px;
 }
 .capDesc {
-  font-size: 0.66rem;
+  font-size: 0.78rem;
   color: var(--text-secondary, #888);
   line-height: 1.55;
   margin: 0;
@@ -199,6 +199,15 @@
   user-select: none;
   margin: 0 6px;
 }
+.tabCount {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  background: rgba(255,255,255,0.06);
+  padding: 1px 6px;
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
 
 /* Horizontal Scroll */
 .scrollContainer {
@@ -212,58 +221,129 @@
   display: none;
 }
 
-/* Featured Grid */
-.featuredGrid {
+/* ═══════════════════════════════════════
+   Featured Pane — Hero + Compact Grid
+   ═══════════════════════════════════════ */
+.featuredPane {
   display: flex;
-  gap: 16px;
-  min-width: min-content;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.featuredCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
+/* Hero Row — 2 flagship games */
+.featuredHeroRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.featuredCardHero {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.featuredCardHero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.featuredPosterHero {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+.featuredOverlayHero {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 40%, transparent 70%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 14px 16px;
+}
+.featuredOverlayHero .featuredTag {
+  align-self: flex-end;
+}
+.heroTextBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.heroGameTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.heroGameDesc {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Compact Grid — remaining games */
+.featuredCompactGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.featuredCardCompact {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card, rgba(255,255,255,0.03));
+  border: 1px solid var(--border-default, rgba(255,255,255,0.06));
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s;
-  width: 340px;
-  min-width: 340px;
-  flex-shrink: 0;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
-
-.featuredCard:hover {
-  border-color: var(--border-accent);
+.featuredCardCompact:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-accent, rgba(255,255,255,0.15));
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
-
-.featuredPoster {
+.compactPoster {
   position: relative;
-  height: 200px;
+  height: 160px;
+  overflow: hidden;
+}
+.compactBody {
+  padding: 10px 12px 12px;
+}
+.compactTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary, #e0e0e0);
+  margin: 0 0 3px;
+  letter-spacing: -0.01em;
+}
+.compactDesc {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  line-height: 1.45;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* Shared featured image */
 .featuredImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
-  filter: brightness(0.9);
+  transition: transform 0.4s ease;
+  filter: brightness(0.88);
 }
-
-.featuredCard:hover .featuredImg {
-  transform: scale(1.03);
+.featuredCardHero:hover .featuredImg,
+.featuredCardCompact:hover .featuredImg {
+  transform: scale(1.04);
   filter: brightness(1);
 }
 
-.featuredOverlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 10px;
-}
-
+/* Featured tag badge */
 .featuredTag {
   font-family: var(--font-mono);
   font-size: 0.6rem;
@@ -273,29 +353,14 @@
   color: rgba(255,255,255,0.7);
   background: rgba(255,255,255,0.08);
   padding: 2px 8px;
-  border-radius: 2px;
   border: 1px solid rgba(255,255,255,0.12);
 }
 
-.featuredBody {
-  padding: 14px 16px 18px;
+/* My Works pane */
+.myWorksPane {
+  padding-top: 8px;
 }
 
-.featuredGameTitle {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.03em;
-  margin-bottom: 4px;
-}
-
-.featuredDesc {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 14px;
-}
 
 .playBtn {
   display: inline-flex;
@@ -679,41 +744,92 @@
   width: 100%;
 }
 
-/* AI Section */
-.aiSection { margin-bottom: 8px; }
+/* ── Workbench Sections ── */
+.wbSection { margin-bottom: 24px; }
 
-.aiLabel {
+.wbSectionHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin-bottom: 12px;
-  letter-spacing: -0.02em;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
-.aiLabel svg { color: var(--text-secondary); }
+.wbSectionIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.wbIconGold { background: rgba(232, 160, 32, 0.1); color: #e8a020; }
+.wbIconTeal { background: rgba(70, 167, 88, 0.1); color: #46a758; }
+
+.wbSectionTitle {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.wbSectionSub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+  line-height: 1.3;
+}
+
+/* AI Input with rotating border */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.aiInputWrap {
+  position: relative;
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  background: conic-gradient(
+    from var(--border-angle),
+    #5b7ee5 0%,
+    #e8a020 25%,
+    #46a758 50%,
+    #5b7ee5 75%,
+    transparent 85%,
+    transparent 100%
+  );
+  animation: rotateBorder 3s linear infinite;
+}
+
+@keyframes rotateBorder {
+  to { --border-angle: 360deg; }
+}
 
 .aiInput {
+  display: block;
   width: 100%;
   padding: 14px 16px;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm);
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.88rem;
   line-height: 1.5;
   resize: none;
-  transition: border-color 0.15s;
   box-sizing: border-box;
 }
 
 .aiInput:focus {
   outline: none;
-  border-color: var(--border-accent);
 }
 
 .aiInput::placeholder {
@@ -729,24 +845,88 @@
   padding: 10px 0;
 }
 
-/* Drawer Divider */
-.drawerDivider {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 28px 0;
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+/* ── Wallet Section ── */
+.walletSection {
+  margin-bottom: 24px;
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-elevated) 100%);
 }
 
-.drawerDivider::before,
-.drawerDivider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-subtle);
+.walletSection .wbSectionHeader {
+  margin-bottom: 16px;
+}
+
+.walletGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.walletCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.walletCard:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-1px);
+}
+
+.walletCardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(232, 160, 32, 0.08);
+  color: #e8a020;
+  flex-shrink: 0;
+}
+
+.walletIconGreen { background: rgba(70, 167, 88, 0.08); color: #46a758; }
+.walletIconBlue { background: rgba(91, 126, 229, 0.08); color: #5b7ee5; }
+.walletIconPurple { background: rgba(147, 100, 220, 0.08); color: #9364dc; }
+
+.walletCardInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.walletCardLabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.walletCardValue {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.4;
+}
+
+.walletHint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 4px;
+  opacity: 0.7;
 }
 
 /* Template category tabs */
@@ -951,15 +1131,310 @@
   background: rgba(0, 0, 0, 0.06);
   border-color: rgba(0, 0, 0, 0.12);
 }
+/* ══════════════════════════════════════
+   Community Hub — Steam Workshop Style
+   Dense, utilitarian, information-first
+   ══════════════════════════════════════ */
+.communitySection {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 40px 60px;
+}
+.communityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 0;
+}
+.communityTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #67c1f5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  margin: 0;
+}
+.communityOnline {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.onlineDot {
+  width: 6px; height: 6px;
+  background: #a4d007;
+  display: inline-block;
+}
+
+/* ── Layout: sidebar + feed ── */
+.communityLayout {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 0;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-top: none;
+}
+
+/* ── Sidebar ── */
+.communitySidebar {
+  background: rgba(0,0,0,0.2);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 0;
+}
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+}
+.sidebarLabel {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 10px 12px 4px;
+}
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: background 0.1s, color 0.1s;
+  width: 100%;
+}
+.sidebarItem:hover {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.85);
+}
+.sidebarItemActive {
+  background: rgba(103,193,245,0.08);
+  color: #67c1f5;
+  border-left: 2px solid #67c1f5;
+}
+.sidebarCount {
+  margin-left: auto;
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.25);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sidebar blocks */
+.sidebarBlock {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 0 0 10px;
+}
+.tagCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 12px;
+}
+.trendTag {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.4);
+  padding: 2px 6px;
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+.trendTag:hover {
+  color: #67c1f5;
+  background: rgba(103,193,245,0.08);
+}
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  padding: 4px 12px;
+}
+.statItem {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+}
+.statVal {
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  font-variant-numeric: tabular-nums;
+}
+.statKey {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ── Main Feed ── */
+.communityFeed {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Post row (Steam thread-list style) */
+.postRow {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  transition: background 0.1s;
+}
+.postRow:hover {
+  background: rgba(255,255,255,0.02);
+}
+.postPinned {
+  background: rgba(103,193,245,0.03);
+  border-left: 2px solid #67c1f5;
+}
+.postAvatar {
+  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.postBody {
+  flex: 1;
+  min-width: 0;
+}
+.postMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+.postAuthor {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #67c1f5;
+}
+.postTagBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.05);
+  letter-spacing: 0.02em;
+}
+.postTagBadge[data-tag="官方活动"] { color: #c89b3c; background: rgba(200,155,60,0.1); }
+.postTagBadge[data-tag="作品分享"] { color: #a4d007; background: rgba(164,208,7,0.08); }
+.postTagBadge[data-tag="教育分享"] { color: #67c1f5; background: rgba(103,193,245,0.08); }
+.postTagBadge[data-tag="攻略教程"] { color: #67c1f5; background: rgba(103,193,245,0.08); }
+.postTagBadge[data-tag="游戏测评"] { color: #a4d007; background: rgba(164,208,7,0.08); }
+.postTagBadge[data-tag="功能建议"] { color: #c89b3c; background: rgba(200,155,60,0.1); }
+.postPin {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #67c1f5;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.postTime {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.25);
+  margin-left: auto;
+}
+.postText {
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 6px;
+}
+
+/* Post replies */
+.postReplies {
+  padding: 6px 0 6px 12px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.postReplyRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+}
+.postReplyIcon {
+  flex-shrink: 0;
+  color: rgba(255,255,255,0.2);
+}
+.postReplyAuthor {
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+}
+.postReplyText {
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.postReplyTime {
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.15);
+  margin-left: auto;
+  white-space: nowrap;
+}
+.postReplyMore {
+  font-size: 0.6rem;
+  color: rgba(103,193,245,0.7);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  font-family: inherit;
+  text-align: left;
+}
+.postReplyMore:hover { color: #67c1f5; }
+
+/* Post actions */
+.postActions {
+  display: flex;
+  gap: 12px;
+}
+.postActionBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.25);
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 0.1s;
+  font-family: inherit;
+}
+.postActionBtn:hover { color: rgba(255,255,255,0.6); }
 
 /* ── Responsive ── */
 
 @media (max-width: 1023px) {
   .heroAction { padding: 20px 24px 0; }
   .featuredSection { padding: 24px 24px; }
-  .featuredCard { width: 300px; min-width: 300px; }
-  .friendsCard { width: 300px; min-width: 300px; }
+  .featuredCompactGrid { grid-template-columns: repeat(3, 1fr); }
   .projectsSection { padding: 20px 24px 60px; }
+  .communitySection { padding: 0 24px 60px; }
+  .communityLayout { grid-template-columns: 180px 1fr; }
   .tabBtn { font-size: 1rem; }
   .drawerHeader { padding: 16px 24px; }
   .drawerContent { padding: 24px; }
@@ -971,15 +1446,21 @@
   .ctaBtn { width: 100%; justify-content: center; padding: 12px 24px; font-size: 0.9rem; }
   .featuredSection { padding: 20px 16px; }
   .featuredHeader { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .featuredCard { width: 280px; min-width: 280px; }
-  .featuredPoster { height: 160px; }
-  .friendsCard { width: 280px; min-width: 280px; }
-  .friendsPoster { height: 160px; }
+  .featuredHeroRow { grid-template-columns: 1fr; gap: 10px; }
+  .featuredPosterHero { height: 160px; }
+  .featuredCompactGrid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .compactPoster { height: 120px; }
   .tabBtn { font-size: 0.9rem; }
   .projectsSection { padding: 16px 16px 60px; }
+  .communitySection { padding: 0 16px 40px; }
+  .communityLayout { grid-template-columns: 1fr; }
+  .communitySidebar { display: none; }
   .projectsGrid { grid-template-columns: 1fr; gap: 12px; }
   .drawerHeader { padding: 14px 16px; }
   .drawerContent { padding: 20px 16px; }
   .drawerTplGrid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .walletSection { padding: 14px; }
+  .walletGrid { grid-template-columns: 1fr; }
+  .walletCardValue { font-size: 0.95rem; }
   .genCard { padding: 32px 24px; min-width: auto; width: 85%; }
 }

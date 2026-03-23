@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import styles from './MazeHomePage.module.css';
+import { Play, Pencil } from 'lucide-react';
 
 /* ── Asset paths ── */
 const C = '/assets/kenney/kenney_new-platformer-pack-1.1/Sprites/Characters/Double';
@@ -47,6 +48,7 @@ function loadImg(src) {
 export default function MazeHomePage() {
   const navigate = useNavigate();
   const canvasRef = useRef(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   /* ── My works state ── */
   const STORAGE_KEY = 'game_drafts_v1';
@@ -392,20 +394,19 @@ export default function MazeHomePage() {
               transition={{ delay: 0.3 }}
               whileTap={{ scale: 0.96 }}
             >
-              <img src={ASSETS.iconPlay} alt="" className={styles.btnIcon} />
+              <Play size={20} fill="currentColor" strokeWidth={0} style={{ marginRight: 2 }} />
               <span>开始游戏</span>
-              <img src={ASSETS.iconArrow} alt="" className={styles.btnIconSmall} />
             </motion.button>
 
             <motion.button
               className={`${styles.btnSecondary} kenneyPanelBeige`}
-              onClick={() => navigate('/maze/creator')}
+              onClick={() => navigate('/maze/ai-maze')}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               whileTap={{ scale: 0.96 }}
             >
-              <img src={ASSETS.iconCreate} alt="" className={styles.btnIcon} />
+              <Pencil size={18} strokeWidth={2.5} style={{ marginRight: 2 }} />
               <span>AI创作游戏</span>
             </motion.button>
           </div>
@@ -451,6 +452,43 @@ export default function MazeHomePage() {
           </motion.div>
         )}
       </div>
+
+      {/* ── Create Game Modal ── */}
+      {showCreateModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+          <motion.div
+            className={styles.createModal}
+            onClick={e => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.2, type: 'spring', stiffness: 300, damping: 25 }}
+          >
+            <button className={styles.modalClose} onClick={() => setShowCreateModal(false)}>×</button>
+            <h2 className={styles.modalTitle}>选择创作类型</h2>
+            <div className={styles.modalCards}>
+              <button
+                className={styles.modalCard}
+                style={{ '--mc-color': '#4FC3F7' }}
+                onClick={() => navigate('/maze/ai-maze')}
+              >
+                <span className={styles.modalCardEmoji}>🌍</span>
+                <span className={styles.modalCardName}>创作迷宫</span>
+                <span className={styles.modalCardAge}>适合 3-6 岁</span>
+              </button>
+              <button
+                className={styles.modalCard}
+                style={{ '--mc-color': '#FF7043' }}
+                onClick={() => navigate('/maze/editor/platformer/medium-1?from=maze-home')}
+              >
+                <span className={styles.modalCardEmoji}>🎮</span>
+                <span className={styles.modalCardName}>创作冒险闯关</span>
+                <span className={styles.modalCardAge}>适合 7-8 岁</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
+

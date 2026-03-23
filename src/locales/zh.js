@@ -6,7 +6,7 @@ export default {
     heroTitle: '创造游戏，如此简单！',
     heroSub: '零代码、AI 驱动的益智游戏创作平台。选择模板、描述想法，一键生成游戏。',
     heroTagline: '面向全年龄用户',
-    createProject: '开始创作游戏',
+    createProject: '创建您的游戏',
     feature2dTitle: '海量素材与模板',
     feature2dDesc: '内置数千 2D/3D 精灵、地图块、音效素材和精选游戏模板，开箱即用，快速启动创作。',
     feature3dTitle: '专业游戏引擎',
