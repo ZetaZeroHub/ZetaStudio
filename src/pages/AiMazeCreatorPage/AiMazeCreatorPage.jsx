@@ -211,7 +211,7 @@ export default function AiMazeCreatorPage() {
     else { cx = e.clientX; cy = e.clientY; }
     const gx = Math.floor((cx - rect.left) * scaleX / CELL_SIZE);
     const gy = Math.floor((cy - rect.top) * scaleY / CELL_SIZE);
-    if (gx < 1 || gx >= GRID_W - 1 || gy < 1 || gy >= GRID_H - 1) return null;
+    if (gx < 0 || gx >= GRID_W || gy < 0 || gy >= GRID_H) return null;
     return { gx, gy };
   };
 
@@ -443,6 +443,77 @@ export default function AiMazeCreatorPage() {
                   </div>
                 </div>
               ))}
+
+              {/* ── AI 描述用法 & 典型例子 ── */}
+              <div className={styles.helpCatSection}>
+                <div className={styles.helpCatHead}>
+                  <img src={`${BGI}/book_open.png`} alt="" className={styles.helpCatIcon} />
+                  <span className={styles.helpCatName}>AI 描述用法</span>
+                </div>
+                <p className={styles.helpCatDesc}>用自然语言描述你想要的迷宫，AI 会自动识别风格、角色、终点和装饰。以下是典型示例：</p>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>🎨 风格关键词</h4>
+                  <div className={styles.helpExampleList}>
+                    <div className={styles.helpExampleItem}><b>森林</b>：森林、树林、丛林、绿色、草地、自然</div>
+                    <div className={styles.helpExampleItem}><b>秋天</b>：秋天、秋季、落叶、枫叶、金色、丰收</div>
+                    <div className={styles.helpExampleItem}><b>冬天</b>：冬天、冰雪、雪地、寒冷、雪花、白雪</div>
+                    <div className={styles.helpExampleItem}><b>糖果</b>：糖果、甜点、蛋糕、棒棒糖、巧克力、奶油</div>
+                    <div className={styles.helpExampleItem}><b>城市</b>：城市、都市、街道、建筑、商店、高楼</div>
+                    <div className={styles.helpExampleItem}><b>村庄</b>：村庄、乡村、小镇、田园、农场、小屋</div>
+                    <div className={styles.helpExampleItem}><b>赛车</b>：赛车、赛道、越野、沙漠、竞速、公路</div>
+                  </div>
+                </div>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>🐤 角色关键词</h4>
+                  <div className={styles.helpExampleList}>
+                    <div className={styles.helpExampleItem}>鸭子、蜜蜂、青蛙、瓢虫、蜗牛、老鼠、毛毛虫</div>
+                    <div className={styles.helpExampleItem}>男孩、女孩 / 公主、巫师 / 魔法师</div>
+                    <div className={styles.helpExampleItem}>赛车 / 小汽车、蓝色赛车</div>
+                  </div>
+                </div>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>🏁 终点关键词</h4>
+                  <div className={styles.helpExampleList}>
+                    <div className={styles.helpExampleItem}>水池 / 池塘、宝箱 / 宝藏、城堡 / 宫殿</div>
+                    <div className={styles.helpExampleItem}>房子 / 家 / 车库、爱心、蛋糕 / 甜品、旗帜 / 终点旗</div>
+                  </div>
+                </div>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>🌳 装饰关键词</h4>
+                  <div className={styles.helpExampleList}>
+                    <div className={styles.helpExampleItem}>松树、花朵、爱心、棒棒糖、宝箱、石头、灌木、路锥</div>
+                  </div>
+                </div>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>✨ 典型提示词示例</h4>
+                  <div className={styles.helpExampleList}>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('小鸭子穿过森林找水池'); setHelpOpen(false); }}>🐤 "小鸭子穿过森林找水池"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('小汽车沙漠越野到车库'); setHelpOpen(false); }}>🚗 "小汽车沙漠越野到车库"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('公主穿过村庄去城堡'); setHelpOpen(false); }}>👸 "公主穿过村庄去城堡"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('巫师在冰雪世界寻找宝藏'); setHelpOpen(false); }}>🧙 "巫师在冰雪世界寻找宝藏"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('蜜蜂在花丛中采蜜飞到蛋糕'); setHelpOpen(false); }}>🐝 "蜜蜂在花丛中采蜜飞到蛋糕"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('青蛙穿过秋天落叶到池塘'); setHelpOpen(false); }}>🐸 "青蛙穿过秋天落叶到池塘"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('男孩在城市街道找到宝箱'); setHelpOpen(false); }}>🧒 "男孩在城市街道找到宝箱"</button>
+                    <button className={styles.helpExampleBtn} onClick={() => { fillPrompt('蜗牛在糖果世界找棒棒糖'); setHelpOpen(false); }}>🐌 "蜗牛在糖果世界找棒棒糖"</button>
+                  </div>
+                </div>
+
+                <div className={styles.helpExampleSection}>
+                  <h4 className={styles.helpExampleTitle}>🔗 智能联合推理</h4>
+                  <div className={styles.helpExampleList}>
+                    <div className={styles.helpExampleItem}>输入 <b>"赛车"</b> → 自动匹配赛道风格 + 房子终点</div>
+                    <div className={styles.helpExampleItem}>输入 <b>"鸭子"</b> → 自动匹配森林风格 + 水池终点</div>
+                    <div className={styles.helpExampleItem}>输入 <b>"公主"</b> → 自动匹配村庄风格 + 城堡终点</div>
+                    <div className={styles.helpExampleItem}>输入 <b>"巫师"</b> → 自动匹配冬天风格 + 城堡终点</div>
+                    <div className={styles.helpExampleItem}>输入 <b>"糖果"</b> → 自动匹配蛋糕终点</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
@@ -508,22 +579,22 @@ export default function AiMazeCreatorPage() {
             </div>
             <textarea
               className={styles.textArea}
-              rows={2}
+              rows={3}
               placeholder="例如：小鸭子穿过森林找水池..."
               value={textInput}
               onChange={e => setTextInput(e.target.value)}
             />
           </div>
 
-          {/* ── Preset prompts ── */}
-          <div className={styles.presetRow}>
+          {/* <div className={styles.presetRow}>
             <button className={styles.presetBtn} onClick={() => applyPreset('小鸭子找水池')}>
               🐤 小鸭子找水池
             </button>
             <button className={styles.presetBtn} onClick={() => applyPreset('小汽车沙漠越野')}>
               🚗 小汽车沙漠越野
             </button>
-          </div>
+          </div> */}
+
 
           {/* Voice input — WeChat style "按住说话" */}
           <div className={styles.voiceSection}>
@@ -539,8 +610,6 @@ export default function AiMazeCreatorPage() {
               <span>{isRecording ? '松开结束' : '按住说话'}</span>
             </button>
           </div>
-
-          {/* ── Canvas size picker ── */}
           <div className={styles.section}>
             <div className={styles.sectionHead}><img src={`${BGI}/dice_3D.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>画布</span></div>
             <div className={styles.sizeRow}>
@@ -553,11 +622,6 @@ export default function AiMazeCreatorPage() {
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════
-             以下 section 暂时注释掉，方便后续快速恢复
-             ══════════════════════════════════════════════ */}
-
-          {/* -- 添加元素 (COMMENTED OUT)
           <div className={styles.section}>
             <div className={styles.sectionHead}><img src={`${BGI}/hand.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>添加元素</span></div>
             <div className={styles.tagGrid}>
@@ -569,9 +633,7 @@ export default function AiMazeCreatorPage() {
               ))}
             </div>
           </div>
-          -- */}
 
-          {/* -- 风格 (COMMENTED OUT)
           <div className={styles.section}>
             <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>风格</span></div>
             <div className={styles.styleGrid}>
@@ -583,9 +645,7 @@ export default function AiMazeCreatorPage() {
               ))}
             </div>
           </div>
-          -- */}
 
-          {/* -- 主角 (COMMENTED OUT)
           <div className={styles.section}>
             <div className={styles.sectionHead}><img src={MAZE_ASSETS.duckDown} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>主角</span></div>
             <div className={styles.charGrid}>
@@ -596,9 +656,7 @@ export default function AiMazeCreatorPage() {
               ))}
             </div>
           </div>
-          -- */}
 
-          {/* -- 终点 (COMMENTED OUT)
           <div className={styles.section}>
             <div className={styles.sectionHead}><img src={`${BGI}/flag_triangle.png`} alt="" className={styles.sectionIcon} /><span className={styles.sectionLabel}>终点</span></div>
             <div className={styles.charGrid}>
@@ -610,7 +668,6 @@ export default function AiMazeCreatorPage() {
               ))}
             </div>
           </div>
-          -- */}
 
           {/* ── Actions: Clear + Generate ── */}
           <div className={styles.actionsRow}>

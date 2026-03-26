@@ -21,8 +21,14 @@
 /* Hide the maze game's own back/nav buttons — we have our own Navbar */
 .mazeFrame [class*="hudBtn"]:first-child,
 .mazeFrame [class*="backBtn"],
-.mazeFrame [class*="topBar"] {
+.mazeFrame [class*="gameBar"] {
   display: none !important;
+}
+
+/* Ensure game HUD (lives/coins/score) stays visible */
+.mazeFrame [class*="gameHud"] {
+  display: flex !important;
+  z-index: 20;
 }
 
 /* Loading state */

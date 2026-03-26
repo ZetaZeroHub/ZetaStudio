@@ -694,6 +694,50 @@
 .helpFillBtn:hover { transform: scale(1.15); }
 .helpFillBtn:active { transform: scale(0.95); }
 
+/* ── Help Example Sections (AI描述用法) ── */
+.helpExampleSection {
+  margin-top: 10px;
+}
+.helpExampleTitle {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #5D4037;
+  margin: 0 0 6px;
+}
+.helpExampleList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.helpExampleItem {
+  font-size: 0.72rem;
+  color: #5a3a1a;
+  line-height: 1.5;
+  padding: 3px 8px;
+  background: rgba(139, 90, 43, 0.06);
+  border-left: 2px solid #D7A34A;
+}
+.helpExampleBtn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #2E7D32;
+  background: rgba(46, 125, 50, 0.06);
+  border: 1px solid rgba(46, 125, 50, 0.15);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.helpExampleBtn:hover {
+  background: rgba(46, 125, 50, 0.15);
+}
+.helpExampleBtn:active {
+  transform: scale(0.98);
+}
+
 /* ── Help responsive ── */
 @media (max-width: 640px) {
   .helpModal { width: 100%; max-width: 100%; max-height: 90vh; }

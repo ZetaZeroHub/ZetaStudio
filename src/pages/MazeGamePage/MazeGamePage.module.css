@@ -77,15 +77,38 @@
   align-items: center;
 }
 
-/* Canvas container */
-.canvasContainer {
+/* Canvas area wrapper — holds both canvas and HUD */
+.canvasArea {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   position: relative;
   overflow: hidden;
   touch-action: none;
+}
+
+/* Canvas container — PixiJS 会清空此 div 的子元素 */
+.canvasContainer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* In-game HUD overlay — 游戏画布内右上角 */
+.gameHud {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  padding: 4px 10px;
+  border-radius: 8px;
+  pointer-events: none;
 }
 
 /* Mobile controls — platform game layout */

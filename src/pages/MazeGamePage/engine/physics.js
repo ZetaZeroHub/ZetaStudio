@@ -329,19 +329,22 @@ export function updateInteractables(interactables, gs, delta, platforms, onDrop,
         }
 
         // Head bump → activate (only once)
-        if (!obj.activated && gs.vy < 0) {
-          const headY = gs.py - PLAYER_H;
-          if (gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
-            if (headY <= obj.y + bH && headY >= obj.y + bH - 12) {
-              obj.activated = true;
-              gs.vy = 1;
-              obj.timer = 10; // bounce animation
-              if (obj.contents && onDrop) {
-                onDrop(obj.contents, obj.x + bW / 2, obj.y - 10);
-              }
+      if (!obj.activated && gs.vy < 0) {
+        const headY = gs.py - PLAYER_H;
+        if (gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (headY <= obj.y + bH && headY >= obj.y + bH - 12) {
+            obj.activated = true;
+            gs.vy = 1;
+            obj.timer = 10; // bounce animation
+            // 随机掉落池
+            const RANDOM_DROPS = ['coin', 'coin', 'coin', 'star', 'weapon_fire', 'heart'];
+            const drop = obj.contents || RANDOM_DROPS[Math.floor(Math.random() * RANDOM_DROPS.length)];
+            if (onDrop) {
+              onDrop(drop, obj.x + bW / 2, obj.y - 10);
             }
           }
         }
+      }
 
         // Bounce animation
         if (obj.timer > 0) {
@@ -358,6 +361,214 @@ export function updateInteractables(interactables, gs, delta, platforms, onDrop,
               gs.px = obj.x + bW + PLAYER_W / 2;
               gs.vx = 0;
             }
+          }
+        }
+        break;
+      }
+
+      // ══════ 金币砖（连续顶出金币） ══════
+      case 'coinBlock': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+
+        // Platform behavior on top
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+            gs.py = obj.y;
+            gs.vy = 0;
+            gs.onGround = true;
+          }
+        }
+
+        // Head bump → drop coin (可多次)
+        if (!obj.depleted && gs.vy < 0) {
+          const headY = gs.py - PLAYER_H;
+          if (gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+            if (headY <= obj.y + bH && headY >= obj.y + bH - 12) {
+              gs.vy = 1;
+              obj.timer = 10;
+              obj.hitCount = (obj.hitCount || 0) + 1;
+              const maxCoins = obj.maxCoins || 5;
+              if (onDrop) onDrop('coin', obj.x + bW / 2, obj.y - 10);
+              if (obj.hitCount >= maxCoins) {
+                obj.depleted = true; // 用完变灰
+              }
+            }
+          }
+        }
+
+        // Bounce animation
+        if (obj.timer > 0) obj.timer -= delta;
+
+        // Side collision
+        if (gs.py > obj.y + 4 && gs.py - PLAYER_H < obj.y + bH - 4) {
+          if (gs.px + PLAYER_W / 2 > obj.x && gs.px - PLAYER_W / 2 < obj.x + bW) {
+            if (gs.vx > 0 && gs.px < obj.x + bW / 2) { gs.px = obj.x - PLAYER_W / 2; gs.vx = 0; }
+            else if (gs.vx < 0 && gs.px > obj.x + bW / 2) { gs.px = obj.x + bW + PLAYER_W / 2; gs.vx = 0; }
+          }
+        }
+        break;
+      }
+
+      // ══════ 坚固砖（需子弹破碎） ══════
+      case 'sturdyBlock': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+
+        // 坚固砖有碰撞体积（SOLID）
+        // Platform on top
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+            gs.py = obj.y;
+            gs.vy = 0;
+            gs.onGround = true;
+          }
+        }
+
+        // Head bump → 弹头但不破
+        if (gs.vy < 0) {
+          const headY = gs.py - PLAYER_H;
+          if (gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+            if (headY <= obj.y + bH && headY >= obj.y + bH - 12) {
+              gs.vy = 1; // 弹回
+              obj.timer = 6; // 轻微震动
+            }
+          }
+        }
+
+        // 子弹命中 → 在 combat.js updateProjectiles 中处理
+        // 此处标记属性供子弹检测
+        obj.isBulletBreakable = true;
+
+        if (obj.timer > 0) obj.timer -= delta;
+
+        // Side collision
+        if (gs.py > obj.y + 4 && gs.py - PLAYER_H < obj.y + bH - 4) {
+          if (gs.px + PLAYER_W / 2 > obj.x && gs.px - PLAYER_W / 2 < obj.x + bW) {
+            if (gs.vx > 0 && gs.px < obj.x + bW / 2) { gs.px = obj.x - PLAYER_W / 2; gs.vx = 0; }
+            else if (gs.vx < 0 && gs.px > obj.x + bW / 2) { gs.px = obj.x + bW + PLAYER_W / 2; gs.vx = 0; }
+          }
+        }
+        break;
+      }
+
+      // ══════ 危险砖（踩到/攻击爆炸） ══════
+      case 'dangerBlock': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+
+        // 爆炸待引爆
+        if (obj.exploding) {
+          obj.explodeTimer = (obj.explodeTimer || 0) + delta;
+          if (obj.explodeTimer > 3) {
+            // 爆炸伤害
+            const cx = obj.x + bW / 2;
+            const cy = obj.y + bH / 2;
+            const px = gs.px;
+            const py = gs.py - PLAYER_H / 2;
+            const dist = Math.sqrt((px - cx) ** 2 + (py - cy) ** 2);
+            if (dist < 60) {
+              damagePlayer(gs, 1, cx, 50);
+            }
+            obj.alive = false;
+            obj.breakAnim = 20;
+          }
+          break;
+        }
+
+        // 碰撞体积
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+            // 踩到 → 触发爆炸
+            obj.exploding = true;
+            obj.explodeTimer = 0;
+            gs.vy = PHYSICS.JUMP_FORCE * 0.5; // 弹起
+          }
+        }
+
+        // Head bump → 也爆炸
+        if (gs.vy < 0) {
+          const headY = gs.py - PLAYER_H;
+          if (gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+            if (headY <= obj.y + bH && headY >= obj.y + bH - 12) {
+              obj.exploding = true;
+              obj.explodeTimer = 0;
+              gs.vy = 1;
+            }
+          }
+        }
+
+        // 子弹命中也可爆炸
+        obj.isBulletBreakable = true;
+
+        // Side collision
+        if (gs.py > obj.y + 4 && gs.py - PLAYER_H < obj.y + bH - 4) {
+          if (gs.px + PLAYER_W / 2 > obj.x && gs.px - PLAYER_W / 2 < obj.x + bW) {
+            if (gs.vx > 0 && gs.px < obj.x + bW / 2) { gs.px = obj.x - PLAYER_W / 2; gs.vx = 0; }
+            else if (gs.vx < 0 && gs.px > obj.x + bW / 2) { gs.px = obj.x + bW + PLAYER_W / 2; gs.vx = 0; }
+          }
+        }
+        break;
+      }
+
+      // ══════ 警告空砖（摇晃后坠落） ══════
+      case 'warningBlock': {
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+
+        // 正在坠落
+        if (obj.isFalling) {
+          obj.fallSpeed = (obj.fallSpeed || 0) + 0.3 * delta;
+          obj.y += obj.fallSpeed * delta;
+          if (obj.y > (gs.worldHeight || 700) + 100) {
+            obj.alive = false;
+          }
+          break;
+        }
+
+        // 正在摇晃
+        if (obj.isShaking) {
+          obj.shakeTimer = (obj.shakeTimer || 0) + delta;
+          // 抖动偏移
+          obj.shakeOffsetX = Math.sin(obj.shakeTimer * 1.5) * 2;
+          obj.shakeOffsetY = Math.cos(obj.shakeTimer * 2) * 1;
+          if (obj.shakeTimer > 40) {
+            // 开始坠落
+            obj.isFalling = true;
+            obj.fallSpeed = 0;
+            obj.shakeOffsetX = 0;
+            obj.shakeOffsetY = 0;
+          }
+          // 摇晃期间仍有碰撞
+          if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+            if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+              gs.py = obj.y;
+              gs.vy = 0;
+              gs.onGround = true;
+            }
+          }
+          break;
+        }
+
+        // 未触发状态 → 有碰撞体积
+        if (gs.vy >= 0 && gs.px + PLAYER_W / 2 > obj.x + 4 && gs.px - PLAYER_W / 2 < obj.x + bW - 4) {
+          if (gs.py >= obj.y && gs.py <= obj.y + 10) {
+            gs.py = obj.y;
+            gs.vy = 0;
+            gs.onGround = true;
+            // 触发摇晃
+            if (!obj.isShaking) {
+              obj.isShaking = true;
+              obj.shakeTimer = 0;
+            }
+          }
+        }
+
+        // Side collision
+        if (gs.py > obj.y + 4 && gs.py - PLAYER_H < obj.y + bH - 4) {
+          if (gs.px + PLAYER_W / 2 > obj.x && gs.px - PLAYER_W / 2 < obj.x + bW) {
+            if (gs.vx > 0 && gs.px < obj.x + bW / 2) { gs.px = obj.x - PLAYER_W / 2; gs.vx = 0; }
+            else if (gs.vx < 0 && gs.px > obj.x + bW / 2) { gs.px = obj.x + bW + PLAYER_W / 2; gs.vx = 0; }
           }
         }
         break;

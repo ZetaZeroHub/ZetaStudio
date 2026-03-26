@@ -387,7 +387,7 @@ export default function MazeHomePage() {
 
           <div className={styles.actions}>
             <motion.button
-              className={`${styles.btnPrimary} kenneyPanelBrown`}
+              className={styles.btnGreen}
               onClick={() => navigate('/maze/difficulty')}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -399,7 +399,7 @@ export default function MazeHomePage() {
             </motion.button>
 
             <motion.button
-              className={`${styles.btnSecondary} kenneyPanelBeige`}
+              className={styles.btnYellow}
               onClick={() => navigate('/maze/ai-maze')}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

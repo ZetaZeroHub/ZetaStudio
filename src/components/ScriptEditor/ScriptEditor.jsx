@@ -1,7 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import Editor from '@monaco-editor/react';
+import Editor, { loader } from '@monaco-editor/react';
+import * as monaco from 'monaco-editor';
 import useEditorStore from '../../stores/editorStore';
 import styles from './ScriptEditor.module.css';
+
+// Use locally installed monaco-editor instead of CDN
+loader.config({ monaco });
 
 export default function ScriptEditor() {
   const { scripts, activeScriptId, setActiveScriptId, addScript, updateScript, removeScript } = useEditorStore();

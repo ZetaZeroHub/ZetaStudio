@@ -25,8 +25,8 @@ export default {
   },
   editor: {
     loading: '项目加载中...',
-    edit: '编排',
-    preview: '预览',
+    edit: '编辑',
+    preview: '开始游戏',
     saved: '已保存',
     save: '保存',
     publish: '发布',

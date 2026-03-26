@@ -10,6 +10,9 @@ import { playClickSound, playSelectSound, playBackSound } from '../../utils/game
 import styles from './MazePathGame.module.css';
 
 const UI = '/assets/kenney/kenney_ui-pack/PNG';
+const COIN_SFX_SRC = '/assets/kenney/kenney_new-platformer-pack-1.1/Sounds/sfx_coin.ogg';
+const COIN_POINTS = { gold: 10, silver: 5, star: 25 };
+const COIN_ASSET_MAP = { gold: 'coinGold', silver: 'coinSilver', star: 'star' };
 
 /* ── 游戏状态机 ── */
 const PHASE = { INTRO: 'intro', DRAWING: 'drawing', WALKING: 'walking', VICTORY: 'victory' };
@@ -106,34 +109,71 @@ function generateSceneDecorations(level) {
     return BUILDING_BLUEPRINTS[0];
   }
 
+  // Pre-compute a set of cells that are on/adjacent to road tiles for clearance
+  const roadNeighborSet = new Set();
+  if (level.grid) {
+    for (let gy = 0; gy < level.gridH; gy++) {
+      for (let gx = 0; gx < level.gridW; gx++) {
+        if (level.grid[gy][gx] > 0) {
+          // Mark this road tile and all 4 neighbors
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              roadNeighborSet.add(`${gx + dx},${gy + dy}`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Track placed cells to enforce minimum spacing (no two decos in adjacent cells)
+  const placedSet = new Set();
+
   const decos = [];
-  const pad = 8;
+  const pad = 6; // Reduced from 8 — sparser outside border
   for (let gy = -pad; gy < level.gridH + pad; gy++) {
     for (let gx = -pad; gx < level.gridW + pad; gx++) {
-      // Skip road/water tiles inside grid
-      if (gx >= 0 && gx < level.gridW && gy >= 0 && gy < level.gridH) {
+      const isInGrid = gx >= 0 && gx < level.gridW && gy >= 0 && gy < level.gridH;
+
+      // Skip road tiles & cells adjacent to roads (keep paths clear)
+      if (isInGrid) {
         if (level.grid[gy][gx] > 0) continue;
+        if (roadNeighborSet.has(`${gx},${gy}`)) continue;
+        // Also skip near player start
         const distToStart = Math.abs(gx - level.playerStart.gx) + Math.abs(gy - level.playerStart.gy);
-        if (distToStart <= 1) continue;
+        if (distToStart <= 2) continue;
       }
-      const isOutside = gx < 0 || gx >= level.gridW || gy < 0 || gy >= level.gridH;
-      const chance = isOutside ? 0.25 : 0.18;
+
+      // Enforce minimum spacing — skip if any neighbor already has a deco
+      let tooClose = false;
+      for (let dy = -1; dy <= 1 && !tooClose; dy++) {
+        for (let dx = -1; dx <= 1 && !tooClose; dx++) {
+          if (dx === 0 && dy === 0) continue;
+          if (placedSet.has(`${gx + dx},${gy + dy}`)) tooClose = true;
+        }
+      }
+      if (tooClose) continue;
+
+      const isOutside = !isInGrid;
+      // Sparser: 15% outside, 10% inside (was 25% / 18%)
+      const chance = isOutside ? 0.15 : 0.10;
       if (rand() > chance) continue;
 
-      // 12% chance to place a compound building instead of a simple deco
-      if (rand() < 0.12) {
+      placedSet.add(`${gx},${gy}`);
+
+      // 6% chance to place a compound building (was 12%)
+      if (rand() < 0.06) {
         const bp = pickBuilding();
         const sc = bp.scale + (rand() - 0.5) * 0.15;
         const offsetX = (rand() - 0.5) * T * 0.3;
         const baseWx = gx * T + T / 2 + offsetX;
         const baseWy = gy * T + T;
-        // blockH = vertical height of one block layer in pixel
-        const blockH = T * sc * 0.55; // ~55% of tile for vertical stacking
+        // blockH: use actual sprite height (128px for Double sprites) scaled
+        const blockH = 128 * sc * 0.42;
         decos.push({
           type: 'compound',
           sprites: bp.layers.map((key, i) => ({
             asset: MAZE_ASSETS[key],
-            // Each layer drawn at: baseY - i * blockH
             yOff: -i * blockH,
           })),
           scale: sc,
@@ -157,6 +197,12 @@ function generateSceneDecorations(level) {
       }
     }
   }
+
+  // Sort all decorations by wy (Y position) for correct perspective occlusion
+  // Items with larger wy (closer to viewer) are drawn later → cover farther items
+  decos.sort((a, b) => a.wy - b.wy);
+
+  console.log(`[MazePathGame] Generated ${decos.length} decorations (grid: ${level.gridW}×${level.gridH})`);
   return decos;
 }
 
@@ -186,8 +232,18 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
   const [elapsed, setElapsed] = useState(0);
   const [phase, setPhase] = useState(PHASE.INTRO);
   const [starCount, setStarCount] = useState(0);
+  const [coinCount, setCoinCount] = useState(0);
+  const [coinScore, setCoinScore] = useState(0);
   const [showHint, setShowHint] = useState(false);
   const showHintRef = useRef(false);
+  const coinSfxRef = useRef(null);
+
+  // Preload coin sound effect
+  useEffect(() => {
+    const audio = new Audio(COIN_SFX_SRC);
+    audio.volume = 0.5;
+    coinSfxRef.current = audio;
+  }, []);
 
   /* ── 预加载图片 ── */
   useEffect(() => {
@@ -198,6 +254,11 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
     // Goal marker icons
     srcs.add('/assets/kenney/kenney_board-game-icons/PNG/Default (64px)/flag_triangle.png');
     srcs.add('/assets/kenney/kenney_board-game-icons/PNG/Default (64px)/award.png');
+    // Coin/star collectible sprites
+    srcs.add(MAZE_ASSETS.coinGold);
+    srcs.add(MAZE_ASSETS.coinSilver);
+    srcs.add(MAZE_ASSETS.star);
+    srcs.add(MAZE_ASSETS.hudCoin);
     // Preload custom ground tiles if present
     if (level.groundTiles) {
       Object.values(level.groundTiles).forEach(v => { if (typeof v === 'string' && v.endsWith('.png')) srcs.add(v); });
@@ -260,11 +321,17 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
       _panLastY: 0,
       // Random scene decorations
       sceneDecorations: generateSceneDecorations(level),
+      // Coins — deep copy so collected state is per-play
+      coins: (level.coins || []).map(c => ({ ...c, collected: false })),
+      coinCount: 0,
+      coinScore: 0,
     };
     setSteps(0);
     setElapsed(0);
     setPhase(PHASE.INTRO);
     setStarCount(0);
+    setCoinCount(0);
+    setCoinScore(0);
     setShowHint(false); showHintRef.current = false;
   }, [loaded, level]);
 
@@ -301,7 +368,7 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
         const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; // easeInOutQuad
 
         // Full-map zoom (see entire maze including start and end)
-        const fitZoom = Math.min(viewW / mapW, viewH / mapH) * 0.92;
+        const fitZoom = Math.min(viewW / mapW, viewH / mapH) * 0.95;
         // Start close to duck (2× fit zoom)
         const closeUpZoom = fitZoom * 2.5;
         const duckCx = gs.duck.px;
@@ -452,17 +519,63 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
         }
       }
 
+      // ── Layer 3.5: Coins on road (bouncing + rotating) ──
+      if (gs.coins) {
+        const now = Date.now();
+        gs.coins.forEach(c => {
+          if (c.collected) return;
+          const assetKey = COIN_ASSET_MAP[c.type];
+          const cImg = imgs[MAZE_ASSETS[assetKey]];
+          if (!cImg) return;
+          const cx = c.gx * T + T / 2;
+          const cy = c.gy * T + T / 2;
+          const bounce = Math.sin(now / 350 + c.gx * 1.7 + c.gy * 2.3) * 4;
+          const pulse = 0.85 + Math.sin(now / 500 + c.gx) * 0.15;
+          const cSize = T * 0.45 * pulse;
+          // Glow
+          ctx.save();
+          ctx.globalAlpha = 0.25;
+          ctx.fillStyle = c.type === 'star' ? '#FFD700' : '#FFC107';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + bounce, cSize * 0.7, cSize * 0.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.drawImage(cImg, cx - cSize / 2, cy - cSize / 2 + bounce, cSize, cSize);
+          ctx.restore();
+        });
+      }
+
       // ── Layer 4: Decorations (level-defined + random scene) ──
       // Collect all decorations with Y-sort key
       const allDecos = [];
       (level.decorations || []).forEach(d => {
-        const dImg = imgs[MAZE_ASSETS[d.type]];
-        if (!dImg) return;
-        const dw = T * 0.7;
-        const dh = dw * (dImg.naturalHeight / dImg.naturalWidth);
-        const dx = d.gx * T + (T - dw) / 2;
-        const dy = d.gy * T + T - dh;
-        allDecos.push({ img: dImg, dx, dy, dw, dh, sortY: d.gy * T + T });
+        if (d.type === 'building' && d.layers) {
+          // Compound stacked building: render wall + window + roof layers
+          const sc = d.scale || 0.9;
+          const dw = T * sc;
+          const baseWx = d.gx * T + T / 2;
+          const baseWy = d.gy * T + T;
+          const blockH = 128 * sc * 0.42;
+          allDecos.push({
+            sortY: baseWy,
+            drawFn: () => {
+              d.layers.forEach((key, i) => {
+                const sImg = imgs[MAZE_ASSETS[key]];
+                if (!sImg) return;
+                const sh = dw * (sImg.naturalHeight / sImg.naturalWidth);
+                ctx.drawImage(sImg, baseWx - dw / 2, baseWy - sh + (-i * blockH), dw, sh);
+              });
+            },
+          });
+        } else {
+          const dImg = imgs[MAZE_ASSETS[d.type]];
+          if (!dImg) return;
+          const dw = T * 0.7;
+          const dh = dw * (dImg.naturalHeight / dImg.naturalWidth);
+          const dx = d.gx * T + (T - dw) / 2;
+          const dy = d.gy * T + T - dh;
+          allDecos.push({ img: dImg, dx, dy, dw, dh, sortY: d.gy * T + T });
+        }
       });
       // Random scene decorations (above-road layer: trees, buildings, characters)
       if (gs.sceneDecorations) {
@@ -787,11 +900,30 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
             gs.footprints.push({ gx: target.gx, gy: target.gy });
             gs.steps++;
             setSteps(gs.steps);
+
+            // Check coin collection at this cell
+            if (gs.coins) {
+              gs.coins.forEach(c => {
+                if (!c.collected && c.gx === target.gx && c.gy === target.gy) {
+                  c.collected = true;
+                  gs.coinCount++;
+                  gs.coinScore += (COIN_POINTS[c.type] || 10);
+                  setCoinCount(gs.coinCount);
+                  setCoinScore(gs.coinScore);
+                  console.log(`[MazePathGame] Collected ${c.type} coin at (${c.gx},${c.gy}), total: ${gs.coinCount}, score: ${gs.coinScore}`);
+                  // Play coin sfx
+                  if (coinSfxRef.current) {
+                    coinSfxRef.current.currentTime = 0;
+                    coinSfxRef.current.play().catch(() => {});
+                  }
+                }
+              });
+            }
             gs.duck.walkIdx++;
 
-            // Follow camera
-            gs.camTarget.x = gs.duck.px;
-            gs.camTarget.y = gs.duck.py;
+            // Camera stays at panoramic view — no auto-follow
+            // gs.camTarget.x = gs.duck.px;
+            // gs.camTarget.y = gs.duck.py;
 
             // Check victory
             if (level.grid[target.gy][target.gx] === 2) {
@@ -1006,11 +1138,17 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
       _panLastY: 0,
       // Random scene decorations
       sceneDecorations: generateSceneDecorations(level),
+      // Coins — reset
+      coins: (level.coins || []).map(c => ({ ...c, collected: false })),
+      coinCount: 0,
+      coinScore: 0,
     };
     setSteps(0);
     setElapsed(0);
     setPhase(PHASE.INTRO);
     setStarCount(0);
+    setCoinCount(0);
+    setCoinScore(0);
   }, [level]);
 
   if (!level) {
@@ -1050,6 +1188,10 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
           <div className={styles.hudStatBox}>
             <span className={styles.hudStatLabel}>时间</span>
             <span className={styles.hudStatVal}>{formatTime(elapsed)}</span>
+          </div>
+          <div className={styles.hudStatBox}>
+            <span className={styles.hudStatLabel}>金币</span>
+            <span className={styles.hudStatVal}>{coinCount}</span>
           </div>
         </div>
 
@@ -1110,6 +1252,10 @@ export default function MazePathGame({ level: levelProp, onBack, onPublish, hide
               <div className={styles.victoryStatItem}>
                 <span className={styles.victoryStatLabel}>时间</span>
                 <span className={styles.victoryStatVal}>{formatTime(elapsed)}</span>
+              </div>
+              <div className={styles.victoryStatItem}>
+                <span className={styles.victoryStatLabel}>金币</span>
+                <span className={styles.victoryStatVal}>{coinCount} ({coinScore}分)</span>
               </div>
             </div>
             <div className={styles.victoryActions}>

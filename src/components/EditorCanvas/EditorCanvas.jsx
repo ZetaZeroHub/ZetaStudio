@@ -5,12 +5,20 @@
    ======================================== */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import * as PIXI from 'pixi.js';
+import { ALL_CATEGORIES, ENEMIES_ASSETS } from '../../data/editorAssets';
 import useGameDraftStore from '../../stores/gameDraftStore';
 import { loadAllPlatformerAssets } from '../../engine/AssetLoader';
 import styles from './EditorCanvas.module.css';
 
 const GRID = 32;
 const TILE_SIZE = 64;
+
+// Build a set of all enemy asset IDs for quick lookup
+const ENEMY_IDS = new Set((ENEMIES_ASSETS?.items || []).map(e => e.id));
+// Map enemy asset ID → enemyType for game engine binding
+const ENEMY_ID_TO_TYPE = Object.fromEntries(
+  (ENEMIES_ASSETS?.items || []).map(e => [e.id, e.enemyType || e.id])
+);
 
 export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }) {
   const containerRef = useRef(null);
@@ -111,6 +119,28 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
     let isPainting = false; // continuous brush painting
     let lastPaintGx = -1, lastPaintGy = -1; // avoid repeat paint same cell
     let dragEl = null; // { kind, index, offsetX, offsetY } for element dragging
+
+    // Helper: clamp pan so you can't drag beyond the world content area
+    const clampPan = (px, py, z) => {
+      const state = useGameDraftStore.getState();
+      const ld = state.currentDraft?.levelData;
+      const ww = ld?.worldWidth || 3800;
+      const wh = ld?.worldHeight || 700;
+      const rect = canvas.getBoundingClientRect();
+      const canvasW = rect.width;
+      const canvasH = rect.height;
+      const margin = 50; // small margin
+      // Don't allow scrolling past left/top edges
+      const maxX = margin;
+      const maxY = margin;
+      // Don't allow scrolling past right/bottom edges
+      const minX = canvasW - ww * z - margin;
+      const minY = canvasH - wh * z - margin;
+      return {
+        x: Math.min(maxX, Math.max(minX, px)),
+        y: Math.min(maxY, Math.max(minY, py)),
+      };
+    };
 
     // Helper: grid coords from pointer event
     const getGrid = (e) => {
@@ -269,12 +299,50 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
         }
       }
 
-      // Element dragging
+      // Element dragging — draw preview ghost shadow at target position
       if (dragEl) {
         didMove = true;
-        // Live visual feedback — update position in store (snapped to grid on up)
         dragEl.currentGx = gx;
         dragEl.currentGy = gy;
+
+        // 绘制拖拽预占阴影
+        const cursor = cursorRef.current;
+        if (cursor) {
+          cursor.clear();
+          // 阴影填充 — 半透明蓝色
+          cursor.beginFill(0x1CB0F6, 0.18);
+          cursor.drawRect(gx, gy, GRID, GRID);
+          cursor.endFill();
+          // 虚线边框效果 — 用短线段模拟
+          cursor.lineStyle(2, 0x1CB0F6, 0.7);
+          const dashLen = 4, gapLen = 3;
+          // 上边
+          for (let dx = 0; dx < GRID; dx += dashLen + gapLen) {
+            cursor.moveTo(gx + dx, gy);
+            cursor.lineTo(gx + Math.min(dx + dashLen, GRID), gy);
+          }
+          // 下边
+          for (let dx = 0; dx < GRID; dx += dashLen + gapLen) {
+            cursor.moveTo(gx + dx, gy + GRID);
+            cursor.lineTo(gx + Math.min(dx + dashLen, GRID), gy + GRID);
+          }
+          // 左边
+          for (let dy = 0; dy < GRID; dy += dashLen + gapLen) {
+            cursor.moveTo(gx, gy + dy);
+            cursor.lineTo(gx, gy + Math.min(dy + dashLen, GRID));
+          }
+          // 右边
+          for (let dy = 0; dy < GRID; dy += dashLen + gapLen) {
+            cursor.moveTo(gx + GRID, gy + dy);
+            cursor.lineTo(gx + GRID, gy + Math.min(dy + dashLen, GRID));
+          }
+          // 中心十字标记
+          cursor.lineStyle(1, 0x1CB0F6, 0.4);
+          cursor.moveTo(gx + GRID / 2 - 6, gy + GRID / 2);
+          cursor.lineTo(gx + GRID / 2 + 6, gy + GRID / 2);
+          cursor.moveTo(gx + GRID / 2, gy + GRID / 2 - 6);
+          cursor.lineTo(gx + GRID / 2, gy + GRID / 2 + 6);
+        }
         return; // Don't pan while dragging
       }
 
@@ -295,8 +363,10 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
         didMove = true;
         const dx = pt.clientX - lastX;
         const dy = pt.clientY - lastY;
-        world.x += dx;
-        world.y += dy;
+        const z = zoomRef.current;
+        const clamped = clampPan(world.x + dx, world.y + dy, z);
+        world.x = clamped.x;
+        world.y = clamped.y;
         panRef.current = { x: world.x, y: world.y };
         lastX = pt.clientX; lastY = pt.clientY;
       }
@@ -429,8 +499,9 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
   const placeTileAtGrid = useCallback((tile, gx, gy) => {
     if (!tile) return;
     const id = tile.id;
-    if (id.startsWith('enemy_')) {
-      addEnemy({ x: gx, y: gy + GRID, type: id, enemyType: id, tileId: id });
+    if (ENEMY_IDS.has(id)) {
+      const enemyType = ENEMY_ID_TO_TYPE[id] || id;
+      addEnemy({ x: gx, y: gy + GRID, type: enemyType, enemyType: id, tileId: id });
     } else if (['coin', 'star', 'gem_blue', 'gem_green', 'gem_red', 'gem_yellow',
                 'coin_silver', 'coin_bronze'].some(k => id.startsWith(k))) {
       const typeMap = { coin: 'coin', coin_silver: 'coin', coin_bronze: 'coin',
@@ -450,7 +521,18 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
                 'lava', 'lava_top', 'water', 'water_top', 'conveyor', 'saw', 'ramp',
                 'lock_', 'lever'].some(k => id.startsWith(k))) {
       // Interactable / special terrain (有物理效果)
-      addInteractable({ x: gx, y: gy, w: GRID, h: GRID, type: id, tileId: id });
+      // 映射 tileId → physics engine type
+      const BLOCK_TYPE_MAP = {
+        block_coin: 'coinBlock',
+        block_strong_coin: 'sturdyBlock',
+        block_strong_exclamation: 'sturdyBlock',
+        block_strong_danger: 'dangerBlock',
+        block_strong: 'sturdyBlock',
+        block_empty_warning: 'warningBlock',
+        block_exclamation: 'questionBlock',
+      };
+      const mappedType = BLOCK_TYPE_MAP[id] || id;
+      addInteractable({ x: gx, y: gy, w: GRID, h: GRID, type: mappedType, tileId: id });
     } else if (id.startsWith('char_')) {
       updateLevelData({ playerStart: { x: gx + 16, y: gy + GRID } });
     } else if (id.startsWith('door_') || id.startsWith('flag')) {
@@ -473,6 +555,13 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
       o.start(ctx.currentTime); o.stop(ctx.currentTime + 0.08);
     } catch (_) {}
+
+    // 每次放置后自动保存（去抖 500ms，避免连续刷时频繁写入）
+    if (placeTileAtGrid._saveTimer) clearTimeout(placeTileAtGrid._saveTimer);
+    placeTileAtGrid._saveTimer = setTimeout(() => {
+      useGameDraftStore.getState().saveDraft();
+      console.log('[EditorCanvas] Auto-saved after tile placement');
+    }, 500);
   }, [addPlatform, addItem, addEnemy, addInteractable, updateLevelData]);
 
   // ── Erase at grid ──
@@ -691,9 +780,17 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       const cx = ld.playerStart.x || 80;
       const cy = ld.playerStart.y || 300;
       const targetZoom = zoom;
+      // Compute target pan centered on playerStart, then clamp to world bounds
+      const rawTargetX = canvasW / 2 - cx * targetZoom;
+      const rawTargetY = canvasH / 2 - cy * targetZoom;
+      const margin = 50;
+      const maxX = margin;
+      const maxY = margin;
+      const minX = canvasW - ww * targetZoom - margin;
+      const minY = canvasH - wh * targetZoom - margin;
       const targetPan = {
-        x: canvasW / 2 - cx * targetZoom,
-        y: canvasH / 2 - cy * targetZoom,
+        x: Math.min(maxX, Math.max(minX, rawTargetX)),
+        y: Math.min(maxY, Math.max(minY, rawTargetY)),
       };
 
       world.scale.set(globalZoom);
@@ -877,10 +974,27 @@ export default function EditorCanvas({ zoom = 1, onElementSelect, onZoomChange }
       world.addChild(makeSprite(getTileTex(texName), (item.x || 0) - 16, (item.y || 0) - 16, 32, 32, 0xFFD700));
     });
 
-    // Enemies (use tileId/enemyType for texture lookup)
+    // Enemies (use id/enemyType for texture lookup from AssetLoader)
     const enemyAssets = assets?.enemies || {};
+    // 构建 tileId(文件名) → assetId(ENEMIES_ASSETS.id) 的反向映射
+    // 解决预置关卡中 tileId='slime_normal_rest' 但 enemyAssets 键为 'slime_normal' 的不匹配问题
+    const ENEMY_TILE_TO_ASSET = {};
+    (ENEMIES_ASSETS.items || []).forEach(item => {
+      // 从 src 提取文件名（不含扩展名）作为 tileId 键
+      const fileName = item.src.split('/').pop().replace('.png', '');
+      ENEMY_TILE_TO_ASSET[fileName] = item.id;
+      // 也用 enemyType 作为键
+      if (item.enemyType) ENEMY_TILE_TO_ASSET[item.enemyType] = item.id;
+    });
     (ld.enemies || []).forEach((en) => {
-      const tex = enemyAssets[en.enemyType || 'slime_normal']?.textures?.default;
+      // 查找顺序: enemyType → 直接匹配 → tileId反向映射 → type作为键 → 兜底slime_normal
+      const lookupKey = en.enemyType
+        || enemyAssets[en.tileId] && en.tileId
+        || ENEMY_TILE_TO_ASSET[en.tileId]
+        || ENEMY_TILE_TO_ASSET[en.type]
+        || en.tileId
+        || 'slime_normal';
+      const tex = enemyAssets[lookupKey]?.textures?.default;
       world.addChild(makeSprite(tex, (en.x || 0) - 16, (en.y || 0) - 32, 32, 32, 0xFF4444));
     });
 

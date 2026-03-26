@@ -8,9 +8,9 @@ import { MAZE_ASSETS } from '../data/topDownLevels';
    画布尺寸预设
    ═══════════════════════════════════════════ */
 export const CANVAS_SIZES = {
-  small:  { gridW: 14, gridH: 10, cellSize: 46, label: '小' },
-  medium: { gridW: 20, gridH: 16, cellSize: 32, label: '中' },
-  large:  { gridW: 28, gridH: 22, cellSize: 24, label: '大' },
+  small:  { gridW: 18, gridH: 8,  cellSize: 46, label: '小' },
+  medium: { gridW: 26, gridH: 12, cellSize: 32, label: '中' },
+  large:  { gridW: 36, gridH: 16, cellSize: 24, label: '大' },
 };
 
 /* ═══════════════════════════════════════════
@@ -576,6 +576,31 @@ export function generateMazeFromPath(userPath, gridW = 18, gridH = 14, style = '
   // 9. Build goal info
   const goalDef = GOAL_TYPES.find(g => g.key === goalType) || GOAL_TYPES[0];
 
+  // 10. Generate collectible coins/stars on road tiles
+  const COIN_TYPES = [
+    { type: 'gold',   weight: 60, points: 10 },
+    { type: 'silver', weight: 25, points: 5 },
+    { type: 'star',   weight: 15, points: 25 },
+  ];
+  const totalCoinWeight = COIN_TYPES.reduce((s, c) => s + c.weight, 0);
+  const coins = [];
+  for (let gy = 0; gy < gridH; gy++) {
+    for (let gx = 0; gx < gridW; gx++) {
+      if (grid[gy][gx] !== 1) continue; // only road tiles (not goal=2)
+      if (gx === start.gx && gy === start.gy) continue; // skip start
+      if (Math.random() > 0.25) continue; // ~25% chance
+      // Pick coin type by weight
+      let r = Math.random() * totalCoinWeight;
+      let coinType = COIN_TYPES[0].type;
+      for (const ct of COIN_TYPES) {
+        r -= ct.weight;
+        if (r <= 0) { coinType = ct.type; break; }
+      }
+      coins.push({ gx, gy, type: coinType });
+    }
+  }
+  console.log('[mazeGenerator] Generated', coins.length, 'coins on road');
+
   const level = {
     id: `ai_maze_${Date.now()}`,
     name: 'AI 创作迷宫',
@@ -586,6 +611,7 @@ export function generateMazeFromPath(userPath, gridW = 18, gridH = 14, style = '
     playerStart: { gx: start.gx, gy: start.gy },
     decorations,
     worldDecorations,
+    coins,
     stars: {
       s3: Math.max(15, userPath.length + 5),
       s2: Math.max(25, userPath.length + 15),

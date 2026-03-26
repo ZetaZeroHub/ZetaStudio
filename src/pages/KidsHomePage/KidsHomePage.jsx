@@ -196,7 +196,7 @@ export default function KidsHomePage({ onSwitchToPro }) {
 
       {/* My Drafts */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>📝 我的草稿</h2>
+        <h2 className={styles.sectionTitle}>📝 我的作品</h2>
         {kidsProjects.length > 0 ? (
           <div className={styles.draftsGrid}>
             {kidsProjects.map((p, i) => (

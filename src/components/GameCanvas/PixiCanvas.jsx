@@ -11,6 +11,8 @@ export default function GameCanvas({ mode, canvasBg }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
   const initIdRef = useRef(0);
+  // 追踪脚本注入的全局事件监听器，卸载时自动清理
+  const scriptListenersRef = useRef([]);
   const [loading, setLoading] = useState(false);
 
   const elements = useEditorStore(s => s.elements);
@@ -33,6 +35,12 @@ export default function GameCanvas({ mode, canvasBg }) {
     if (containerRef.current) {
       containerRef.current.innerHTML = '';
     }
+    // 清理脚本注入的全局事件监听器（keydown/keyup等），防止退出游戏后键盘失效
+    scriptListenersRef.current.forEach(({ target, type, fn }) => {
+      try { target.removeEventListener(type, fn); } catch (e) { /* ignore */ }
+    });
+    scriptListenersRef.current = [];
+    console.log('[PixiCanvas] Cleaned up script-injected listeners');
   }, []);
 
   // Initialize PixiJS app
@@ -100,6 +108,18 @@ export default function GameCanvas({ mode, canvasBg }) {
         const store = useEditorStore.getState();
         const scripts = store.scripts || [];
         
+        // Monkey-patch addEventListener to track script-injected listeners
+        const origWindowAdd = window.addEventListener.bind(window);
+        const origDocAdd = document.addEventListener.bind(document);
+        window.addEventListener = (type, fn, opts) => {
+          scriptListenersRef.current.push({ target: window, type, fn });
+          origWindowAdd(type, fn, opts);
+        };
+        document.addEventListener = (type, fn, opts) => {
+          scriptListenersRef.current.push({ target: document, type, fn });
+          origDocAdd(type, fn, opts);
+        };
+
         // Execute scripts safely
         scripts.forEach(script => {
           try {
@@ -135,6 +155,11 @@ export default function GameCanvas({ mode, canvasBg }) {
             console.error(`Error executing script "${script.name}":`, err);
           }
         });
+
+        // 恢复原始 addEventListener
+        window.addEventListener = origWindowAdd;
+        document.addEventListener = origDocAdd;
+        console.log(`[PixiCanvas] Tracked ${scriptListenersRef.current.length} script-injected listeners`);
       }
 
       // Draw selection box for selected element

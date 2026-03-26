@@ -60,6 +60,10 @@ export function createEnemySprite(en) {
     x: en.x,
     y: en.y,
     vx: 0,
+    vy: 0,                          // 垂直速度（重力系统）
+    onPlatform: false,               // 是否站在平台上
+    gravityEnabled: !def.flying,     // 非飞行敌人启用重力
+    hasLanded: false,                // 是否已首次着陆
     type: en.type,
     element: en.element || def.element,
     startX: en.x,
@@ -73,7 +77,7 @@ export function createEnemySprite(en) {
     flying: !!def.flying,
     score: def.score,
     color: def.color,
-    behavior: def.behavior,
+    behavior: en.behavior || def.behavior,  // 允许覆盖行为
     isBoss: !!def.isBoss,
     bossPhase: 0,
     phaseThresholds: def.phaseThresholds || [],
@@ -84,6 +88,7 @@ export function createEnemySprite(en) {
     jumpPhase: 0,
     isShell: false,
     shellVx: 0,
+    bounceTimer: 0,                  // bounce行为计时
     // BOSS-specific
     chargeVx: 0,
     isCharging: false,
@@ -106,15 +111,19 @@ export function createEnemySprite(en) {
     trappedTimer: 0,
     // Hit flash
     hitFlash: 0,
-    weaknessFlash: 0,    // 属性衰减闪烁
-    weaknessText: '',     // "效果微弱！"
+    weaknessFlash: 0,
+    weaknessText: '',
   };
 }
 
 /**
- * Update enemy AI behavior
+ * Update enemy AI behavior (with gravity physics)
+ * @param {object} enemy
+ * @param {object} gs - game state
+ * @param {number} delta
+ * @param {Array} platforms - level platforms for gravity collision
  */
-export function updateEnemyAI(enemy, gs, delta) {
+export function updateEnemyAI(enemy, gs, delta, platforms) {
   if (!enemy.alive) return;
 
   // ── Bubble trap: freeze enemy ──
@@ -131,6 +140,42 @@ export function updateEnemyAI(enemy, gs, delta) {
   if (enemy.weaknessFlash > 0) enemy.weaknessFlash -= delta;
   if (enemy.hitFlash > 0) enemy.hitFlash -= delta;
 
+  // ── 重力物理系统（非飞行敌人） ──
+  if (enemy.gravityEnabled && platforms) {
+    // 应用重力
+    enemy.vy = (enemy.vy || 0) + 0.35 * delta;
+    if (enemy.vy > 10) enemy.vy = 10; // 终端速度
+    enemy.y += enemy.vy * delta;
+    enemy.onPlatform = false;
+
+    // 平台碰撞检测
+    const eW = 24; // 敌人碰撞宽度
+    for (const p of platforms) {
+      const pH = p.h || (p.y >= 500 ? 200 : 16);
+      // 水平重叠检测
+      if (enemy.x + eW / 2 > p.x + 4 && enemy.x - eW / 2 < p.x + p.w - 4) {
+        // 着陆在平台顶部
+        if (enemy.vy >= 0 && enemy.y >= p.y && enemy.y <= p.y + 20) {
+          enemy.y = p.y;
+          enemy.vy = 0;
+          enemy.onPlatform = true;
+          // 首次着陆后更新起始Y（用于巡逻高度基准）
+          if (!enemy.hasLanded) {
+            enemy.hasLanded = true;
+            enemy.startY = enemy.y;
+          }
+        }
+      }
+    }
+
+    // 坠落出世界 → 标记死亡
+    if (enemy.y > (gs.worldHeight || 700) + 100) {
+      enemy.alive = false;
+      if (enemy.gfx) enemy.gfx.visible = false;
+      return;
+    }
+  }
+
   switch (enemy.behavior) {
     case 'crawl':
       // Worm: slow direct crawl
@@ -142,6 +187,18 @@ export function updateEnemyAI(enemy, gs, delta) {
       // Slime: patrol with bounce
       enemy.x += enemy.speed * enemy.dir * delta;
       if (Math.abs(enemy.x - enemy.startX) > enemy.patrolRange) enemy.dir *= -1;
+      break;
+
+    case 'bounce':
+      // 巡逻+弹跳效果（如方块史莱姆）
+      enemy.x += enemy.speed * enemy.dir * delta;
+      if (Math.abs(enemy.x - enemy.startX) > enemy.patrolRange) enemy.dir *= -1;
+      enemy.bounceTimer = (enemy.bounceTimer || 0) + delta;
+      if (enemy.bounceTimer > 40 && enemy.onPlatform) {
+        enemy.vy = -5; // 小跳
+        enemy.onPlatform = false;
+        enemy.bounceTimer = 0;
+      }
       break;
 
     case 'jump':
@@ -390,7 +447,7 @@ export function fireProjectile(gs, worldLayer, elementId, aimAngle) {
 /**
  * Update projectiles: physics (gravity drop), trail spawning, lifetime, enemy hits, terrain collision
  */
-export function updateProjectiles(projectiles, enemies, gs, delta, worldLayer, setScore, platforms) {
+export function updateProjectiles(projectiles, enemies, gs, delta, worldLayer, setScore, platforms, interactables) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const b = projectiles[i];
 
@@ -501,6 +558,55 @@ export function updateProjectiles(projectiles, enemies, gs, delta, worldLayer, s
         }
         worldLayer.removeChild(b.gfx);
         projectiles.splice(i, 1);
+        continue;
+      }
+    }
+
+    // ── Interactable collision — bullets break sturdy/danger blocks ──
+    if (interactables) {
+      let hitBlock = false;
+      for (const obj of interactables) {
+        if (!obj.alive || !obj.isBulletBreakable) continue;
+        const bW = obj.w || 32;
+        const bH = obj.h || 32;
+        if (b.x > obj.x && b.x < obj.x + bW && b.y > obj.y && b.y < obj.y + bH) {
+          hitBlock = true;
+          if (obj.type === 'sturdyBlock') {
+            // 破碎 + 掉落奖励
+            obj.alive = false;
+            obj.breakAnim = 20;
+            gs.score += 10;
+            if (setScore) setScore(s => s + 10);
+          } else if (obj.type === 'dangerBlock') {
+            // 触发爆炸
+            obj.exploding = true;
+            obj.explodeTimer = 0;
+          }
+          break;
+        }
+      }
+      if (hitBlock) {
+        // Impact particles
+        for (let sp = 0; sp < 4; sp++) {
+          const spark = {
+            gfx: new PIXI.Graphics(),
+            x: b.x, y: b.y,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 3 - 1,
+            life: 20,
+            isParticle: true,
+          };
+          spark.gfx.beginFill(0xFF8800, 0.8);
+          spark.gfx.drawCircle(0, 0, 3);
+          spark.gfx.endFill();
+          spark.gfx.x = b.x;
+          spark.gfx.y = b.y;
+          worldLayer.addChild(spark.gfx);
+          projectiles.push(spark);
+        }
+        worldLayer.removeChild(b.gfx);
+        projectiles.splice(i, 1);
+        playSound('enemyHit', 0.3);
         continue;
       }
     }

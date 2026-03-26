@@ -86,7 +86,7 @@ export default function GameEditorPage() {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
   const [rightPanelOpen, setRightPanelOpen] = useState(isDesktop);
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.5);
   // AI panel resizable width
   const cachedW = typeof window !== 'undefined' ? parseInt(localStorage.getItem('gameEditorAiWidth') || '320', 10) : 320;
   const [aiPanelWidth, setAiPanelWidth] = useState(Math.max(200, Math.min(cachedW, 600)));
@@ -96,27 +96,33 @@ export default function GameEditorPage() {
   // Selected element for property editing
   const [selectedElement, setSelectedElement] = useState(null);
 
-  // Load drafts on mount
-  useEffect(() => { loadDrafts(); }, []);
-
-  // Initialize: open existing draft or create NEW independent draft from level template
+  // Load drafts on mount, then open/create draft — merged to avoid race condition
+  // (openDraft needs drafts to already be loaded from localStorage)
   useEffect(() => {
-    // Default tool to select
+    loadDrafts(); // synchronous: sets drafts from localStorage immediately
     setSelectedTool('select');
     if (draftId) {
       // Opening an existing draft for re-editing
       console.log('[GameEditorPage] Opening existing draft:', draftId);
+      // loadDrafts已在上面同步完成，此时drafts已就绪
       openDraft(draftId);
     } else if (templateType && levelId) {
       // Always create a NEW independent draft from the level template
-      // Never reuse existing drafts — each creation is independent
       const baseLevel = getLevelById(levelId);
       if (baseLevel) {
         console.log('[GameEditorPage] Creating NEW independent draft from template:', levelId);
         createDraft(`${baseLevel.name} - 编辑版`, templateType, baseLevel);
       }
     }
-    return () => closeDraft();
+    return () => {
+      // 离开编辑器前自动保存，防止数据丢失
+      const state = useGameDraftStore.getState();
+      if (state.currentDraft) {
+        console.log('[GameEditorPage] Auto-saving on unmount');
+        state.saveDraft();
+      }
+      closeDraft();
+    };
   }, [draftId, templateType, levelId]);
 
   // Keep panel open by default for discoverability
@@ -171,14 +177,14 @@ export default function GameEditorPage() {
       publishDraft(name); // also keep in draft store
       playSaveSound();
       setSaveModalOpen(false);
-      setPublishToast('🎉 已发布到我的作品！');
+      setPublishToast('✅ 已保存到我的作品！');
       console.log('[GameEditorPage] Published to pro projectStore:', project.id);
       setTimeout(() => navigate('/'), 1500);
     } else {
       publishDraft(name);
       playSaveSound();
       setSaveModalOpen(false);
-      setPublishToast('🎉 作品已发布！（模拟）');
+      setPublishToast('✅ 作品已保存！');
       console.log('[GameEditorPage] Level published (simulated):', currentDraft?.id);
       setTimeout(() => setPublishToast(''), 3000);
     }
@@ -213,12 +219,12 @@ export default function GameEditorPage() {
   const handlePlayTest = () => {
     playClick();
     if (currentDraft) saveDraft();
-    // Use draft ID route to play the draft, NOT the baseLevelId
-    // This prevents drafts from overriding official levels
     const draftIdToPlay = currentDraft?.id;
     if (draftIdToPlay) {
       console.log('[GameEditorPage] Play testing draft:', draftIdToPlay);
-      navigate(`/maze/play-draft/${draftIdToPlay}`);
+      // 始终传 from=pro，确保 MazeGamePage goBack 导航到 /maze/editor/draft/:id
+      // 而非回到 template 路由（template 路由会创建新草稿导致数据丢失）
+      navigate(`/maze/play-draft/${draftIdToPlay}?from=pro`);
     }
   };
 
@@ -262,12 +268,12 @@ export default function GameEditorPage() {
           {/* My Saves dropdown */}
           <div className={styles.savesDropdownWrap}>
             <button className={styles.savesToggle} onClick={() => { playClick(); setSavesOpen(!savesOpen); }}>
-              <FileDown size={14} /> <span>我的保存 {currentSaves.length > 0 && `(${currentSaves.length})`}</span>
+              <FileDown size={14} /> <span>修改记录 {currentSaves.length > 0 && `(${currentSaves.length})`}</span>
             </button>
             {savesOpen && (
               <div className={styles.savesDropdown}>
                 {currentSaves.length === 0 ? (
-                  <div className={styles.savesEmpty}>暂无保存记录</div>
+                  <div className={styles.savesEmpty}>暂无修改记录</div>
                 ) : (
                   currentSaves.map(s => (
                     <div key={s.id} className={styles.saveItem} onClick={() => handleLoadSave(s.id)}>
@@ -280,13 +286,9 @@ export default function GameEditorPage() {
               </div>
             )}
           </div>
-          {/* Save button — direct save, no popup */}
-          <button className={styles.quickSaveBtn} onClick={handleManualSave}>
-            <Save size={14} /> <span>保存</span>
-          </button>
           <button className={styles.saveBtn} onClick={handlePublishClick}>
-            {saving ? <CheckCircle2 size={16} /> : <Upload size={16} />}
-            <span>{saving ? '已发布' : '发布'}</span>
+            {saving ? <CheckCircle2 size={16} /> : <Save size={16} />}
+            <span>{saving ? '已保存' : '保存'}</span>
           </button>
           <button
             className={`${styles.aiBtn} ${rightPanelOpen ? styles.aiBtnActive : ''}`}
@@ -332,9 +334,14 @@ export default function GameEditorPage() {
                         style={{ '--tpl-color': tpl.color }}
                         onClick={() => {
                           if (currentDraft?.levelData?.id === tpl.id) return;
+                          // ⚠️ 切换模板风险提示
+                          const confirmed = window.confirm(
+                            '⚠️ 切换关卡模板将清空当前画布的所有修改记录，并重新生成一个全新的关卡。\n\n确定要切换吗？'
+                          );
+                          if (!confirmed) return;
                           playClick();
                           // Save current draft then navigate to the new template
-                          saveRecord();
+                          saveDraft();
                           navigate(`/maze/editor/platformer/${tpl.id}?from=maze-home`, { replace: true });
                         }}
                       >
@@ -466,7 +473,55 @@ export default function GameEditorPage() {
                   )}
                   {selectedElement.kind === 'enemy' && (
                     <div className={styles.propHint}>
-                      💡 敌人类型: {selectedElement.data?.enemyType || '史莱姆'} · 可设置巡逻范围
+                      <div style={{ marginBottom: 6 }}>
+                        💡 敌人类型: {selectedElement.data?.enemyType || '史莱姆'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <label style={{ fontSize: 12, opacity: 0.7, minWidth: 60 }}>行为模式</label>
+                        <select
+                          value={selectedElement.data?.behavior || 'patrol'}
+                          onChange={(e) => {
+                            const { updateEnemy } = useGameDraftStore.getState();
+                            updateEnemy(selectedElement.index, { behavior: e.target.value });
+                            setSelectedElement(prev => ({
+                              ...prev,
+                              data: { ...prev.data, behavior: e.target.value },
+                            }));
+                          }}
+                          className={styles.propInput}
+                          style={{ flex: 1, cursor: 'pointer' }}
+                        >
+                          <option value="crawl">🐛 爬行</option>
+                          <option value="patrol">🔄 左右巡逻</option>
+                          <option value="jump">🐸 跳跃</option>
+                          <option value="fly">🦇 飞行</option>
+                          <option value="bounce">⬆️ 巡逻+弹跳</option>
+                          <option value="armor">🐢 护甲(龟壳)</option>
+                          <option value="phase">👻 穿越(幽灵)</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ fontSize: 12, opacity: 0.7, minWidth: 60 }}>巡逻范围</label>
+                        <input
+                          type="number"
+                          value={selectedElement.data?.patrolRange || 120}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 120;
+                            const { updateEnemy } = useGameDraftStore.getState();
+                            updateEnemy(selectedElement.index, { patrolRange: val });
+                            setSelectedElement(prev => ({
+                              ...prev,
+                              data: { ...prev.data, patrolRange: val },
+                            }));
+                          }}
+                          className={styles.propInput}
+                          style={{ flex: 1, width: 60 }}
+                          min={30}
+                          max={500}
+                          step={10}
+                        />
+                        <span style={{ fontSize: 11, opacity: 0.5 }}>px</span>
+                      </div>
                     </div>
                   )}
                   {selectedElement.kind === 'interactable' && (
@@ -547,7 +602,7 @@ export default function GameEditorPage() {
                   title="配置 AI 模型"
                 >⚙️</button>
               </div>
-              <AiPanel />
+              <AiPanel initialPrompt={location.state?.aiPrompt} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -570,8 +625,8 @@ export default function GameEditorPage() {
               exit={{ scale: 0.8, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className={styles.saveModalTitle}>🚀 发布作品</h3>
-              <p className={styles.saveModalDesc}>发布后将在「我的创作」中展示</p>
+              <h3 className={styles.saveModalTitle}>保存作品</h3>
+              <p className={styles.saveModalDesc}>保存后将在作品」中展示</p>
               <input
                 type="text"
                 className={styles.saveModalInput}
@@ -583,7 +638,7 @@ export default function GameEditorPage() {
               />
               <div className={styles.saveModalActions}>
                 <button className={styles.publishBtn} onClick={handlePublishLevel}>
-                  <Upload size={16} /> 发布作品
+                  <Save size={16} /> 保存作品
                 </button>
                 <button className={styles.saveModalCancel} onClick={() => setSaveModalOpen(false)}>取消</button>
               </div>

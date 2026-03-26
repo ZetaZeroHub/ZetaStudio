@@ -241,12 +241,26 @@ export const DOORS = {
 export const ENEMIES_ASSETS = {
   label: '👾 敌人',
   items: [
-    { id: 'enemy_a_idle', name: '蜗牛', src: `${E}/enemy_a_idle.png` },
-    { id: 'enemy_b_idle', name: '蓝蝙蝠', src: `${E}/enemy_b_idle.png` },
-    { id: 'enemy_c_idle', name: '绿虫', src: `${E}/enemy_c_idle.png` },
-    { id: 'enemy_d_idle', name: '橙史莱姆', src: `${E}/enemy_d_idle.png` },
-    { id: 'enemy_e_idle', name: '紫怪', src: `${E}/enemy_e_idle.png` },
-    { id: 'enemy_mushroom_idle', name: '🍄 蘑菇怪', src: `${E}/enemy_mushroom_idle.png` },
+    // ── 地面敌人 ──
+    { id: 'slime_normal',  name: '绿史莱姆',  src: `${E}/slime_normal_rest.png`,  enemyType: 'slime' },
+    { id: 'slime_fire',    name: '火史莱姆',   src: `${E}/slime_fire_rest.png`,    enemyType: 'slime_fire' },
+    { id: 'slime_spike',   name: '刺史莱姆',   src: `${E}/slime_spike_rest.png`,   enemyType: 'slime_spike' },
+    { id: 'slime_block',   name: '方块史莱姆', src: `${E}/slime_block_rest.png`,   enemyType: 'slime_block' },
+    { id: 'snail',         name: '蜗牛',       src: `${E}/snail_rest.png`,         enemyType: 'snail' },
+    { id: 'mouse',         name: '老鼠',       src: `${E}/mouse_rest.png`,         enemyType: 'mouse' },
+    { id: 'frog',          name: '青蛙',       src: `${E}/frog_idle.png`,          enemyType: 'frog' },
+    { id: 'ladybug',       name: '瓢虫',       src: `${E}/ladybug_rest.png`,       enemyType: 'ladybug' },
+    { id: 'worm_normal',   name: '蠕虫',       src: `${E}/worm_normal_rest.png`,   enemyType: 'worm' },
+    { id: 'worm_ring',     name: '环虫',       src: `${E}/worm_ring_rest.png`,     enemyType: 'worm_ring' },
+    { id: 'barnacle',      name: '藤壶',       src: `${E}/barnacle_attack_rest.png`, enemyType: 'barnacle' },
+    // ── 飞行敌人 ──
+    { id: 'bee',           name: '蜜蜂',       src: `${E}/bee_rest.png`,           enemyType: 'bee' },
+    { id: 'fly',           name: '苍蝇',       src: `${E}/fly_rest.png`,           enemyType: 'fly_enemy' },
+    // ── 机关型敌人 ──
+    { id: 'saw_enemy',     name: '锯齿怪',     src: `${E}/saw_rest.png`,           enemyType: 'saw_enemy' },
+    { id: 'block_enemy',   name: '石块怪',     src: `${E}/block_rest.png`,         enemyType: 'block_enemy' },
+    // ── 水域敌人 ──
+    { id: 'fish_blue',     name: '蓝鱼',       src: `${E}/fish_blue_rest.png`,     enemyType: 'fish' },
   ],
 };
 

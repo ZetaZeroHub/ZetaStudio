@@ -29,7 +29,9 @@ export default function TopDownGamePage() {
     if (k === 'arrowleft' || k === 'a') keysRef.current.left = true;
     if (k === 'arrowright' || k === 'd') keysRef.current.right = true;
     if (k === 'e') keysRef.current.e = true;
-    e.preventDefault();
+    // 仅对游戏按键调用 preventDefault
+    const gameKeys = ['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d','e',' '];
+    if (gameKeys.includes(k)) e.preventDefault();
   }, []);
 
   const handleKeyUp = useCallback((e) => {

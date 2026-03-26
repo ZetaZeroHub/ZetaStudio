@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Crosshair, ArrowRight, Sparkles, Bot, X, Loader2, CheckSquare, Square, ArrowUpDown, Filter, Swords, Map, Layers, Cpu, Wallet, Coins, TrendingUp, Eye, Heart, MessageCircle, Link2, Palette, GraduationCap, Trophy, BookOpen, User, Star } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, Rocket, Brain, MessageSquare, Box, Crosshair, ArrowRight, Sparkles, Bot, X, Loader2, CheckSquare, Square, ArrowUpDown, Filter, Swords, Map, Layers, Cpu, Wallet, Coins, TrendingUp, Eye, Heart, MessageCircle, Link2, Palette, GraduationCap, Trophy, BookOpen, User, Star, ChevronDown, Upload, ImageIcon, FileText, Send } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
 import ParticleField from '../../components/ParticleField/ParticleField';
 import useProjectStore from '../../stores/projectStore';
@@ -31,148 +32,187 @@ function SkeletonImg({ src, alt, className, style }) {
 const FEATURED_GAMES = [
   {
     id: 'featured-maze',
-    title: '横版闯关',
-    titleEn: 'Side-Scroll Adventure',
-    desc: '打败怪物、收集宝物、挑战 Boss，成为小英雄',
-    descEn: 'Defeat enemies, collect treasures, challenge bosses',
-    poster: '/assets/custom/精选游戏-游戏封面-横版闯关.png',
+    title: '绿洲大冒险 · 官方示范',
+    titleEn: 'Oasis Adventure · Official Demo',
+    desc: '官方精心打磨的横版闯关示范关卡，包含完整的敌人AI、BOSS战和商人系统',
+    descEn: 'Official demo level with full enemy AI, boss fights and merchant system',
+    poster: '/assets/custom/精选游戏-游戏封面-绿洲大冒险.jpeg',
     templateType: 'mazeAdventure',
     dimension: '2D',
-    tag: '2D',
+    tag: '官方精选',
+    author: '管理员',
+    authorTag: 'official',
+    publishedAt: '2026-03-20',
     route: '/play-maze/platformer/medium-1',
   },
   {
     id: 'featured-duck',
-    title: '小鸭子找水池',
-    titleEn: 'Duck Finds Pond',
-    desc: '用手指帮小鸭子画出一条路，走到水池去游泳',
-    descEn: 'Draw a path for the little duck to reach the pond',
+    title: '小鸭子找水池 · 官方示范',
+    titleEn: 'Duck Finds Pond · Official',
+    desc: '官方出品的超可爱互动小游戏，用手指帮小鸭子画出一条路~',
+    descEn: 'An adorable interactive game — draw a path for the duck',
     poster: '/assets/custom/精选游戏-游戏封面-小鸭子找水池.jpg',
     templateType: 'duckPond',
     dimension: '2D',
-    tag: '2D',
+    tag: '官方精选',
+    author: '管理员',
+    authorTag: 'official',
+    publishedAt: '2026-03-18',
     route: '/play-maze/topdown/maze-1',
   },
   {
     id: 'featured-tank',
-    title: '坦克大战',
-    titleEn: 'Tank Battle',
-    desc: '驾驶坦克击破敌方阵地，保卫基地',
-    descEn: 'Drive your tank, destroy enemies and protect the base',
+    title: '练习封装的坦克小游戏',
+    titleEn: 'My Tank Battle Practice',
+    desc: '第一次用 AI 生成的坦克对战，操控还有点生硬哈哈',
+    descEn: 'First AI-generated tank battle, controls are a bit rough haha',
     poster: '/assets/custom/朋友们的游戏-游戏封面-坦克大战.png',
     templateType: 'tankBattle',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '小明同学',
+    authorTag: 'user',
+    publishedAt: '2026-03-22',
   },
   {
     id: 'featured-balloon',
-    title: '气球射击',
-    titleEn: 'Balloon Pop',
-    desc: '瞄准天空中飘过的气球，比拼你的反应速度',
-    descEn: 'Pop the balloons floating across the sky',
+    title: '午休时候做的打气球',
+    titleEn: 'Lunch Break Balloon Pop',
+    desc: '午休无聊随手做的，没想到还挺上头的',
+    descEn: 'Made during lunch break, turned out pretty fun',
     poster: '/assets/custom/朋友们的游戏-游戏封面-气球射击.png',
     templateType: 'balloonPop',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '游戏小王子',
+    authorTag: 'user',
+    publishedAt: '2026-03-21',
   },
   {
     id: 'featured-tetris',
-    title: '俄罗斯方块',
-    titleEn: 'Tetris',
-    desc: '经典俄罗斯方块，消除整行方块拿高分',
-    descEn: 'Classic Tetris — clear rows and chase the high score',
+    title: '复刻经典俄罗斯方块',
+    titleEn: 'Classic Tetris Remake',
+    desc: '用 AI 复刻了童年记忆中的俄罗斯方块，居然还能玩！',
+    descEn: 'Remade childhood Tetris with AI, and it actually works!',
     poster: '/assets/custom/朋友们的游戏-游戏封面-俄罗斯方块.png',
     templateType: 'tetris',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '代码菜鸟',
+    authorTag: 'user',
+    publishedAt: '2026-03-19',
   },
   {
     id: 'featured-breakout',
-    title: '打砖块',
-    titleEn: 'Breakout',
-    desc: '用弹球击碎所有砖块，考验你的操控精度',
-    descEn: 'Smash all the bricks with a bouncing ball',
+    title: '我做的打砖块小游戏',
+    titleEn: 'My Breakout Game',
+    desc: '第一次做游戏，就选了最简单的打砖块，感觉还不错',
+    descEn: 'First game ever, picked the simplest one — Breakout',
     poster: '/assets/custom/朋友们的游戏-游戏封面-打砖块.png',
     templateType: 'breakout',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '新手小白',
+    authorTag: 'user',
+    publishedAt: '2026-03-17',
   },
   {
     id: 'featured-memory',
-    title: '记忆翻牌',
-    titleEn: 'Memory Card',
-    desc: '翻开卡片配对相同图案，训练你的记忆力',
-    descEn: 'Flip cards and match pairs to train your memory',
+    title: '给女儿做的记忆翻牌',
+    titleEn: 'Memory Cards for My Daughter',
+    desc: '女儿说想玩翻牌游戏，爸爸用 AI 十分钟就做好了',
+    descEn: 'My daughter wanted a card game, made it in 10 min with AI',
     poster: '/assets/custom/朋友们的游戏-游戏封面-记忆翻牌.png',
     templateType: 'memoryCard',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '戴眼镜的爸爸',
+    authorTag: 'user',
+    publishedAt: '2026-03-16',
   },
   {
     id: 'featured-whackmole',
-    title: '打地鼠',
-    titleEn: 'Whack-a-Mole',
-    desc: '地鼠冒头就打，手速越快分数越高',
-    descEn: 'Whack the moles as they pop up — speed is key',
+    title: '超好玩的打地鼠！',
+    titleEn: 'Super Fun Whack-a-Mole!',
+    desc: '我跟 AI 说“做个打地鼠”，然后它就做出来了，太神了',
+    descEn: 'I said "make whack-a-mole" to AI and it just... did it',
     poster: '/assets/custom/朋友们的游戏-游戏封面-打地鼠.png',
     templateType: 'whackMole',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: 'AI玩家007',
+    authorTag: 'user',
+    publishedAt: '2026-03-15',
   },
   {
     id: 'featured-fruitcatch',
-    title: '接水果',
-    titleEn: 'Fruit Catch',
-    desc: '用篮子接住掉落的水果，别让它们落地',
-    descEn: 'Catch the falling fruits with your basket',
+    title: '接水果小游戏（v2）',
+    titleEn: 'Fruit Catch (v2)',
+    desc: '第二版增加了炸弹和加速功能，比第一版难多了',
+    descEn: 'v2 adds bombs and speed boost, way harder than v1',
     poster: '/assets/custom/朋友们的游戏-游戏封面-接水果.png',
     templateType: 'fruitCatch',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '小游戏达人',
+    authorTag: 'user',
+    publishedAt: '2026-03-14',
   },
   {
     id: 'featured-counting',
-    title: '数数乐',
-    titleEn: 'Counting Fun',
-    desc: '和可爱动物一起学数数，寓教于乐',
-    descEn: 'Learn counting with cute animals',
+    title: '宝宝学数字',
+    titleEn: 'Number Learning for Kids',
+    desc: '给两岁宝宝做的数字启蒙小游戏，动物动画很可爱',
+    descEn: 'Number learning game for my 2-year-old, cute animal animations',
     poster: '/assets/custom/朋友们的游戏-游戏封面-数数乐.png',
     templateType: 'counting',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '妈妈程序员',
+    authorTag: 'user',
+    publishedAt: '2026-03-13',
   },
   {
     id: 'featured-colorbook',
-    title: '涂色本',
-    titleEn: 'Color Book',
-    desc: '发挥想象力，给各种图案涂上喜欢的颜色',
-    descEn: 'Color beautiful patterns with your imagination',
+    title: '我的涂色乐园',
+    titleEn: 'My Coloring Paradise',
+    desc: '给幼儿园小朋友们做的涂色本，老师说很棒！',
+    descEn: 'Coloring book for kindergarten kids, teacher approved!',
     poster: '/assets/custom/朋友们的游戏-游戏封面-涂色本.png',
     templateType: 'colorBook',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '幼教小李',
+    authorTag: 'user',
+    publishedAt: '2026-03-12',
   },
   {
     id: 'featured-animalquiz',
-    title: '动物认知',
-    titleEn: 'Animal Quiz',
-    desc: '认识各种动物，看看你能答对多少',
-    descEn: 'Identify animals and test your knowledge',
+    title: '动物认识小课堂',
+    titleEn: 'Animal Quiz Classroom',
+    desc: '用 AI 做的动物认知游戏，小朋友们都爱玩',
+    descEn: 'AI-made animal quiz, kids love it',
     poster: '/assets/custom/朋友们的游戏-游戏封面-动物认知.png',
     templateType: 'animalQuiz',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '科学小队长',
+    authorTag: 'user',
+    publishedAt: '2026-03-10',
   },
   {
-    id: 'featured-maze',
-    title: '迷宫冒险',
-    titleEn: 'Maze Adventure',
-    desc: '在迷宫中寻找出口，挑战你的方向感',
-    descEn: 'Find your way out of the maze',
+    id: 'featured-maze2',
+    title: '迷宫大挑战（超难）',
+    titleEn: 'Maze Challenge (Hard Mode)',
+    desc: '挑战了一下最难的迷宫配置，居然真的很难啊',
+    descEn: 'Tried the hardest maze config, it\'s actually really hard',
     poster: '/assets/custom/朋友们的游戏-游戏封面-迷宫冒险.png',
     templateType: 'maze',
     dimension: '2D',
-    tag: '2D',
+    tag: '社区作品',
+    author: '迷宫爱好者',
+    authorTag: 'user',
+    publishedAt: '2026-03-08',
   },
 ];
 
@@ -225,6 +265,95 @@ const GEN_STEPS = [
   { zh: '导入脚本资源...', en: 'Loading scripts...' },
 ];
 
+/* ── Prompt Gallery: popular community prompts with configurable dropdowns ── */
+const PROMPT_TEMPLATES = [
+  {
+    id: 'platformer-adventure',
+    title: '横版闯关冒险',
+    hot: 2847,
+    tag: '最受欢迎',
+    segments: [
+      { type: 'text', value: '我要做一个类似马里奥的横版闯关冒险游戏。主角是' },
+      { type: 'dropdown', key: 'hero', options: ['绿色太空人', '紫色太空人', '粉色太空人', '米色太空人', '黄色太空人'], default: 0 },
+      { type: 'text', value: '，地图背景是' },
+      { type: 'dropdown', key: 'bg', options: ['森林绿洲', '沙漠黄沙', '海滩蓝天', '蘑菇仙境'], default: 0 },
+      { type: 'text', value: '，地形材质用' },
+      { type: 'dropdown', key: 'terrain', options: ['草地', '沙地', '石块', '雪地', '泥土', '紫玉'], default: 0 },
+      { type: 'text', value: '。主角拥有三段跳和360°泡泡弹射击能力。关卡包含' },
+      { type: 'dropdown', key: 'enemies', options: ['1~3个敌人（简单）', '3~5个敌人（中等）', '5~8个敌人（困难）'], default: 1 },
+      { type: 'text', value: '（如青蛙、瓢虫、蜜蜂），沿途散布金币引导路径，高处平台放置红心回血道具。在中后段设置一个商人NPC，玩家可购买生命、护盾等补给。关卡末尾设置BOSS战，需要' },
+      { type: 'dropdown', key: 'boss', options: ['3次攻击击败（简单）', '5次攻击击败（中等）', '8次攻击击败（困难）'], default: 1 },
+      { type: 'text', value: '。难度曲线：从左到右逐步增加高度和跳跃难度。' },
+    ],
+  },
+  {
+    id: 'coin-speedrun',
+    title: '金币竞速挑战',
+    hot: 1563,
+    tag: '热门',
+    segments: [
+      { type: 'text', value: '设计一个限时金币收集竞速关卡。地图背景' },
+      { type: 'dropdown', key: 'bg', options: ['森林绿洲', '海滩蓝天', '沙漠黄沙'], default: 0 },
+      { type: 'text', value: '，全图散布' },
+      { type: 'dropdown', key: 'coins', options: ['30枚金币（轻松）', '50枚金币（中等）', '80枚金币（挑战）'], default: 1 },
+      { type: 'text', value: '形成引导路径，没有敌人，纯平台跳跃挑战，浮台材质' },
+      { type: 'dropdown', key: 'terrain', options: ['草地', '沙地', '石块'], default: 0 },
+      { type: 'text', value: '，高低交错分布，玩家需要在' },
+      { type: 'dropdown', key: 'time', options: ['60秒', '90秒', '120秒'], default: 1 },
+      { type: 'text', value: '内收集尽可能多的金币。' },
+    ],
+  },
+  {
+    id: 'platform-obstacle',
+    title: '平台跳跃障碍赛',
+    hot: 1204,
+    tag: '精选',
+    segments: [
+      { type: 'text', value: '设计一个纯平台跳跃障碍赛关卡。主角' },
+      { type: 'dropdown', key: 'hero', options: ['绿色太空人', '粉色太空人', '紫色太空人'], default: 0 },
+      { type: 'text', value: '，地图风格' },
+      { type: 'dropdown', key: 'bg', options: ['糖果城堡', '雪地极地', '沙漠峡谷'], default: 0 },
+      { type: 'text', value: '，地面有大量间隙，需要通过' },
+      { type: 'dropdown', key: 'platforms', options: ['5个浮台（简单）', '8个浮台（中等）', '12个浮台（困难）'], default: 1 },
+      { type: 'text', value: '跳跃通过，浮台宽度' },
+      { type: 'dropdown', key: 'width', options: ['宽（容易）', '中等', '窄（困难）'], default: 1 },
+      { type: 'text', value: '，高处浮台放置宝石奖励，终点设置大型金币彩蛋。' },
+    ],
+  },
+  {
+    id: 'boss-rush',
+    title: 'BOSS 突袭战',
+    hot: 980,
+    tag: '挑战',
+    segments: [
+      { type: 'text', value: '设计一个BOSS突袭战关卡。场景背景' },
+      { type: 'dropdown', key: 'bg', options: ['沙漠绿洲', '森林深处', '糖果迷城'], default: 0 },
+      { type: 'text', value: '，关卡开始即为空旷竞技场，BOSS类型' },
+      { type: 'dropdown', key: 'bossType', options: ['树精王（蓄力冲锋）', '海王蟹（高跳砸地）', '糖果巫师（闪现攻击）', '沙漠蝎王（钻地追踪）'], default: 0 },
+      { type: 'text', value: '，BOSS血量' },
+      { type: 'dropdown', key: 'bossHp', options: ['5（简单）', '8（中等）', '12（困难）'], default: 1 },
+      { type: 'text', value: '，场地周围放置弹簧和少量回血道具作为辅助。' },
+    ],
+  },
+  {
+    id: 'explore-garden',
+    title: '探索采集花园',
+    hot: 756,
+    tag: '休闲',
+    segments: [
+      { type: 'text', value: '设计一个开放式探索花园关卡。主角' },
+      { type: 'dropdown', key: 'hero', options: ['米色太空人', '黄色太空人', '绿色太空人'], default: 0 },
+      { type: 'text', value: '，场景' },
+      { type: 'dropdown', key: 'bg', options: ['森林绿洲', '蘑菇仙境', '海滩乐园'], default: 0 },
+      { type: 'text', value: '，不设敌人，主打探索和收集，放置' },
+      { type: 'dropdown', key: 'items', options: ['3种收集品（简单）', '5种收集品（中等）', '8种收集品（丰富）'], default: 1 },
+      { type: 'text', value: '（金币、宝石、星星、钥匙），多个隐藏区域通过跳跃平台到达，地图分' },
+      { type: 'dropdown', key: 'layers', options: ['上下两层', '三层立体'], default: 0 },
+      { type: 'text', value: '结构。' },
+    ],
+  },
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
   const { projects, loadAllProjects, createProject, deleteProject } = useProjectStore();
@@ -236,11 +365,19 @@ export default function HomePage() {
   const [genStep, setGenStep] = useState(0);
   const [activeTab, setActiveTab] = useState('featured');
   const [tplCategory, setTplCategory] = useState('all'); // all | adventure | 2d | 3d
+  const [showPromptGallery, setShowPromptGallery] = useState(false);
+  const [promptSelections, setPromptSelections] = useState({});
+  const [openChipKey, setOpenChipKey] = useState(null); // tracks which chip popup is open
+  const [drawerReady, setDrawerReady] = useState(false); // true after drawer open animation completes
   // Project management
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [sortBy, setSortBy] = useState('newest'); // newest | oldest | name
   const [filterDim, setFilterDim] = useState('all'); // all | 2D | 3D
   const [selectMode, setSelectMode] = useState(false);
+  // Publish-to-library modal
+  const [publishModalProject, setPublishModalProject] = useState(null);
+  const [publishForm, setPublishForm] = useState({ name: '', desc: '', screenshot: '', cover: '' });
+
 
   useEffect(() => { loadAllProjects(); }, []);
 
@@ -261,7 +398,8 @@ export default function HomePage() {
         _isMazeDraft: true,
       }));
     } catch (e) { /* ignore */ }
-    let list = [...projects, ...mazeDrafts];
+    // 过滤掉 temporary 项目（社区游戏预览产生的临时项目，未经用户保存）
+    let list = [...projects.filter(p => !p.temporary), ...mazeDrafts];
     if (filterDim !== 'all') {
       list = list.filter(p => (p.dimension || '2D') === filterDim);
     }
@@ -313,7 +451,7 @@ export default function HomePage() {
     },
     {
       templateType: 'topdown',
-      name: 'AI迷宫创作',
+      name: '迷宫创作',
       description: 'AI辅助创作俯视角迷宫游戏，画路线、选风格、一键生成',
       dimension: '2D',
       editorCategory: 'adventure',
@@ -374,10 +512,25 @@ export default function HomePage() {
     });
   };
 
+  // ── Cascade close: gallery first, then drawer ──
+  const closeDrawer = useCallback(() => {
+    if (showPromptGallery) {
+      setShowPromptGallery(false);
+      // Wait for gallery exit animation before closing drawer
+      setTimeout(() => {
+        setDrawerOpen(false);
+        setDrawerReady(false);
+      }, 280);
+    } else {
+      setDrawerOpen(false);
+      setDrawerReady(false);
+    }
+  }, [showPromptGallery]);
+
   const handleTemplateCreate = (tpl) => {
     // Special route for maze/topdown games
     if (tpl.route) {
-      setDrawerOpen(false);
+      closeDrawer();
       navigate(tpl.route);
       return;
     }
@@ -389,7 +542,7 @@ export default function HomePage() {
       elements: template.elements,
       scripts: template.scripts,
     });
-    setDrawerOpen(false);
+    closeDrawer();
     navigate(`/editor/${project.id}`);
   };
 
@@ -402,9 +555,11 @@ export default function HomePage() {
     const name = language === 'zh' ? game.title : game.titleEn;
     const project = createProject(name, game.templateType, game.dimension);
     const template = getTemplate(game.templateType);
+    // 标记为临时项目，不在「我的作品」中显示，直到用户手动保存
     useProjectStore.getState().updateProject(project.id, {
       elements: template.elements,
       scripts: template.scripts,
+      temporary: true,
     });
     navigate(`/play/${project.id}`);
   };
@@ -413,31 +568,63 @@ export default function HomePage() {
     const name = language === 'zh' ? tpl.name : tpl.templateType;
     const project = createProject(name, tpl.templateType, '2D');
     const template = getTemplate(tpl.templateType);
+    // 标记为临时项目，不在「我的作品」中显示，直到用户手动保存
     useProjectStore.getState().updateProject(project.id, {
       elements: template.elements,
       scripts: template.scripts,
+      temporary: true,
     });
     navigate(`/play/${project.id}`);
   };
 
+  // Build full prompt text from a template + current dropdown selections
+  const buildPromptText = useCallback((template) => {
+    return template.segments.map(seg => {
+      if (seg.type === 'text') return seg.value;
+      const selKey = `${template.id}_${seg.key}`;
+      const idx = promptSelections[selKey] ?? seg.default;
+      return seg.options[idx] || seg.options[0];
+    }).join('');
+  }, [promptSelections]);
+
+  const handleUsePrompt = useCallback((template) => {
+    setAiInput(buildPromptText(template));
+    setShowPromptGallery(false);
+  }, [buildPromptText]);
+
+  const handlePromptSelect = useCallback((templateId, key, value) => {
+    setPromptSelections(prev => ({ ...prev, [`${templateId}_${key}`]: parseInt(value, 10) }));
+  }, []);
+
+  // Publish toast
+  const [publishToast, setPublishToast] = useState(null);
+
+  // Publish a draft to the public library (simulated — only shows toast)
+  const handlePublishToLibrary = useCallback(() => {
+    if (!publishModalProject || !publishForm.name.trim()) return;
+    const gameName = publishForm.name.trim();
+    setPublishModalProject(null);
+    setPublishForm({ name: '', desc: '', screenshot: '', cover: '' });
+    // Show success toast
+    setPublishToast(gameName);
+    setTimeout(() => setPublishToast(null), 2500);
+    console.log('[Publish] 模拟发布成功:', gameName);
+  }, [publishModalProject, publishForm]);
+
   const handleAiGenerate = async () => {
     if (!aiInput.trim()) return;
+    const prompt = aiInput.trim();
     setGenerating(true);
     setGenStep(0);
     for (let i = 0; i < GEN_STEPS.length; i++) {
       setGenStep(i);
       await new Promise(r => setTimeout(r, 1200));
     }
-    const project = createProject(aiInput.trim().slice(0, 20), 'platformer', '2D');
-    const template = getTemplate('platformer');
-    useProjectStore.getState().updateProject(project.id, {
-      elements: template.elements,
-      scripts: template.scripts,
-    });
     setGenerating(false);
-    setDrawerOpen(false);
+    closeDrawer();
     setAiInput('');
-    navigate(`/editor/${project.id}`);
+    // Navigate to 横版闯关 editor with AI prompt
+    navigate('/maze/editor/platformer/medium-1?from=pro', { state: { aiPrompt: prompt } });
   };
 
   const deleteMazeDraft = (id) => {
@@ -530,7 +717,7 @@ export default function HomePage() {
               className={`${styles.tabBtn} ${activeTab === 'featured' ? styles.tabBtnActive : ''}`}
               onClick={() => setActiveTab('featured')}
             >
-              {language === 'zh' ? '精选游戏' : 'Featured'}
+              {language === 'zh' ? '游戏社区' : 'Featured'}
             </button>
             <span className={styles.tabDivider}>/</span>
             <button
@@ -557,10 +744,17 @@ export default function HomePage() {
                   <div className={styles.featuredPosterHero}>
                     <SkeletonImg src={game.poster} alt={game.title} className={styles.featuredImg} />
                     <div className={styles.featuredOverlayHero}>
-                      <span className={styles.featuredTag}>{game.tag}</span>
+                      <span className={`${styles.featuredTag} ${game.authorTag === 'official' ? styles.featuredTagOfficial : ''}`}>{game.tag}</span>
                       <div className={styles.heroTextBlock}>
                         <h3 className={styles.heroGameTitle}>{language === 'zh' ? game.title : game.titleEn}</h3>
                         <p className={styles.heroGameDesc}>{language === 'zh' ? game.desc : game.descEn}</p>
+                        <div className={styles.heroAuthorRow}>
+                          <span className={`${styles.authorBadge} ${game.authorTag === 'official' ? styles.authorBadgeOfficial : styles.authorBadgeUser}`}>
+                            {game.authorTag === 'official' ? '官方' : '用户'}
+                          </span>
+                          <span className={styles.authorName}>{game.author}</span>
+                          <span className={styles.publishDate}>{game.publishedAt}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -578,10 +772,18 @@ export default function HomePage() {
                 >
                   <div className={styles.compactPoster}>
                     <SkeletonImg src={game.poster} alt={game.title} className={styles.featuredImg} />
+                    <span className={`${styles.compactTag} ${game.authorTag === 'official' ? styles.compactTagOfficial : ''}`}>{game.tag}</span>
                   </div>
                   <div className={styles.compactBody}>
                     <h4 className={styles.compactTitle}>{language === 'zh' ? game.title : game.titleEn}</h4>
                     <p className={styles.compactDesc}>{language === 'zh' ? game.desc : game.descEn}</p>
+                    <div className={styles.compactAuthorRow}>
+                      <span className={`${styles.authorBadge} ${game.authorTag === 'official' ? styles.authorBadgeOfficial : styles.authorBadgeUser}`}>
+                        {game.authorTag === 'official' ? '官方' : '用户'}
+                      </span>
+                      <span className={styles.authorName}>{game.author}</span>
+                      <span className={styles.publishDate}>{game.publishedAt}</span>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -681,11 +883,26 @@ export default function HomePage() {
                       </div>
                       <div className={styles.projectMeta}>
                         <span>{formatDate(p.updatedAt)}</span>
-                        {!selectMode && (
-                          <button className={styles.delBtn} onClick={(e) => handleDelete(e, p.id)}>
-                            <Trash2 size={13} />
-                          </button>
-                        )}
+                        <div className={styles.projectActions}>
+                          {!selectMode && (
+                            <button
+                              className={styles.publishBtn}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPublishForm({ name: p.name, desc: '', screenshot: '', cover: '' });
+                                setPublishModalProject(p);
+                              }}
+                            >
+                              <Send size={12} />
+                              {language === 'zh' ? '发布' : 'Publish'}
+                            </button>
+                          )}
+                          {!selectMode && (
+                            <button className={styles.delBtn} onClick={(e) => handleDelete(e, p.id)}>
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -872,7 +1089,7 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setDrawerOpen(false)}
+              onClick={closeDrawer}
             />
             <motion.div
               className={styles.drawer}
@@ -880,10 +1097,11 @@ export default function HomePage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              onAnimationComplete={() => { if (drawerOpen) setDrawerReady(true); }}
             >
               <div className={styles.drawerHeader}>
                 <h2 className={styles.drawerTitle}>{language === 'zh' ? '创作工作台' : 'Creator Workbench'}</h2>
-                <button className={styles.drawerClose} onClick={() => setDrawerOpen(false)}>
+                <button className={styles.drawerClose} onClick={closeDrawer}>
                   <X size={22} />
                 </button>
               </div>
@@ -894,7 +1112,7 @@ export default function HomePage() {
                   <div className={styles.wbSectionHeader}>
                     <div className={styles.wbSectionIcon}><Cpu size={16} /></div>
                     <div>
-                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? 'AI 智能助手' : 'AI Smart Assistant'}</h3>
+                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? 'AI 游戏生成引擎' : 'AI Smart Assistant'}</h3>
                       <p className={styles.wbSectionSub}>{language === 'zh' ? '核心生产力入口 · 描述你的游戏创意' : 'Core productivity — describe your game idea'}</p>
                     </div>
                   </div>
@@ -905,6 +1123,7 @@ export default function HomePage() {
                       value={aiInput}
                       onChange={e => setAiInput(e.target.value)}
                       rows={3}
+                      onFocus={() => drawerReady && setShowPromptGallery(true)}
                     />
                   </div>
                   <button
@@ -969,7 +1188,7 @@ export default function HomePage() {
                   <div className={styles.wbSectionHeader}>
                     <div className={`${styles.wbSectionIcon} ${styles.wbIconTeal}`}><Layers size={16} /></div>
                     <div>
-                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? '海量益智游戏模板' : 'Game Templates'}</h3>
+                      <h3 className={styles.wbSectionTitle}>{language === 'zh' ? '海量游戏模板' : 'Game Templates'}</h3>
                       <p className={styles.wbSectionSub}>{language === 'zh' ? '在成熟框架上发起二次创作' : 'Build upon proven frameworks'}</p>
                     </div>
                   </div>
@@ -1005,6 +1224,97 @@ export default function HomePage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* ── Secondary Drawer: Prompt Gallery ── */}
+            {/* Rendered as sibling (not child) of drawer so z-index layers independently */}
+            <AnimatePresence>
+              {showPromptGallery && (
+                <motion.div
+                  className={styles.promptGallery}
+                  initial={{ x: '100%', opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: '100%', opacity: 0 }}
+                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                >
+                  <div className={styles.pgHeader}>
+                    <div className={styles.pgHeaderLeft}>
+                      <Sparkles size={16} />
+                      <h3 className={styles.pgTitle}>Prompt 灵感广场</h3>
+                      <span className={styles.pgBadge}>{PROMPT_TEMPLATES.length} 个模板</span>
+                    </div>
+                    <button className={styles.pgClose} onClick={() => setShowPromptGallery(false)}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className={styles.pgBody} onClick={() => setOpenChipKey(null)}>
+                    {PROMPT_TEMPLATES.map((tpl, rank) => (
+                      <div key={tpl.id} className={styles.pgCard}>
+                        <div className={styles.pgCardHeader}>
+                          <span className={`${styles.pgRank} ${rank === 0 ? styles.pgRankTop : ''}`}>
+                            #{rank + 1}
+                          </span>
+                          <span className={styles.pgCardTitle}>{tpl.title}</span>
+                          <span className={styles.pgTag}>{tpl.tag}</span>
+                          <span className={styles.pgHot}>🔥 {tpl.hot.toLocaleString()}</span>
+                        </div>
+                        <div className={styles.pgCardBody}>
+                          {tpl.segments.map((seg, si) => {
+                            if (seg.type === 'text') {
+                              return <span key={si}>{seg.value}</span>;
+                            }
+                            const selKey = `${tpl.id}_${seg.key}`;
+                            const selIdx = promptSelections[selKey] ?? seg.default;
+                            const currentOpt = seg.options[selIdx] || seg.options[0];
+                            const isOpen = openChipKey === selKey;
+                            return (
+                              <span
+                                key={si}
+                                className={styles.pgChipWrap}
+                              >
+                                <span
+                                  className={`${styles.pgChip} ${isOpen ? styles.pgChipActive : ''}`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenChipKey(isOpen ? null : selKey);
+                                  }}
+                                >
+                                  {currentOpt}
+                                  <ChevronDown size={10} className={styles.pgChipIcon} />
+                                </span>
+                                {isOpen && (
+                                  <div className={styles.pgPopup}>
+                                    {seg.options.map((opt, oi) => (
+                                      <div
+                                        key={oi}
+                                        className={`${styles.pgPopupItem} ${oi === selIdx ? styles.pgPopupItemActive : ''}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handlePromptSelect(tpl.id, seg.key, oi);
+                                          setOpenChipKey(null);
+                                        }}
+                                      >
+                                        {opt}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <button
+                          className={styles.pgUseBtn}
+                          onClick={() => handleUsePrompt(tpl)}
+                        >
+                          使用此提示词
+                          <ArrowRight size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </AnimatePresence>
@@ -1027,6 +1337,162 @@ export default function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Publish Modal ── */}
+      <AnimatePresence>
+        {publishModalProject && (
+          <motion.div
+              className={styles.publishOverlay}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPublishModalProject(null)}
+            >
+            <motion.div
+              className={styles.publishModal}
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.92, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 340 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className={styles.publishHeader}>
+                <h3 className={styles.publishTitle}>
+                  <Send size={16} />
+                  {language === 'zh' ? '发布到游戏社区' : 'Publish to Library'}
+                </h3>
+                <button className={styles.publishClose} onClick={() => setPublishModalProject(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className={styles.publishBody}>
+                <div className={styles.publishField}>
+                  <label className={styles.publishLabel}>
+                    <FileText size={13} />
+                    {language === 'zh' ? '游戏名称' : 'Game Name'}
+                  </label>
+                  <input
+                    className={styles.publishInput}
+                    value={publishForm.name}
+                    onChange={e => setPublishForm(f => ({ ...f, name: e.target.value }))}
+                    placeholder={language === 'zh' ? '给你的游戏起个名字...' : 'Name your game...'}
+                  />
+                </div>
+
+                <div className={styles.publishField}>
+                  <label className={styles.publishLabel}>
+                    <FileText size={13} />
+                    {language === 'zh' ? '游戏描述' : 'Description'}
+                  </label>
+                  <textarea
+                    className={styles.publishTextarea}
+                    value={publishForm.desc}
+                    onChange={e => setPublishForm(f => ({ ...f, desc: e.target.value }))}
+                    placeholder={language === 'zh' ? '用一句话介绍你的游戏...' : 'Describe your game in one sentence...'}
+                    rows={2}
+                  />
+                </div>
+
+                <div className={styles.publishField}>
+                  <label className={styles.publishLabel}>
+                    <ImageIcon size={13} />
+                    {language === 'zh' ? '游戏内截图' : 'Screenshot'}
+                  </label>
+                  <div className={styles.publishUploadZone}>
+                    {publishForm.screenshot ? (
+                      <img src={publishForm.screenshot} alt="screenshot" className={styles.publishPreviewImg} />
+                    ) : (
+                      <div className={styles.publishUploadPlaceholder}>
+                        <Upload size={20} />
+                        <span>{language === 'zh' ? '点击或拖拽上传截图' : 'Click or drag to upload'}</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={styles.publishFileInput}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = ev => setPublishForm(f => ({ ...f, screenshot: ev.target.result }));
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.publishField}>
+                  <label className={styles.publishLabel}>
+                    <ImageIcon size={13} />
+                    {language === 'zh' ? '游戏封面' : 'Cover Image'}
+                  </label>
+                  <div className={styles.publishUploadZone}>
+                    {publishForm.cover ? (
+                      <img src={publishForm.cover} alt="cover" className={styles.publishPreviewImg} />
+                    ) : (
+                      <div className={styles.publishUploadPlaceholder}>
+                        <Upload size={20} />
+                        <span>{language === 'zh' ? '点击或拖拽上传封面' : 'Click or drag to upload cover'}</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className={styles.publishFileInput}
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = ev => setPublishForm(f => ({ ...f, cover: ev.target.result }));
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.publishFooter}>
+                <button className={styles.publishCancelBtn} onClick={() => setPublishModalProject(null)}>
+                  {language === 'zh' ? '取消' : 'Cancel'}
+                </button>
+                <button
+                  className={styles.publishSubmitBtn}
+                  disabled={!publishForm.name.trim()}
+                  onClick={handlePublishToLibrary}
+                >
+                  <Send size={14} />
+                  {language === 'zh' ? '确认发布' : 'Publish'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Publish Success Toast (portal to body to avoid transform offset) ── */}
+      {createPortal(
+        <AnimatePresence>
+          {publishToast && (
+            <div className={styles.publishToastContainer}>
+              <motion.div
+                className={styles.publishToast}
+                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+              >
+                <Sparkles size={16} />
+                <span>{language === 'zh' ? `「${publishToast}」发布成功！` : `"${publishToast}" published!`}</span>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

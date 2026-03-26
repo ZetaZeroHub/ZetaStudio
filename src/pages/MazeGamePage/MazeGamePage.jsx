@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, RotateCcw, ArrowRight, ChevronLeft, ChevronRight, Heart, Coins } from 'lucide-react';
 import * as PIXI from 'pixi.js';
@@ -8,6 +8,7 @@ import { ELEMENTS, getUnlockedElements } from '../../data/elements';
 import { drawKnight, drawEnemy, drawItem, drawDoor, drawBubble, drawPortal, drawLockedDoor, drawWaterPit, drawInteractable } from './engine/renderer';
 import { PHYSICS, applyInput, applyGravity, moveX, moveY, checkFallDeath, updateCamera, initInteractables, updateInteractables } from './engine/physics';
 import { createEnemySprite, updateEnemyAI, fireProjectile, updateProjectiles, checkEnemyCollisions, collectItems, WEAPON_MODES, WEAPON_ORDER, cycleWeapon } from './engine/combat';
+import ENEMY_DEFS, { BOSS_DEFS } from '../../data/enemies';
 import { loadAllPlatformerAssets } from '../../engine/AssetLoader';
 import { createCharacterAnimator, createEnemyAnimator, getCharacterState } from '../../engine/SpriteAnimator';
 import { playSound, preloadSounds } from './engine/audioManager';
@@ -26,6 +27,16 @@ const MERCHANT_ITEMS = [
 export default function MazeGamePage() {
   const { levelId, draftId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromPro = location.search?.includes('from=pro');
+  // Back handler: go to draft editor (preserves saves) or browser history
+  const goBack = useCallback(() => {
+    if (fromPro && draftId) {
+      navigate(`/maze/editor/draft/${draftId}?from=pro`);
+    } else {
+      navigate(-1);
+    }
+  }, [fromPro, draftId, navigate]);
   const canvasRef = useRef(null);
   const appRef = useRef(null);
   const gsRef = useRef(null);
@@ -360,12 +371,9 @@ export default function MazeGamePage() {
       const enemies = level.enemies.map(en => {
         const enemy = createEnemySprite(en);
 
-        // Try to create Kenney sprite enemy
-        const kenneyEnemyType = {
-          slime: 'slime_normal', bat: 'bee', frog: 'frog',
-          spider: 'ladybug', worm: 'worm_normal', turtle: 'snail',
-          ghost: 'fly', mushroom: 'slime_fire',
-        }[en.type] || 'slime_normal';
+        // Resolve Kenney sprite type from ENEMY_DEFS kenneySprite field
+        const def = ENEMY_DEFS[en.type] || ENEMY_DEFS.slime;
+        const kenneyEnemyType = def.kenneySprite || 'slime_normal';
 
         const enemyData = kenneyAssets?.enemies?.[kenneyEnemyType];
         if (enemyData) {
@@ -392,9 +400,10 @@ export default function MazeGamePage() {
         const boss = createEnemySprite({ ...level.boss, isBoss: true });
         boss.isBoss = true;
 
-        // Visual: larger slime sprite or vector
-        const bossKenneyType = {
-          treant: 'slime_normal', crab: 'slime_normal',
+        // Resolve BOSS sprite from BOSS_DEFS or ENEMY_DEFS kenneySprite
+        const bossDef = BOSS_DEFS[level.boss.type] || ENEMY_DEFS[level.boss.type] || ENEMY_DEFS.slime;
+        const bossKenneyType = bossDef.kenneySprite || {
+          treant: 'slime_spike', crab: 'slime_block',
           witch: 'fly', scorpion: 'slime_fire',
         }[level.boss.type] || 'slime_normal';
         const bossData = kenneyAssets?.enemies?.[bossKenneyType];
@@ -672,7 +681,7 @@ export default function MazeGamePage() {
         }
 
         // Update projectiles & enemy hits
-        updateProjectiles(projectiles, enemies, gs, delta, worldLayer, setScore, level.platforms);
+        updateProjectiles(projectiles, enemies, gs, delta, worldLayer, setScore, level.platforms, interactableData);
 
         // Collect items
         collectItems(itemSprites, level.items, gs, setCoins, setScore, setHp);
@@ -754,7 +763,7 @@ export default function MazeGamePage() {
         });
 
         // Enemy AI
-        enemies.forEach(en => updateEnemyAI(en, gs, delta));
+        enemies.forEach(en => updateEnemyAI(en, gs, delta, level.platforms));
 
         // Player-enemy collisions
         checkEnemyCollisions(enemies, gs, delta, setHp, setScore, setGameOver);
@@ -1050,8 +1059,14 @@ export default function MazeGamePage() {
 
   // Keyboard — support mouse click to shoot on desktop
   useEffect(() => {
-    // NOTE: Must read gsRef.current INSIDE each handler, not here,
-    // because the game engine initializes asynchronously after this effect runs.
+    // 仅对游戏控制按键调用 preventDefault，避免阻断其他键盘输入
+    const GAME_KEYS = new Set([
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'KeyW', 'KeyA', 'KeyS', 'KeyD',
+      'KeyJ', 'KeyX', 'KeyK', 'KeyZ',
+      'Space', 'ShiftLeft', 'ShiftRight',
+    ]);
+
     const onDown = (e) => {
       const gs = gsRef.current;
       if (!gs) return;
@@ -1059,7 +1074,10 @@ export default function MazeGamePage() {
       if (e.code === 'KeyJ' || e.code === 'KeyX') {
         gs.isAiming = true;
       }
-      e.preventDefault();
+      // 仅阻止游戏按键的默认行为（滚动等），不影响文字输入
+      if (GAME_KEYS.has(e.code)) {
+        e.preventDefault();
+      }
     };
     const onUp = (e) => {
       const gs = gsRef.current;
@@ -1093,6 +1111,8 @@ export default function MazeGamePage() {
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('mouseup', onMouseUp);
+      // 清除游戏状态引用，确保残留handler是no-op
+      gsRef.current = null;
     };
   }, []);
 
@@ -1236,12 +1256,24 @@ export default function MazeGamePage() {
       {/* Header */}
       <div className={styles.gameBar}>
         <div className={styles.gameBarLeft}>
-          <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <button className={styles.backBtn} onClick={goBack}>
             <ArrowLeft size={14} />
           </button>
           <span className={styles.levelName}>{level.name}</span>
         </div>
         <div className={styles.gameBarRight}>
+          <button className={styles.backBtn} onClick={restart}>
+            <RotateCcw size={12} />
+          </button>
+        </div>
+      </div>
+
+      {/* Canvas + HUD wrapper — HUD 放在 canvasContainer 外面，防止 PixiJS 初始化时被清空 */}
+      {loading && <div className={styles.loading}>加载中...</div>}
+      <div className={styles.canvasArea}>
+        <div className={styles.canvasContainer} ref={canvasRef} />
+        {/* HUD overlay — 游戏画布内右上角 */}
+        <div className={styles.gameHud}>
           <div className={styles.hpHearts}>
             {Array.from({ length: 5 }, (_, i) => (
               <Heart key={i} size={14} fill={i < hp ? '#FF1744' : 'none'}
@@ -1254,15 +1286,8 @@ export default function MazeGamePage() {
           <div className={styles.stat}>
             <span className={styles.statValue}>{score}</span>分
           </div>
-          <button className={styles.backBtn} onClick={restart}>
-            <RotateCcw size={12} />
-          </button>
         </div>
       </div>
-
-      {/* Canvas */}
-      {loading && <div className={styles.loading}>加载中...</div>}
-      <div className={styles.canvasContainer} ref={canvasRef} />
 
       {/* Mobile controls */}
       {!loading && !victory && !gameOver && (
@@ -1450,7 +1475,7 @@ export default function MazeGamePage() {
                 </div>
               </div>
               <div className={styles.victoryActions}>
-                <button className={styles.btnVictoryPrimary} onClick={() => navigate(-1)}>
+                <button className={styles.btnVictoryPrimary} onClick={goBack}>
                   下一关 <ArrowRight size={16} />
                 </button>
                 <button className={styles.btnVictorySecondary} onClick={restart}>
@@ -1484,7 +1509,7 @@ export default function MazeGamePage() {
                 <button className={styles.btnVictoryPrimary} onClick={restart}>
                   <RotateCcw size={14} /> 重新挑战
                 </button>
-                <button className={styles.btnVictorySecondary} onClick={() => navigate(-1)}>
+                <button className={styles.btnVictorySecondary} onClick={goBack}>
                   退出
                 </button>
               </div>

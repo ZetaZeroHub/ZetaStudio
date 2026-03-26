@@ -18,18 +18,18 @@ const CURSOR = '/assets/kenney/kenney_cursor-pixel-pack/Tiles';
 /* ── Featured maze list (animals mapped to existing Round PNGs only) ── */
 const FEATURED_MAZES = [
   // Maze type — 迷宫类
-  { id: 'duck-pool',     name: '小鸭子找水池迷宫', emoji: '🦆', color: '#4FC3F7', animal: `${DUCK}/duck_down.png`, playable: true,  type: 'maze' },
+  { id: 'duck-pool',     name: '小鸭子找水池迷宫', emoji: '🦆', color: '#4FC3F7', cover: '/assets/custom/精选游戏-游戏封面-小鸭子找水池.jpg', playable: true,  type: 'maze' },
   { id: 'snow-white',    name: '白雪公主迷宫',     emoji: '👸', color: '#F48FB1', animal: `${ANIMALS}/parrot.png`,  playable: false, type: 'maze' },
   { id: 'cat-mouse',     name: '猫捉老鼠迷宫',     emoji: '🐱', color: '#FFB74D', animal: `${ANIMALS}/monkey.png`, playable: false, type: 'maze' },
-  { id: 'red-riding',    name: '小红帽迷宫',        emoji: '🐺', color: '#EF5350', animal: `${ANIMALS}/pig.png`,    playable: false, type: 'maze' },
-  { id: 'space-explore', name: '太空探险迷宫',      emoji: '🚀', color: '#5C6BC0', animal: `${ANIMALS}/penguin.png`,playable: false, type: 'maze' },
-  { id: 'dino-world',    name: '恐龙世界迷宫',      emoji: '🦕', color: '#66BB6A', animal: `${ANIMALS}/elephant.png`,playable: false, type: 'maze' },
-  { id: 'unicorn',       name: '独角兽迷宫',        emoji: '🦄', color: '#AB47BC', animal: `${ANIMALS}/giraffe.png`,playable: false, type: 'maze' },
+  // { id: 'red-riding',    name: '小红帽迷宫',        emoji: '🐺', color: '#EF5350', animal: `${ANIMALS}/pig.png`,    playable: false, type: 'maze' },
+  // { id: 'space-explore', name: '太空探险迷宫',      emoji: '🚀', color: '#5C6BC0', animal: `${ANIMALS}/penguin.png`,playable: false, type: 'maze' },
+  // { id: 'dino-world',    name: '恐龙世界迷宫',      emoji: '🦕', color: '#66BB6A', animal: `${ANIMALS}/elephant.png`,playable: false, type: 'maze' },
+  // { id: 'unicorn',       name: '独角兽迷宫',        emoji: '🦄', color: '#AB47BC', animal: `${ANIMALS}/giraffe.png`,playable: false, type: 'maze' },
   // Adventure type — 闯关冒险类 (last)
-  { id: 'medium-1',      name: '森林小径闯关',      emoji: '🌳', color: '#43A047', animal: `${ANIMALS}/panda.png`,  playable: true, type: 'adventure', levelId: 'medium-1' },
-  { id: 'medium-2',      name: '海滩寻宝闯关',      emoji: '🏖️', color: '#0097A7', animal: `${ANIMALS}/hippo.png`, playable: true, type: 'adventure', levelId: 'medium-2' },
-  { id: 'medium-3',      name: '糖果迷城闯关',      emoji: '🍬', color: '#E91E63', animal: `${ANIMALS}/rabbit.png`, playable: true, type: 'adventure', levelId: 'medium-3' },
-  { id: 'medium-4',      name: '沙漠绿洲闯关',      emoji: '🏜️', color: '#F57C00', animal: `${ANIMALS}/snake.png`, playable: true, type: 'adventure', levelId: 'medium-4' },
+  // { id: 'medium-1',      name: '森林小径闯关',      emoji: '🌳', color: '#43A047', animal: `${ANIMALS}/panda.png`,  playable: true, type: 'adventure', levelId: 'medium-1' },
+  // { id: 'medium-2',      name: '海滩寻宝闯关',      emoji: '🏖️', color: '#0097A7', animal: `${ANIMALS}/hippo.png`, playable: true, type: 'adventure', levelId: 'medium-2' },
+  // { id: 'medium-3',      name: '糖果迷城闯关',      emoji: '🍬', color: '#E91E63', animal: `${ANIMALS}/rabbit.png`, playable: true, type: 'adventure', levelId: 'medium-3' },
+  // { id: 'medium-4',      name: '沙漠绿洲闯关',      emoji: '🏜️', color: '#F57C00', animal: `${ANIMALS}/snake.png`, playable: true, type: 'adventure', levelId: 'medium-4' },
 ];
 
 const STORAGE_KEY = 'game_drafts_v1';
@@ -236,7 +236,11 @@ export default function MazeDifficultyPage() {
                   whileTap={{ scale: 0.95 }}
                 >
                   <div className={styles.cardBg}>
-                    <img src={maze.animal} alt="" className={styles.cardAnimal} />
+                    {maze.cover ? (
+                      <img src={maze.cover} alt="" className={styles.cardCover} />
+                    ) : (
+                      <img src={maze.animal} alt="" className={styles.cardAnimal} />
+                    )}
                     {maze.type === 'adventure' && (
                       <span className={styles.cardTypeBadge}>闯关</span>
                     )}

@@ -17,6 +17,8 @@ export default function ThreeCanvas({ mode }) {
   const transformRef = useRef(null);
   const keyHandlerRef = useRef(null);
   const modeRef = useRef(mode);
+  // 追踪脚本注入的全局事件监听器，卸载时自动清理
+  const scriptListenersRef = useRef([]);
   const initIdRef = useRef(0);
   const reqIdRef = useRef(0);
   const [loading, setLoading] = useState(false);
@@ -67,6 +69,11 @@ export default function ThreeCanvas({ mode }) {
       });
     }
     if (canvasMountRef.current) canvasMountRef.current.innerHTML = '';
+    // 清理脚本注入的全局事件监听器，防止退出游戏后键盘失效
+    scriptListenersRef.current.forEach(({ target, type, fn }) => {
+      try { target.removeEventListener(type, fn); } catch (e) { /* ignore */ }
+    });
+    scriptListenersRef.current = [];
     sceneRef.current = null;
     rendererRef.current = null;
     cameraRef.current = null;
@@ -220,6 +227,18 @@ export default function ThreeCanvas({ mode }) {
         const store = useEditorStore.getState();
         const scripts = store.scripts || [];
         
+        // Monkey-patch addEventListener to track script-injected listeners
+        const origWindowAdd = window.addEventListener.bind(window);
+        const origDocAdd = document.addEventListener.bind(document);
+        window.addEventListener = (type, fn, opts) => {
+          scriptListenersRef.current.push({ target: window, type, fn });
+          origWindowAdd(type, fn, opts);
+        };
+        document.addEventListener = (type, fn, opts) => {
+          scriptListenersRef.current.push({ target: document, type, fn });
+          origDocAdd(type, fn, opts);
+        };
+
         scripts.forEach(script => {
           try {
             const executor = new Function(
@@ -241,6 +260,10 @@ export default function ThreeCanvas({ mode }) {
             console.error(`Error executing script "${script.name}":`, err);
           }
         });
+
+        // 恢复原始 addEventListener
+        window.addEventListener = origWindowAdd;
+        document.addEventListener = origDocAdd;
       }
 
       const animate = () => {

@@ -86,20 +86,7 @@ export default function EditorPage() {
     setTimeout(() => setSaving(false), 800);
   }, [currentProject, updateProject]);
 
-  // Auto-save every 60 seconds
-  useEffect(() => {
-    if (!currentProject) return;
-    const timer = setInterval(() => {
-      const state = useEditorStore.getState();
-      if (state.currentProject) {
-        const data = state.getProjectData();
-        updateProject(state.currentProject.id, data);
-        state.saveSnapshot();
-        console.log('[EditorPage] Auto-saved');
-      }
-    }, 60_000);
-    return () => clearInterval(timer);
-  }, [currentProject?.id, updateProject]);
+  // 不再自动保存 — 仅在用户点击"保存"按钮后才保存到「我的作品」
 
   // Open publish modal
   const handlePublishClick = useCallback(() => {
@@ -112,10 +99,11 @@ export default function EditorPage() {
     if (!currentProject) return;
     const name = publishName.trim() || currentProject.name || '';
     const data = useEditorStore.getState().getProjectData();
-    updateProject(currentProject.id, { ...data, name, published: true, publishedAt: Date.now() });
+    // 移除 temporary 标记，使项目正式出现在「我的作品」中
+    updateProject(currentProject.id, { ...data, name, published: true, temporary: false, publishedAt: Date.now() });
     useEditorStore.getState().saveSnapshot();
     setPublishModalOpen(false);
-    setPublishToast('已发布到我的作品！');
+    setPublishToast('✅ 已保存到我的作品！');
     console.log('[EditorPage] Published:', currentProject.id, name);
     setTimeout(() => navigate('/'), 1500);
   }, [currentProject, updateProject, publishName, navigate]);
@@ -215,17 +203,13 @@ export default function EditorPage() {
               <PanelRight size={16} />
             </button>
           </div>
-          <button className="btn btn-secondary btn-sm" onClick={handleSave}>
-            {saving ? <CheckCircle2 size={16} className={styles.iconSuccess} /> : <Save size={16} />}
-            <span className={styles.actionLabel}>{saving ? t('editor.saved') : t('editor.save')}</span>
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setSavesOpen(v => !v)} title="My Saves">
+          <button className="btn btn-ghost btn-sm" onClick={() => setSavesOpen(v => !v)} title="修改记录">
             <History size={16} />
-            <span className={styles.actionLabel}>记录</span>
+            <span className={styles.actionLabel}>修改记录</span>
           </button>
           <button className="btn btn-primary btn-sm" onClick={handlePublishClick}>
-            <Upload size={16} />
-            <span className={styles.actionLabel}>{t('editor.publish')}</span>
+            {saving ? <CheckCircle2 size={16} className={styles.iconSuccess} /> : <Save size={16} />}
+            <span className={styles.actionLabel}>{saving ? '已保存' : '保存'}</span>
           </button>
         </div>
       </Navbar>
@@ -326,7 +310,7 @@ export default function EditorPage() {
             exit={{ opacity: 0, y: -10 }}
           >
             <div className={styles.savesPanelHeader}>
-              <h4 className={styles.savesPanelTitle}>My Saves</h4>
+              <h4 className={styles.savesPanelTitle}>修改记录</h4>
               <button className={styles.savesPanelClose} onClick={() => setSavesOpen(false)}><X size={14} /></button>
             </div>
             <div className={styles.savesList}>
@@ -370,22 +354,22 @@ export default function EditorPage() {
               exit={{ scale: 0.85, opacity: 0 }}
               onClick={e => e.stopPropagation()}
             >
-              <h3 className={styles.publishModalTitle}>Publish</h3>
-              <p className={styles.publishModalDesc}>Name your game</p>
+              <h3 className={styles.publishModalTitle}>保存作品</h3>
+              <p className={styles.publishModalDesc}>保存后将在「我的作品」中展示</p>
               <input
                 type="text"
                 className={styles.publishModalInput}
                 value={publishName}
                 onChange={e => setPublishName(e.target.value)}
-                placeholder="Name"
+                placeholder="作品名称"
                 autoFocus
                 onKeyDown={e => e.key === 'Enter' && handleConfirmPublish()}
               />
               <div className={styles.publishModalActions}>
                 <button className={styles.publishConfirmBtn} onClick={handleConfirmPublish}>
-                  <Upload size={16} /> Publish
+                  <Save size={16} /> 保存
                 </button>
-                <button className={styles.publishCancelBtn} onClick={() => setPublishModalOpen(false)}>Cancel</button>
+                <button className={styles.publishCancelBtn} onClick={() => setPublishModalOpen(false)}>取消</button>
               </div>
             </motion.div>
           </motion.div>
