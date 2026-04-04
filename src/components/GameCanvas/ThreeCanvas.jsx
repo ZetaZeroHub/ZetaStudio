@@ -447,7 +447,7 @@ export default function ThreeCanvas({ mode }) {
   useEffect(() => {
     initApp();
     return () => destroyApp();
-  }, [mode]);
+  }, [mode, activeSceneId]);
 
   // Sync elements without destroying — use direct import (not dynamic)
   useEffect(() => {

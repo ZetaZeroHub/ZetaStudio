@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Sparkles, Globe, Github, Settings } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Sparkles, Globe, Github, Settings, Sun, Moon } from 'lucide-react';
 import useI18nStore from '../../stores/i18nStore';
+import useThemeStore from '../../stores/themeStore';
 import SettingsModal from '../SettingsModal/SettingsModal';
 import styles from './Navbar.module.css';
 
+const NAV_TABS = [
+  { key: '/', label: '游戏开发', labelEn: 'Home' },
+  { key: '/art-studio', label: '美术资产', labelEn: 'AI Art Studio' },
+];
+
 export default function Navbar({ children, hideBrand = false, leftContent }) {
   const { language, setLanguage, t } = useI18nStore();
+  const { theme, toggleTheme } = useThemeStore();
   const [showSettings, setShowSettings] = useState(false);
+  const location = useLocation();
 
   const toggleLanguage = () => {
     setLanguage(language === 'zh' ? 'en' : 'zh');
@@ -19,15 +27,35 @@ export default function Navbar({ children, hideBrand = false, leftContent }) {
         {hideBrand ? (
           leftContent || null
         ) : (
-          <Link to="/" className={styles.navBrand}>
-            <Sparkles className={styles.navLogo} size={20} strokeWidth={2.5} />
-            <span>{t('nav.brand')}</span>
-          </Link>
+          <div className={styles.navLeft}>
+            <Link to="/" className={styles.navBrand}>
+              <Sparkles className={styles.navLogo} size={20} strokeWidth={2.5} />
+              <span>{t('nav.brand')}</span>
+            </Link>
+            <div className={styles.navTabs}>
+              {NAV_TABS.map(tab => (
+                <Link
+                  key={tab.key}
+                  to={tab.key}
+                  className={`${styles.navTab} ${location.pathname === tab.key ? styles.navTabActive : ''}`}
+                >
+                  {language === 'zh' ? tab.label : tab.labelEn}
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
         <div className={styles.navRight}>
           <div className={styles.navActions}>
             {children}
           </div>
+          <button
+            className={styles.themeToggle}
+            onClick={toggleTheme}
+            title={theme === 'dark' ? '切换到白天模式' : '切换到暗色模式'}
+          >
+            {theme === 'dark' ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
+          </button>
           <button
             className={styles.settingsBtn}
             onClick={() => setShowSettings(true)}
@@ -54,3 +82,4 @@ export default function Navbar({ children, hideBrand = false, leftContent }) {
     </>
   );
 }
+

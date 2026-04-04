@@ -500,6 +500,7 @@ export default function HomePage() {
       case 'solar3d': return <Rocket size={size} strokeWidth={1.5} />;
       case 'fps3d': return <Crosshair size={size} strokeWidth={1.5} />;
       case 'mazeAdventure': return <Swords size={size} strokeWidth={1.5} />;
+      case 'spriteEditor': return <Palette size={size} strokeWidth={1.5} />;
       case 'duckPond': return <Map size={size} strokeWidth={1.5} />;
       case 'topdown': return <Map size={size} strokeWidth={1.5} />;
       default: return <Gamepad2 size={size} strokeWidth={1.5} />;

@@ -1,0 +1,122 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--m-card-radius);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 80ms ease;
+  break-inside: avoid;
+  margin-bottom: var(--m-card-gap);
+}
+.card:active {
+  transform: scale(0.97);
+}
+
+.poster {
+  width: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-elevated);
+}
+
+.posterWrap {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-elevated);
+  line-height: 0;
+}
+.posterWrap img {
+  width: 100%;
+  display: block;
+  transition: opacity 0.3s ease;
+}
+
+.posterSkeleton {
+  width: 100%;
+  aspect-ratio: 4/3;
+}
+
+.tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 6px;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.tagOfficial {
+  background: var(--m-accent);
+  color: #000;
+}
+
+.body {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.author {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  background: var(--bg-elevated);
+}
+
+.authorName {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.likes {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+.likes svg {
+  width: 12px;
+  height: 12px;
+}

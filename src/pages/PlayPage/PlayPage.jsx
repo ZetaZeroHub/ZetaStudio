@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useLayoutEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Pencil, Copy, Check, ArrowLeft, Share2, Heart, MessageCircle, Eye, Star, Send, ThumbsUp, Clock, User, Bookmark, Flag } from 'lucide-react';
 import Navbar from '../../components/Navbar/Navbar';
@@ -95,7 +95,8 @@ export default function PlayPage() {
     loadAllProjects();
   }, []);
 
-  useEffect(() => {
+  // useLayoutEffect 保证 store 在 PixiCanvas 的 useEffect 之前填充
+  useLayoutEffect(() => {
     const p = getProject(projectId);
     if (p) {
       setProject(p);
@@ -198,7 +199,7 @@ export default function PlayPage() {
             </div>
             <div className={styles.actionRight}>
               <button className={styles.editBtn} onClick={() => navigate(`/editor/${project.id}`)}>
-                <Pencil size={14} /> 编辑关卡
+                <Pencil size={14} /> Remix这个游戏
               </button>
               <button className={styles.shareBtn} onClick={handleCopy}>
                 {copied ? <><Check size={14} /> 已复制</> : <><Share2 size={14} /> 分享链接</>}

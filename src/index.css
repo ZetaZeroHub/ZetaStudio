@@ -68,6 +68,70 @@
 }
 
 /* ============================
+   Light Mode — Apple / OpenAI Aesthetic
+   Pure white, clean blacks, structural grays
+   ============================ */
+[data-theme="light"] {
+  /* ── Bright surface palette ── */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #FAFAFA;
+  --bg-tertiary: #F5F5F5;
+  --bg-card: #FFFFFF;
+  --bg-elevated: #F0F0F0;
+  --bg-hover: #EBEBEB;
+  --bg-input: #FFFFFF;
+
+  /* ── Accent stays structural ── */
+  --accent-primary: #171717;
+  --accent-primary-light: #333333;
+  --accent-primary-dark: #666666;
+  --accent-success: #22C55E;
+  --accent-warning: #F59E0B;
+  --accent-danger: #EF4444;
+
+  /* ── Text — dark on light ── */
+  --text-primary: #171717;
+  --text-secondary: #6B7280;
+  --text-muted: #B0B0B0;
+  --text-accent: #171717;
+
+  /* ── Borders — subtle gray ── */
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.1);
+  --border-accent: rgba(0, 0, 0, 0.2);
+
+  /* ── Shadows — soft daylight ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* Light mode scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+/* Light mode btn-primary inverts */
+[data-theme="light"] .btn-primary {
+  background: #171717;
+  color: #FFFFFF;
+}
+[data-theme="light"] .btn-primary:hover {
+  background: #333333;
+}
+
+/* Light mode gradient text */
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(180deg, #171717 30%, #6B7280 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ============================
    Reset & Base
    ============================ */
 *, *::before, *::after {

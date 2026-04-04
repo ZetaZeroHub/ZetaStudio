@@ -1,6 +1,6 @@
 export default {
   nav: {
-    brand: 'AI益智游戏开放平台',
+    brand: 'AI 益智游戏开放平台',
   },
   home: {
     heroTitle: '创造游戏，如此简单！',

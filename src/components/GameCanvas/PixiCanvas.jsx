@@ -92,9 +92,14 @@ export default function GameCanvas({ mode, canvasBg }) {
         }
       }
 
-      // Render elements
+      // Render elements — 从 store.getState() 实时读取,
+      // 不依赖 React 闭包, 避免父子组件 useEffect 时序导致读到空数据
+      const currentState = useEditorStore.getState();
+      const liveElements = currentState.elements;
+      const liveVariables = currentState.variables;
       const isEdit = mode === 'edit';
-      const pixiMap = renderAll(app, elements, variables, isEdit);
+      console.log('[PixiCanvas] initApp: mode=%s, elements=%d', mode, liveElements.length);
+      const pixiMap = renderAll(app, liveElements, liveVariables, isEdit);
 
       // Edit mode: enable unified interactions via stage delegation
       if (isEdit) {

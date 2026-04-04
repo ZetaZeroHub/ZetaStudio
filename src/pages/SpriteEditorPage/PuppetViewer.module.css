@@ -1,0 +1,175 @@
+/* PuppetViewer — uses global design system */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.containerCompact {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.viewport canvas { display: block; }
+
+.controls {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 3px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 2px;
+  color: var(--text-secondary);
+  font-size: 0.625rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.actionBtn:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+.actionBtnActive {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.bottomRow {
+  display: flex;
+  gap: 3px;
+}
+
+.resetBtn {
+  flex: 1;
+  padding: 5px;
+  font-size: 0.625rem;
+  border: 1px solid var(--border-default);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all var(--transition-fast);
+}
+.resetBtn:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+.captureBtn {
+  flex: 1;
+  padding: 5px;
+  font-size: 0.625rem;
+  border: none;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background var(--transition-fast);
+}
+.captureBtn:hover { background: #E0E0E0; color: #000; }
+
+/* ── Camera Controls ── */
+.cameraControls {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+.cameraRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.cameraLabel {
+  font-size: 0.5625rem;
+  color: var(--text-muted);
+  width: 28px;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+.cameraSlider {
+  flex: 1;
+  height: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-subtle);
+  border-radius: 1px;
+  outline: none;
+}
+.cameraSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  background: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cameraSlider::-webkit-slider-thumb:hover { background: var(--text-primary); }
+.cameraValue {
+  font-size: 0.5625rem;
+  color: var(--text-muted);
+  width: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.viewPresets {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+.viewBtn {
+  flex: 1;
+  font-size: 0.5rem;
+  padding: 2px 0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 1px;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.12s;
+  letter-spacing: 0.02em;
+}
+.viewBtn:hover {
+  border-color: var(--border-accent);
+  color: var(--text-primary);
+}
+
+/* ── Light Mode ── */
+:global([data-theme="light"]) .captureBtn {
+  color: #fff;
+}
+:global([data-theme="light"]) .captureBtn:hover {
+  color: #000;
+}
+

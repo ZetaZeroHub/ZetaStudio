@@ -2013,3 +2013,101 @@
   border-radius: 40px;
 }
 
+/* ════════════════════════════════════════
+   Light Mode — HomePage Overrides
+   ════════════════════════════════════════ */
+
+/* Hero gradient */
+:global([data-theme="light"]) .hero {
+  background: linear-gradient(to bottom, #f0f0f8 0%, #FFFFFF 100%);
+}
+:global([data-theme="light"]) .heroLabel {
+  color: rgba(0, 0, 0, 0.45);
+}
+:global([data-theme="light"]) .heroTitle {
+  color: #171717;
+  text-shadow: none;
+}
+:global([data-theme="light"]) .heroSub {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Skeleton in light mode */
+:global([data-theme="light"]) .skeletonPulse {
+  background: linear-gradient(90deg, #e8e8e8 25%, #f2f2f2 50%, #e8e8e8 75%);
+  background-size: 200% 100%;
+}
+
+/* CTA button inverted */
+:global([data-theme="light"]) .ctaBtn {
+  background: #171717;
+  color: #fff;
+}
+:global([data-theme="light"]) .ctaBtn:hover {
+  background: #333;
+}
+:global([data-theme="light"]) .playBtn:hover {
+  background: #171717;
+  color: #fff;
+}
+
+/* Featured hero overlay */
+:global([data-theme="light"]) .featuredOverlayHero {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.1) 40%, transparent 70%);
+}
+
+/* Card shadows lighter */
+:global([data-theme="light"]) .featuredCardHero:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+:global([data-theme="light"]) .featuredCardCompact:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* Tab count badge */
+:global([data-theme="light"]) .tabCount {
+  color: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* featured tag */
+:global([data-theme="light"]) .featuredTag {
+  color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* compact tag */
+:global([data-theme="light"]) .compactTag {
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+}
+
+/* author badges */
+:global([data-theme="light"]) .authorBadgeUser {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+:global([data-theme="light"]) .authorName {
+  color: rgba(0, 0, 0, 0.6);
+}
+:global([data-theme="light"]) .publishDate {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+/* Drawer backdrop */
+:global([data-theme="light"]) .drawerBackdrop {
+  background: rgba(0, 0, 0, 0.2);
+}
+:global([data-theme="light"]) .drawer {
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.06);
+}
+
+/* Featured image brightness */
+:global([data-theme="light"]) .featuredImg {
+  filter: brightness(1);
+}
+:global([data-theme="light"]) .friendsImg {
+  filter: brightness(1);
+}

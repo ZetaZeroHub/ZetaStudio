@@ -1,0 +1,100 @@
+.navBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--m-nav-height) + var(--m-safe-top));
+  padding-top: var(--m-safe-top);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: var(--m-page-pad);
+  padding-right: var(--m-page-pad);
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 700;
+}
+
+[data-theme="light"] .navBar {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.navBarTransparent {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom: none;
+}
+
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 60px;
+}
+
+.navCenter {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.navTitle {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+  justify-content: flex-end;
+}
+
+.navBtn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s ease;
+}
+
+.navBtn:active {
+  background: var(--bg-hover);
+}
+
+.navBrand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navLogo {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.navBrandText {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
